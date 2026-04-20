@@ -1,0 +1,183 @@
+﻿【Unity 2D 项目 · 全局对话管理器 使用指导】
+
+文件位置
+- 全局管理脚本：Assets/DialogueManager.cs
+- 触发脚本（旧脚本改造）：Assets/TypewriterEffect.cs
+- 本指导文件：操作指导/GlobalDialogueUsageGuide.txt
+
+目标
+这套脚本的核心改造是：
+- 所有对话播放逻辑只由一个全局单例管理。
+- 任何地方想播放对话，只要提交“台词列表”，就会统一显示、打字、左键翻页。
+- 不再让多个对话脚本同时监听输入。
+
+总结构
+1. DialogueManager（全局单例）
+   - 负责：
+     - 接收台词、展示目标文本
+     - 打字机逐字显示
+     - 左键推进（或打断当前句）
+     - 面板显隐
+     - 多个对话请求排队
+
+2. TypewriterEffect（触发入口）
+   - 负责：
+     - 在场景对象上配置台词
+     - 在 Start 或手动调用时，把这些台词交给 DialogueManager
+
+----------------------------------------
+一、准备工作（第一次用）
+----------------------------------------
+
+1) 确保场景里有一个对话显示区域（TMP 文本）
+- 在 Hierarchy 新建/确认已有一个 TextMeshPro - Text (UI) 组件。
+- 记住它的对象（例如：DialogueText）。
+
+2) 确保有对话背景面板（可选）
+- 建议创建一个 Panel（或 Image）包裹文字组件。
+- 该面板就是“对话框”，显示时会打开，结束后可选隐藏。
+- 如果你不拖面板，系统会自动尝试使用 Text 的父物体作为面板。
+
+3) 把管理器放进场景（推荐）
+- 在场景里创建空对象：GlobalDialogueManager
+- 给它添加脚本：DialogueManager
+- 这是强烈推荐方式，方便你在 Inspector 里直接配置默认值（默认文本、默认面板、速度等）。
+
+----------------------------------------
+二、在 Inspector 里配置 DialogueManager
+----------------------------------------
+
+选中 GlobalDialogueManager，设置以下字段：
+
+- Default Text Label：
+  你希望默认显示台词的 TMP 组件。
+- Default Dialogue Panel：
+  默认对话面板（可选）。
+- Default Typing Speed：
+  默认逐字间隔秒数，如 0.05。
+- Hide Panel When Finished：
+  完整一组对话结束后是否隐藏面板。
+- Keep Alive Across Scenes：
+  是否跨场景保留管理器（默认 true）。
+
+----------------------------------------
+三、使用 TypewriterEffect 做“触发”
+----------------------------------------
+
+在想要触发对话的对象上（例如 NPC）挂上 TypewriterEffect，配置：
+
+- textLabel：拖入对应的 TMP 文本组件（如 DialogueText）
+- dialoguePanel：拖入对话面板（可选）
+- typingSpeed：每字出现间隔（例如 0.05）
+- dialogueLines：把你要显示的每一句按行写进列表
+- playOnStart：是否场景开始即播放
+- queueIfRunning：当前对话进行中是否进入队列
+- hidePanelWhenFinished：该次对话结束后是否隐藏面板
+
+注意：TypewriterEffect 默认不再自己接收左键事件。
+左键行为全部由 DialogueManager 统一处理。
+
+----------------------------------------
+四、脚本接口（给完全没用过的同学）
+----------------------------------------
+
+A. DialogueManager（全局）
+
+1) ShowDialogue(
+   IList<string> lines,
+   TextMeshProUGUI textLabel,
+   GameObject dialoguePanel = null,
+   float typingSpeed = -1f,
+   bool queueIfRunning = true,
+   bool hidePanelOnFinish = true,
+   Action onComplete = null)
+
+参数说明（按顺序）：
+- lines：要显示的台词列表（不能为空）。
+- textLabel：显示文本组件（不能为空）。
+- dialoguePanel：要显示/隐藏的对话框面板（可不传，默认会尝试用 textLabel 的父对象）。
+- typingSpeed：每个字符出现时间（<=0 使用默认速度）。
+- queueIfRunning：正在播报时新请求是“排队”还是“打断”
+  - true：排队，当前结束后播放新请求
+  - false：打断当前并立即播放
+- hidePanelOnFinish：该请求结束后是否隐藏面板
+- onComplete：这组对话播完后的回调（可选）
+
+2) SkipAllDialogue()
+- 功能：立即结束当前请求并清空队列。
+
+3) IsBusy（属性）
+- 返回 bool。
+- true：当前有正在进行中的对话
+
+B. TypewriterEffect（触发）
+
+1) Play()
+- 功能：将本组件配置的内容提交给 DialogueManager 开始播放。
+- 推荐在
+  - Start 中（playOnStart=true）
+  - 或点击按钮、触发器、对话事件里手动调用
+
+----------------------------------------
+五、左键翻页规则（Unity 运行时）
+----------------------------------------
+
+- 左键按下，且正在打字中：立即显示完整当前句
+- 左键按下，当前句已打完：显示下一句
+- 最后一组句子打完后：自动收起面板（如配置），并触发 onComplete
+
+----------------------------------------
+六、典型操作流程（快速上手）
+----------------------------------------
+
+方式一：直接把对白挂在一个 NPC 上自动播放
+1. 在场景创建 GlobalDialogueManager 并挂 DialogueManager。
+2. 给 NPC 挂 TypewriterEffect。
+3. 配 textLabel 为对话文本，挂 dialogueLines。
+4. 勾选 playOnStart。
+5. 运行场景，左键可以打断逐字并翻页。
+
+方式二：代码里手动开启一段对话
+1. 在你的脚本里引用：
+   using TMPro;
+2. 写一段：
+   var lines = new List<string>{"欢迎", "这是第二句"};
+   DialogueManager.Instance.ShowDialogue(lines, myText, myPanel, 0.05f, true, true, ()=>{
+       Debug.Log("对话结束");
+   });
+
+----------------------------------------
+七、常见问题排查
+----------------------------------------
+
+Q1：运行时报错 "No valid TextMeshProUGUI target"
+- 说明没把 textLabel 传入。
+- 解决：确认 TypewriterEffect 的 textLabel 或 Manager 的 Default Text Label 已设置。
+
+Q2：按左键不翻页
+- 左键翻页逻辑在 DialogueManager.Update 里。
+- 解决：确认场景里只有一个 DialogueManager 生效（单例），且有 activeRequest 正在显示。
+
+Q3：两个对话同时出现
+- 说明多个 TypewriterEffect 同时调用且 queueIfRunning=false。
+- 解决：把 queueIfRunning 设为 true，按顺序播放。
+
+Q4：首次进入场景没有对话
+- 检查 playOnStart 是否勾选，或是否在代码中调用了 Play()/ShowDialogue()。
+
+----------------------------------------
+八、推荐项目命名（可选）
+----------------------------------------
+
+- 全局管理器对象：GlobalDialogueManager
+- 对话文本：DialogueText
+- 对话框：DialogueBox
+- NPC 对话脚本：TypewriterEffect
+
+----------------------------------------
+九、建议的版本检视
+----------------------------------------
+
+- TypewriterEffect 仅保留“配置 + 触发”职责，不再做输入处理。
+- DialogueManager 只在运行时存在一个实例（单例）。
+- 所有输入（左键）和显示时序都集中在 DialogueManager，便于后续新增功能（自动暂停、角色对话分支、语音同步等）。
