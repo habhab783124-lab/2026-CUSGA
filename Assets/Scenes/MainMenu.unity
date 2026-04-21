@@ -167,6 +167,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameplaySceneName: LevelSelect
+  useCampaignFlowOnStart: 1
+  campaignFlowAsset: {fileID: 11400000, guid: cb60c8f9eac74f1a95ab7674b6357b5a, type: 2}
   backgroundColor: {r: 0.9433962, g: 0.9211463, b: 0.9211463, a: 1}
   primaryAccent: {r: 1, g: 0.62, b: 0.29, a: 1}
   secondaryAccent: {r: 0.31, g: 0.86, b: 0.96, a: 1}

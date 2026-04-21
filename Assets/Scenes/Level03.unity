@@ -17863,27 +17863,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   initialDelay: 1.5
   delayBetweenWaves: 4
+  routePreviewLeadTime: 2
+  continueCampaignAfterClear: 1
+  clearContinuePrimaryKey: 13
+  clearContinueSecondaryKey: 32
+  clearContinueMessage: Combat segment secured. Press Enter / Space to continue the story.
   battlefieldMapReference: {fileID: 2109000002}
+  waveCatalogAsset: {fileID: 11400000, guid: 3b40e205ee32408bbaff7f7faa838323, type: 2}
+  enemyCatalogAsset: {fileID: 11400000, guid: 819dd0e8f3ce43b486231f9495890f82, type: 2}
   enemyPathReference: {fileID: 883511605}
   enemyPrototypeReference: {fileID: 5863667738006183233, guid: 188b0c4095b17be4d9ca76d998df24f1, type: 3}
   enemyRootReference: {fileID: 2035091432}
-  enemyRootName: EnemiesRoot
-  waves:
-  - enemyCount: 4
-    spawnInterval: 1
-    moveSpeed: 1.8
-    enemyHealth: 3
-    enemyScrapReward: 8
-  - enemyCount: 6
-    spawnInterval: 0.85
-    moveSpeed: 2.1
-    enemyHealth: 4
-    enemyScrapReward: 11
-  - enemyCount: 8
-    spawnInterval: 0.7
-    moveSpeed: 2.4
-    enemyHealth: 6
-    enemyScrapReward: 15
+  waves: []
 --- !u!1 &1759276076
 GameObject:
   m_ObjectHideFlags: 0

@@ -58,6 +58,17 @@ public sealed class EnemySpawnGate : MonoBehaviour
         return enemyPathReference != null ? enemyPathReference.GetSpawnPosition() : transform.position;
     }
 
+    /// <summary>
+    /// 给编辑器作者工作流一个显式刷新入口。
+    ///
+    /// 当你刚手动补完可读性根、改了材质或调整了路径引用时，
+    /// 可以通过这一步立刻让出怪口标记重新同步。
+    /// </summary>
+    public void EditorRefreshAuthoringState()
+    {
+        RefreshReadabilityVisuals(force: true);
+    }
+
     private void Awake()
     {
         RefreshReadabilityVisuals(force: true);

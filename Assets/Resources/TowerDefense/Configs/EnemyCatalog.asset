@@ -1,0 +1,231 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a929499c824f4b4cb2e02b9c75e0f49f, type: 3}
+  m_Name: EnemyCatalog
+  m_EditorClassIdentifier: 
+  definitions:
+  - archetypeId: 1
+    displayName: Scavenger
+    maxHealth: 4
+    moveSpeed: 1.9
+    scrapReward: 8
+    baseDamageToBase: 1
+    armorTier: 0
+    nonPiercingDamageMultiplier: 1
+    ignoresSlowEffects: 0
+    canBeRepairedByMechanic: 0
+    runtimePrefab: {fileID: 100100000, guid: c02c6ae9c9a44e04bddd4ec15b7cdf72, type: 3}
+    bodySpriteOverride: {fileID: 0}
+    bodyColor: {r: 0.9, g: 0.25, b: 0.25, a: 1}
+    bodyScaleMultiplier: 0.9
+    shieldAmount: 0
+    shieldAuraRadius: 1.8
+    shieldRefreshInterval: 0.45
+    repairAmount: 0
+    repairRadius: 2.1
+    repairCooldown: 2.5
+    entersStealthAfterFirstDirectHit: 0
+    stealthDuration: 1.8
+    signalRevealDuration: 1.2
+    hiddenAlpha: 0.22
+    splitChildType: 0
+    splitChildCount: 0
+    splitSpawnRadius: 0.4
+  - archetypeId: 2
+    displayName: Wolf Runner
+    maxHealth: 3
+    moveSpeed: 3.4
+    scrapReward: 7
+    baseDamageToBase: 1
+    armorTier: 0
+    nonPiercingDamageMultiplier: 1
+    ignoresSlowEffects: 1
+    canBeRepairedByMechanic: 0
+    runtimePrefab: {fileID: 100100000, guid: 81fd033f311a422c8cb5a2bd36065840, type: 3}
+    bodySpriteOverride: {fileID: 0}
+    bodyColor: {r: 0.92, g: 0.84, b: 0.44, a: 1}
+    bodyScaleMultiplier: 0.8
+    shieldAmount: 0
+    shieldAuraRadius: 1.8
+    shieldRefreshInterval: 0.45
+    repairAmount: 0
+    repairRadius: 2.1
+    repairCooldown: 2.5
+    entersStealthAfterFirstDirectHit: 0
+    stealthDuration: 1.8
+    signalRevealDuration: 1.2
+    hiddenAlpha: 0.22
+    splitChildType: 0
+    splitChildCount: 0
+    splitSpawnRadius: 0.4
+  - archetypeId: 3
+    displayName: Banner Scavenger
+    maxHealth: 8
+    moveSpeed: 1.35
+    scrapReward: 14
+    baseDamageToBase: 1
+    armorTier: 1
+    nonPiercingDamageMultiplier: 0.75
+    ignoresSlowEffects: 0
+    canBeRepairedByMechanic: 0
+    runtimePrefab: {fileID: 100100000, guid: 993157e063b944119f0f1b51f50d49fb, type: 3}
+    bodySpriteOverride: {fileID: 0}
+    bodyColor: {r: 1, g: 0.58, b: 0.22, a: 1}
+    bodyScaleMultiplier: 1.05
+    shieldAmount: 4
+    shieldAuraRadius: 1.8
+    shieldRefreshInterval: 0.45
+    repairAmount: 0
+    repairRadius: 2.1
+    repairCooldown: 2.5
+    entersStealthAfterFirstDirectHit: 0
+    stealthDuration: 1.8
+    signalRevealDuration: 1.2
+    hiddenAlpha: 0.22
+    splitChildType: 0
+    splitChildCount: 0
+    splitSpawnRadius: 0.4
+  - archetypeId: 4
+    displayName: Mechanic
+    maxHealth: 7
+    moveSpeed: 1.2
+    scrapReward: 12
+    baseDamageToBase: 1
+    armorTier: 1
+    nonPiercingDamageMultiplier: 0.78
+    ignoresSlowEffects: 0
+    canBeRepairedByMechanic: 0
+    runtimePrefab: {fileID: 100100000, guid: 7e0659a5e1344c4cb1f7cb3bc838553d, type: 3}
+    bodySpriteOverride: {fileID: 0}
+    bodyColor: {r: 0.55, g: 0.88, b: 1, a: 1}
+    bodyScaleMultiplier: 0.95
+    shieldAmount: 0
+    shieldAuraRadius: 1.8
+    shieldRefreshInterval: 0.45
+    repairAmount: 2
+    repairRadius: 2.2
+    repairCooldown: 2.6
+    entersStealthAfterFirstDirectHit: 0
+    stealthDuration: 1.8
+    signalRevealDuration: 1.2
+    hiddenAlpha: 0.22
+    splitChildType: 0
+    splitChildCount: 0
+    splitSpawnRadius: 0.4
+  - archetypeId: 5
+    displayName: Heavy Armored Machine
+    maxHealth: 18
+    moveSpeed: 1.05
+    scrapReward: 18
+    baseDamageToBase: 1
+    armorTier: 2
+    nonPiercingDamageMultiplier: 0.18
+    ignoresSlowEffects: 0
+    canBeRepairedByMechanic: 1
+    runtimePrefab: {fileID: 100100000, guid: cc224b0a4ac14743957cc942ebac5ed0, type: 3}
+    bodySpriteOverride: {fileID: 0}
+    bodyColor: {r: 0.66, g: 0.7, b: 0.76, a: 1}
+    bodyScaleMultiplier: 1.2
+    shieldAmount: 0
+    shieldAuraRadius: 1.8
+    shieldRefreshInterval: 0.45
+    repairAmount: 0
+    repairRadius: 2.1
+    repairCooldown: 2.5
+    entersStealthAfterFirstDirectHit: 0
+    stealthDuration: 1.8
+    signalRevealDuration: 1.2
+    hiddenAlpha: 0.22
+    splitChildType: 0
+    splitChildCount: 0
+    splitSpawnRadius: 0.4
+  - archetypeId: 6
+    displayName: Stealth Stalker
+    maxHealth: 4
+    moveSpeed: 2.8
+    scrapReward: 13
+    baseDamageToBase: 1
+    armorTier: 0
+    nonPiercingDamageMultiplier: 1
+    ignoresSlowEffects: 0
+    canBeRepairedByMechanic: 0
+    runtimePrefab: {fileID: 100100000, guid: 78b7eeefa4534c6080b83b8df189bbe3, type: 3}
+    bodySpriteOverride: {fileID: 0}
+    bodyColor: {r: 0.72, g: 0.44, b: 0.92, a: 1}
+    bodyScaleMultiplier: 0.9
+    shieldAmount: 0
+    shieldAuraRadius: 1.8
+    shieldRefreshInterval: 0.45
+    repairAmount: 0
+    repairRadius: 2.1
+    repairCooldown: 2.5
+    entersStealthAfterFirstDirectHit: 1
+    stealthDuration: 1.8
+    signalRevealDuration: 1.2
+    hiddenAlpha: 0.16
+    splitChildType: 0
+    splitChildCount: 0
+    splitSpawnRadius: 0.4
+  - archetypeId: 7
+    displayName: Abomination
+    maxHealth: 26
+    moveSpeed: 0.85
+    scrapReward: 25
+    baseDamageToBase: 1
+    armorTier: 0
+    nonPiercingDamageMultiplier: 1
+    ignoresSlowEffects: 0
+    canBeRepairedByMechanic: 0
+    runtimePrefab: {fileID: 100100000, guid: 56952ecff0f24007bcc01a9cba3ca66c, type: 3}
+    bodySpriteOverride: {fileID: 0}
+    bodyColor: {r: 0.48, g: 0.84, b: 0.38, a: 1}
+    bodyScaleMultiplier: 1.45
+    shieldAmount: 0
+    shieldAuraRadius: 1.8
+    shieldRefreshInterval: 0.45
+    repairAmount: 0
+    repairRadius: 2.1
+    repairCooldown: 2.5
+    entersStealthAfterFirstDirectHit: 0
+    stealthDuration: 1.8
+    signalRevealDuration: 1.2
+    hiddenAlpha: 0.22
+    splitChildType: 8
+    splitChildCount: 2
+    splitSpawnRadius: 0.45
+  - archetypeId: 8
+    displayName: Small Scavenger
+    maxHealth: 2
+    moveSpeed: 2
+    scrapReward: 0
+    baseDamageToBase: 1
+    armorTier: 0
+    nonPiercingDamageMultiplier: 1
+    ignoresSlowEffects: 0
+    canBeRepairedByMechanic: 0
+    runtimePrefab: {fileID: 100100000, guid: 52167178d7714cd09ecedd6ecd2fba18, type: 3}
+    bodySpriteOverride: {fileID: 0}
+    bodyColor: {r: 1, g: 0.7, b: 0.32, a: 1}
+    bodyScaleMultiplier: 0.62
+    shieldAmount: 0
+    shieldAuraRadius: 1.8
+    shieldRefreshInterval: 0.45
+    repairAmount: 0
+    repairRadius: 2.1
+    repairCooldown: 2.5
+    entersStealthAfterFirstDirectHit: 0
+    stealthDuration: 1.8
+    signalRevealDuration: 1.2
+    hiddenAlpha: 0.22
+    splitChildType: 0
+    splitChildCount: 0
+    splitSpawnRadius: 0.4

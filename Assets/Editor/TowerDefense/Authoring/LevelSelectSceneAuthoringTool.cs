@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -28,11 +27,7 @@ namespace TowerDefense.Editor
                 throw new InvalidOperationException("LevelSelect scene is missing LevelSelectController.");
             }
 
-            InvokePrivate(controller, "EnsureDefaultLevelDefinitions");
-            InvokePrivate(controller, "EnsureEditorSceneReferences");
-            InvokePrivate(controller, "EnsureSceneObjects");
-            InvokePrivate(controller, "ApplyThemeAndCopyToBoundSceneObjects");
-            InvokePrivate(controller, "BindButtons");
+            controller.EditorMaterializeSceneUi();
 
             EditorUtility.SetDirty(controller);
             EditorSceneManager.MarkSceneDirty(controller.gameObject.scene);
@@ -41,17 +36,6 @@ namespace TowerDefense.Editor
             AssetDatabase.Refresh();
 
             Debug.Log("LevelSelectSceneAuthoringTool: LevelSelect scene materialized successfully.");
-        }
-
-        private static void InvokePrivate(LevelSelectController controller, string methodName)
-        {
-            MethodInfo method = typeof(LevelSelectController).GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
-            if (method == null)
-            {
-                throw new MissingMethodException(typeof(LevelSelectController).Name, methodName);
-            }
-
-            method.Invoke(controller, null);
         }
     }
 }

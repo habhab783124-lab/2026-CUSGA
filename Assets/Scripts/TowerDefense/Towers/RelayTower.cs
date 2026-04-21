@@ -6,6 +6,8 @@ using UnityEngine;
 /// The actual phase-two runtime behavior lives in the partial companion file.
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
+[RequireComponent(typeof(CircleCollider2D))]
+[RequireComponent(typeof(PlacedTower))]
 public partial class RelayTower : MonoBehaviour
 {
 }

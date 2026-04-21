@@ -2,35 +2,33 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// `Enemy` is the runtime bridge for path-following, health, and hit feedback.
+/// `Enemy` 现在不再只是“唯一一种小怪”的运行时壳，
+/// 而是升级成了“多怪物类型的统一运行桥”。
 ///
-/// At this stage of the project, the enemy still intentionally stays lightweight:
-/// - it follows a fixed path
-/// - it takes damage from towers
-/// - it damages the base if it reaches the endpoint
+/// 这意味着它要同时承接三层职责：
+/// 1. 通用移动与血条逻辑。
+/// 2. 由敌人目录资产驱动的基础属性。
+/// 3. 各类特殊机制：
+///    - 护盾
+///    - 修理
+///    - 护甲减伤
+///    - 隐身与探测
+///    - 死亡分裂
 ///
-/// The extra layer added in this pass is "readability feedback":
-/// we want the player to immediately see the difference between
-/// a precise hit, a slow-field application, and a bombard blast.
-///
-/// This script therefore owns:
-/// 1. Movement along `EnemyPath`
-/// 2. Health and health-bar updates
-/// 3. Lightweight body flash / slow tint / scale pulse feedback
-///
-/// We keep the feedback inside the enemy instead of scattering it across towers,
-/// because the enemy is the one object that knows how it should visually react when struck.
+/// 之所以继续把这些机制留在同一个 `Enemy` 运行桥里，
+/// 是因为当前项目仍然处在“原型向正式玩法过渡”的阶段：
+/// - 先把怪物主链跑通，比一开始就拆很多策略类更重要
+/// - 后续如果怪物系统继续扩张，再按类型拆分会更稳
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 public class Enemy : MonoBehaviour
 {
     /// <summary>
-    /// `DamageFeedbackType` lets towers tell the enemy what kind of hit just happened.
-    ///
-    /// This keeps feedback intent explicit:
-    /// - single-target tower: precise direct hit
-    /// - slow-field tower: control hit
-    /// - bombard tower: heavier blast hit
+    /// `DamageFeedbackType` 继续保留为“受击反馈语气”枚举。
+    /// 这层和怪物具体机制解耦：
+    /// - 单体塔命中：精确直击
+    /// - 减速塔命中：控制命中
+    /// - 炸弹塔命中：爆炸重击
     /// </summary>
     public enum DamageFeedbackType
     {
@@ -39,56 +37,18 @@ public class Enemy : MonoBehaviour
         Bombard
     }
 
-    /// <summary>
-    /// Active enemies are tracked in a flat list so towers can scan targets cheaply.
-    /// This is still a very reasonable structure for a prototype tower-defense scale.
-    /// </summary>
     private static readonly List<Enemy> ActiveEnemies = new List<Enemy>();
 
     [Header("Movement")]
-
-    /// <summary>
-    /// Distance tolerance used to decide whether the enemy has effectively reached a waypoint.
-    /// </summary>
     [SerializeField] private float reachWaypointDistance = 0.05f;
 
     [Header("Body Look")]
-
-    /// <summary>
-    /// 敌人本体的主渲染器。
-    ///
-    /// 如果后续敌人做成多层结构，
-    /// 这里可以显式指定哪一层代表“主体受击颜色反馈”。
-    /// </summary>
     [SerializeField] private SpriteRenderer bodyRendererReference;
-
-    /// <summary>
-    /// 负责承载受击脉冲缩放的视觉根节点。
-    ///
-    /// 这样后续如果你想让血条或别的挂件不跟着一起缩放，
-    /// 就可以单独把这层指定到真正的敌人视觉根上。
-    /// </summary>
     [SerializeField] private Transform visualScaleRootReference;
-
-    /// <summary>
-    /// Base body color when the enemy is in a neutral state.
-    /// </summary>
     [SerializeField] private Color bodyColor = new Color(0.9f, 0.25f, 0.25f, 1f);
-
-    /// <summary>
-    /// While the enemy is slowed, we blend the body toward this color.
-    /// This is a simple, art-replacement-friendly way to show control status.
-    /// </summary>
+    [SerializeField] private Color shieldTintColor = new Color(0.42f, 0.9f, 1f, 1f);
     [SerializeField] private Color slowTintColor = new Color(0.42f, 0.95f, 0.9f, 1f);
-
-    /// <summary>
-    /// Precise hits use a bright flash so the player can read single-target focus fire.
-    /// </summary>
     [SerializeField] private Color standardHitFlashColor = new Color(1f, 0.96f, 0.9f, 1f);
-
-    /// <summary>
-    /// Bombard hits use a warmer flash so blast impact reads heavier than a normal shot.
-    /// </summary>
     [SerializeField] private Color bombardHitFlashColor = new Color(1f, 0.74f, 0.45f, 1f);
 
     [Header("Body Feedback Timing")]
@@ -102,16 +62,12 @@ public class Enemy : MonoBehaviour
 
     [Header("Health Bar Visuals")]
     [SerializeField] private Color healthBarFillColor = new Color(0.2f, 0.9f, 0.35f, 1f);
+    [SerializeField] private Color healthBarShieldColor = new Color(0.44f, 0.9f, 1f, 1f);
     [SerializeField] private Color healthBarBackgroundColor = new Color(0.15f, 0.15f, 0.15f, 1f);
     [SerializeField] private Sprite healthBarFillSpriteOverride;
     [SerializeField] private Sprite healthBarBackgroundSpriteOverride;
 
     [Header("Health Bar References")]
-
-    /// <summary>
-    /// Scene-authored explicit reference chain for the health bar.
-    /// This keeps the enemy prefab resilient against hierarchy renames.
-    /// </summary>
     [SerializeField] private Transform healthBarRootReference;
     [SerializeField] private Transform healthBarFillReference;
     [SerializeField] private SpriteRenderer healthBarFillRendererReference;
@@ -124,16 +80,37 @@ public class Enemy : MonoBehaviour
     private SpriteRenderer _healthBarBackgroundRenderer;
 
     private EnemyPath _path;
+    private EnemyCatalogAsset _enemyCatalog;
+    private EnemyCatalogAsset.EnemyArchetypeDefinition _definition;
+    private GameObject _enemyPrototypePrefab;
+    private Transform _enemyRoot;
+
     private float _moveSpeed;
     private float _slowMultiplier = 1f;
     private float _slowTimer;
     private int _maxHealth;
     private int _currentHealth;
+    private int _currentShield;
     private int _scrapRewardOnDeath;
+    private int _baseDamageToBase = 1;
     private int _targetWaypointIndex;
     private bool _hasReachedBase;
 
-    private Vector3 _baseScale = Vector3.one;
+    private EnemyArmorTier _armorTier = EnemyArmorTier.None;
+    private float _nonPiercingDamageMultiplier = 1f;
+    private bool _ignoresSlowEffects;
+    private bool _canBeRepairedByMechanic;
+
+    private bool _stealthTriggered;
+    private float _stealthTimer;
+    private float _revealTimer;
+
+    private float _shieldAuraTimer;
+    private float _repairTimer;
+
+    private Vector3 _nativeScale = Vector3.one;
+    private Vector3 _configuredScale = Vector3.one;
+    private float _bodyScaleMultiplier = 1f;
     private float _hitFlashTimer;
     private float _hitFlashDuration;
     private Color _hitFlashColor = Color.white;
@@ -148,13 +125,12 @@ public class Enemy : MonoBehaviour
         return ActiveEnemies[index];
     }
 
-    /// <summary>
-    /// This remains a simple presentation hook for end-state cleanup.
-    /// </summary>
+    public EnemyArchetypeId ArchetypeId => _definition != null ? _definition.ArchetypeId : EnemyArchetypeId.None;
+    public bool CanBeDirectlyTargeted => _stealthTimer <= 0f || _revealTimer > 0f;
+
     public void SetHealthBarVisible(bool visible)
     {
         CacheReferences();
-
         if (_healthBarRoot != null)
         {
             _healthBarRoot.gameObject.SetActive(visible);
@@ -162,9 +138,70 @@ public class Enemy : MonoBehaviour
     }
 
     /// <summary>
-    /// Editor-time helper: if the fill transform is assigned but its renderer is not,
-    /// we can safely derive that reference without relying on object names.
+    /// 旧接口继续保留，避免当前项目里其它调用点瞬间失效。
+    /// 不过这一版真正推荐的初始化方式，是走“敌人目录资产 + 敌人类型”的新入口。
     /// </summary>
+    public void Initialize(EnemyPath path, float moveSpeed, int maxHealth, int scrapRewardOnDeath = 0)
+    {
+        InitializeInternal(
+            path: path,
+            moveSpeed: moveSpeed,
+            maxHealth: maxHealth,
+            scrapRewardOnDeath: scrapRewardOnDeath,
+            baseDamageToBase: 1,
+            armorTier: EnemyArmorTier.None,
+            nonPiercingDamageMultiplier: 1f,
+            ignoresSlowEffects: false,
+            canBeRepairedByMechanic: false,
+            bodySprite: null,
+            configuredBodyColor: bodyColor,
+            bodyScaleMultiplier: 1f,
+            spawnPositionOverride: null,
+            targetWaypointIndexOverride: 1);
+    }
+
+    /// <summary>
+    /// 新版初始化入口：按敌人目录资产里的类型定义初始化。
+    /// 这条链是后续多怪物系统的正式主链。
+    /// </summary>
+    public void Initialize(
+        EnemyPath path,
+        EnemyCatalogAsset enemyCatalog,
+        EnemyArchetypeId archetypeId,
+        GameObject enemyPrototypePrefab,
+        Transform enemyRoot,
+        Vector3? spawnPositionOverride = null,
+        int targetWaypointIndexOverride = 1)
+    {
+        _enemyCatalog = enemyCatalog;
+        _enemyPrototypePrefab = enemyPrototypePrefab;
+        _enemyRoot = enemyRoot;
+        _definition = enemyCatalog != null ? enemyCatalog.GetDefinition(archetypeId) : null;
+
+        if (_definition == null)
+        {
+            Debug.LogWarning($"Enemy 无法找到类型 `{archetypeId}` 的目录定义，回退到基础小怪配置。", this);
+            Initialize(path, moveSpeed: 1.8f, maxHealth: 3, scrapRewardOnDeath: 0);
+            return;
+        }
+
+        InitializeInternal(
+            path: path,
+            moveSpeed: _definition.MoveSpeed,
+            maxHealth: _definition.MaxHealth,
+            scrapRewardOnDeath: _definition.ScrapReward,
+            baseDamageToBase: _definition.BaseDamageToBase,
+            armorTier: _definition.ArmorTier,
+            nonPiercingDamageMultiplier: _definition.NonPiercingDamageMultiplier,
+            ignoresSlowEffects: _definition.IgnoresSlowEffects,
+            canBeRepairedByMechanic: _definition.CanBeRepairedByMechanic,
+            bodySprite: _definition.BodySpriteOverride,
+            configuredBodyColor: _definition.BodyColor,
+            bodyScaleMultiplier: _definition.BodyScaleMultiplier,
+            spawnPositionOverride: spawnPositionOverride,
+            targetWaypointIndexOverride: targetWaypointIndexOverride);
+    }
+
     private void OnValidate()
     {
         if (bodyRendererReference == null)
@@ -186,7 +223,7 @@ public class Enemy : MonoBehaviour
     private void Awake()
     {
         CacheReferences();
-        _baseScale = (visualScaleRootReference != null ? visualScaleRootReference : transform).localScale;
+        CaptureNativeScale();
         ApplyVisualTheme();
         RefreshBodyVisualState();
         SetHealthBarVisible(true);
@@ -205,47 +242,10 @@ public class Enemy : MonoBehaviour
         ActiveEnemies.Remove(this);
     }
 
-    /// <summary>
-    /// Spawn-time runtime setup.
-    /// We intentionally reuse one prototype and inject path / speed / health / scrap reward per wave.
-    /// </summary>
-    public void Initialize(EnemyPath path, float moveSpeed, int maxHealth, int scrapRewardOnDeath = 0)
-    {
-        CacheReferences();
-        _baseScale = (visualScaleRootReference != null ? visualScaleRootReference : transform).localScale;
-        ApplyVisualTheme();
-
-        _path = path;
-        _moveSpeed = moveSpeed;
-        _maxHealth = Mathf.Max(1, maxHealth);
-        _currentHealth = _maxHealth;
-        _scrapRewardOnDeath = Mathf.Max(0, scrapRewardOnDeath);
-        _targetWaypointIndex = 1;
-        _hasReachedBase = false;
-        _slowMultiplier = 1f;
-        _slowTimer = 0f;
-        _hitFlashTimer = 0f;
-        _pulseTimer = 0f;
-        _pulseScaleMultiplier = 1f;
-
-        if (_path != null)
-        {
-            transform.position = _path.GetSpawnPosition();
-        }
-
-        RefreshBodyVisualState();
-        UpdateHealthBar();
-    }
-
-    /// <summary>
-    /// `Update()` keeps movement and presentation feedback in one place.
-    ///
-    /// We advance timers first, so body tint / hit flash / pulse stay responsive,
-    /// then continue with waypoint motion if the match is still active.
-    /// </summary>
     private void Update()
     {
         AdvanceFeedbackTimers();
+        ExecuteSupportAbilities();
         RefreshBodyVisualState();
 
         if (TowerDefenseGame.Instance != null && TowerDefenseGame.Instance.IsGameOver)
@@ -270,7 +270,6 @@ public class Enemy : MonoBehaviour
         if (Vector3.Distance(transform.position, targetPosition) <= reachWaypointDistance)
         {
             _targetWaypointIndex++;
-
             if (_targetWaypointIndex >= _path.WaypointCount)
             {
                 ReachBase();
@@ -278,26 +277,53 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Standard damage entry point kept for compatibility with existing callers.
-    /// </summary>
     public void TakeDamage(int amount)
     {
-        TakeDamage(amount, DamageFeedbackType.Standard);
+        TakeDamage(amount, DamageFeedbackType.Standard, isArmorPiercing: false, isAreaDamage: false);
+    }
+
+    public void TakeDamage(int amount, DamageFeedbackType feedbackType)
+    {
+        TakeDamage(amount, feedbackType, isArmorPiercing: false, isAreaDamage: false);
     }
 
     /// <summary>
-    /// Extended damage entry point with explicit feedback intent.
-    /// Towers use this overload when they want the enemy to react differently to different hit families.
+    /// 新版伤害入口会显式区分：
+    /// - 这次攻击是否穿甲
+    /// - 这次攻击是不是范围伤害
+    ///
+    /// 这是实现重甲怪、隐身怪所需的关键边界。
     /// </summary>
-    public void TakeDamage(int amount, DamageFeedbackType feedbackType)
+    public void TakeDamage(int amount, DamageFeedbackType feedbackType, bool isArmorPiercing, bool isAreaDamage)
     {
         if (amount <= 0 || _currentHealth <= 0)
         {
             return;
         }
 
-        _currentHealth = Mathf.Max(0, _currentHealth - amount);
+        int adjustedDamage = EvaluateIncomingDamage(amount, isArmorPiercing);
+        if (_currentShield > 0)
+        {
+            int absorbedByShield = Mathf.Min(_currentShield, adjustedDamage);
+            _currentShield -= absorbedByShield;
+            adjustedDamage -= absorbedByShield;
+        }
+
+        if (adjustedDamage > 0)
+        {
+            _currentHealth = Mathf.Max(0, _currentHealth - adjustedDamage);
+        }
+
+        if (_definition != null &&
+            _definition.EntersStealthAfterFirstDirectHit &&
+            !_stealthTriggered &&
+            !isAreaDamage)
+        {
+            _stealthTriggered = true;
+            _stealthTimer = Mathf.Max(_stealthTimer, _definition.StealthDuration);
+            _revealTimer = 0f;
+        }
+
         TriggerHitFeedback(feedbackType);
         UpdateHealthBar();
 
@@ -307,11 +333,6 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Applying slow now also counts as a visible combat event.
-    /// This matters because the slow tower intentionally starts with zero damage,
-    /// so the player still needs some immediate feedback that the control effect landed.
-    /// </summary>
     public void ApplySlow(float slowMultiplier, float duration)
     {
         if (_currentHealth <= 0)
@@ -319,9 +340,95 @@ public class Enemy : MonoBehaviour
             return;
         }
 
+        if (_ignoresSlowEffects)
+        {
+            return;
+        }
+
         _slowMultiplier = Mathf.Clamp(Mathf.Min(_slowMultiplier, slowMultiplier), 0.15f, 1f);
         _slowTimer = Mathf.Max(_slowTimer, duration);
         TriggerHitFeedback(DamageFeedbackType.SlowField);
+    }
+
+    /// <summary>
+    /// “信号 / 神经干扰塔”对应当前原型里的减速塔，
+    /// 所以它也顺带承担“探测隐身怪”的职责。
+    /// </summary>
+    public void ApplyDetection(float duration)
+    {
+        if (_currentHealth <= 0 || _definition == null || !_definition.EntersStealthAfterFirstDirectHit)
+        {
+            return;
+        }
+
+        _revealTimer = Mathf.Max(_revealTimer, duration);
+    }
+
+    public bool CanReceiveMechanicRepair => _canBeRepairedByMechanic && _currentHealth > 0;
+
+    private void InitializeInternal(
+        EnemyPath path,
+        float moveSpeed,
+        int maxHealth,
+        int scrapRewardOnDeath,
+        int baseDamageToBase,
+        EnemyArmorTier armorTier,
+        float nonPiercingDamageMultiplier,
+        bool ignoresSlowEffects,
+        bool canBeRepairedByMechanic,
+        Sprite bodySprite,
+        Color configuredBodyColor,
+        float bodyScaleMultiplier,
+        Vector3? spawnPositionOverride,
+        int targetWaypointIndexOverride)
+    {
+        CacheReferences();
+        CaptureNativeScale();
+        ApplyVisualTheme();
+
+        _path = path;
+        _moveSpeed = Mathf.Max(0.05f, moveSpeed);
+        _maxHealth = Mathf.Max(1, maxHealth);
+        _currentHealth = _maxHealth;
+        _currentShield = 0;
+        _scrapRewardOnDeath = Mathf.Max(0, scrapRewardOnDeath);
+        _baseDamageToBase = Mathf.Max(1, baseDamageToBase);
+        _targetWaypointIndex = Mathf.Max(1, targetWaypointIndexOverride);
+        _hasReachedBase = false;
+
+        _armorTier = armorTier;
+        _nonPiercingDamageMultiplier = Mathf.Clamp(nonPiercingDamageMultiplier, 0.05f, 1f);
+        _ignoresSlowEffects = ignoresSlowEffects;
+        _canBeRepairedByMechanic = canBeRepairedByMechanic;
+
+        _slowMultiplier = 1f;
+        _slowTimer = 0f;
+        _hitFlashTimer = 0f;
+        _pulseTimer = 0f;
+        _pulseScaleMultiplier = 1f;
+        _stealthTriggered = false;
+        _stealthTimer = 0f;
+        _revealTimer = 0f;
+        _shieldAuraTimer = 0f;
+        _repairTimer = 0f;
+
+        _bodyScaleMultiplier = Mathf.Max(0.2f, bodyScaleMultiplier);
+        _configuredScale = _nativeScale * _bodyScaleMultiplier;
+
+        if (_spriteRenderer != null)
+        {
+            if (bodySprite != null)
+            {
+                _spriteRenderer.sprite = bodySprite;
+            }
+
+            bodyColor = configuredBodyColor;
+        }
+
+        transform.position = spawnPositionOverride ?? (_path != null ? _path.GetSpawnPosition() : transform.position);
+
+        RefreshBodyVisualState();
+        UpdateHealthBar();
     }
 
     private void ReachBase()
@@ -332,20 +439,178 @@ public class Enemy : MonoBehaviour
         }
 
         _hasReachedBase = true;
-        TowerDefenseGame.Instance?.DamageBase(1);
+        TowerDefenseGame.Instance?.DamageBase(_baseDamageToBase);
         Destroy(gameObject);
     }
 
     private void Die()
     {
-        // Enemy death is now part of the economy loop:
-        // after a legal kill, the current wave definition can immediately feed scrap back into the player's resource pool.
+        SpawnSplitChildrenOnDeath();
+
         if (_scrapRewardOnDeath > 0 && TowerDefenseGame.Instance != null && !TowerDefenseGame.Instance.IsGameOver)
         {
             TowerDefenseGame.Instance.AddScrap(_scrapRewardOnDeath);
         }
 
         Destroy(gameObject);
+    }
+
+    private void SpawnSplitChildrenOnDeath()
+    {
+        if (_definition == null ||
+            _definition.SplitChildType == EnemyArchetypeId.None ||
+            _definition.SplitChildCount <= 0 ||
+            _enemyRoot == null ||
+            _enemyCatalog == null ||
+            _path == null)
+        {
+            return;
+        }
+
+        EnemyCatalogAsset.EnemyArchetypeDefinition childDefinition = _enemyCatalog.GetDefinition(_definition.SplitChildType);
+        GameObject childPrototype = childDefinition != null && childDefinition.RuntimePrefab != null
+            ? childDefinition.RuntimePrefab
+            : _enemyPrototypePrefab;
+        if (childPrototype == null)
+        {
+            return;
+        }
+
+        for (int childIndex = 0; childIndex < _definition.SplitChildCount; childIndex++)
+        {
+            Vector2 randomOffset = UnityEngine.Random.insideUnitCircle * _definition.SplitSpawnRadius;
+            Vector3 spawnPosition = transform.position + new Vector3(randomOffset.x, randomOffset.y, 0f);
+
+            GameObject childObject = Instantiate(childPrototype, spawnPosition, Quaternion.identity, _enemyRoot);
+            childObject.name = $"{_definition.SplitChildType}_Split_{childIndex + 1}";
+            childObject.SetActive(true);
+
+            Enemy childEnemy = childObject.GetComponent<Enemy>();
+            if (childEnemy != null)
+            {
+                childEnemy.Initialize(
+                    path: _path,
+                    enemyCatalog: _enemyCatalog,
+                    archetypeId: _definition.SplitChildType,
+                    enemyPrototypePrefab: childPrototype,
+                    enemyRoot: _enemyRoot,
+                    spawnPositionOverride: spawnPosition,
+                    targetWaypointIndexOverride: _targetWaypointIndex);
+            }
+        }
+    }
+
+    private void ExecuteSupportAbilities()
+    {
+        if (_definition == null || _currentHealth <= 0)
+        {
+            return;
+        }
+
+        if (_definition.ShieldAmount > 0)
+        {
+            _shieldAuraTimer -= Time.deltaTime;
+            if (_shieldAuraTimer <= 0f)
+            {
+                ApplyShieldAura();
+                _shieldAuraTimer = _definition.ShieldRefreshInterval;
+            }
+        }
+
+        if (_definition.RepairAmount > 0)
+        {
+            _repairTimer -= Time.deltaTime;
+            if (_repairTimer <= 0f)
+            {
+                TryRepairNearbyMechanicalAlly();
+                _repairTimer = _definition.RepairCooldown;
+            }
+        }
+    }
+
+    private void ApplyShieldAura()
+    {
+        float shieldRadiusSqr = _definition.ShieldAuraRadius * _definition.ShieldAuraRadius;
+        for (int enemyIndex = 0; enemyIndex < ActiveEnemyCount; enemyIndex++)
+        {
+            Enemy ally = GetActiveEnemy(enemyIndex);
+            if (ally == null || ally == this || ally._currentHealth <= 0)
+            {
+                continue;
+            }
+
+            float distanceSqr = (ally.transform.position - transform.position).sqrMagnitude;
+            if (distanceSqr > shieldRadiusSqr)
+            {
+                continue;
+            }
+
+            ally.ApplyShieldIfWeaker(_definition.ShieldAmount);
+        }
+    }
+
+    private void TryRepairNearbyMechanicalAlly()
+    {
+        Enemy bestTarget = null;
+        float bestDistanceSqr = float.MaxValue;
+        float repairRadiusSqr = _definition.RepairRadius * _definition.RepairRadius;
+
+        for (int enemyIndex = 0; enemyIndex < ActiveEnemyCount; enemyIndex++)
+        {
+            Enemy ally = GetActiveEnemy(enemyIndex);
+            if (ally == null || ally == this || !ally.CanReceiveMechanicRepair || ally._currentHealth >= ally._maxHealth)
+            {
+                continue;
+            }
+
+            float distanceSqr = (ally.transform.position - transform.position).sqrMagnitude;
+            if (distanceSqr > repairRadiusSqr || distanceSqr >= bestDistanceSqr)
+            {
+                continue;
+            }
+
+            bestDistanceSqr = distanceSqr;
+            bestTarget = ally;
+        }
+
+        if (bestTarget != null)
+        {
+            bestTarget.Repair(_definition.RepairAmount);
+        }
+    }
+
+    private void Repair(int amount)
+    {
+        if (amount <= 0 || _currentHealth <= 0)
+        {
+            return;
+        }
+
+        _currentHealth = Mathf.Min(_maxHealth, _currentHealth + amount);
+        TriggerHitFeedback(DamageFeedbackType.Standard);
+        UpdateHealthBar();
+    }
+
+    private void ApplyShieldIfWeaker(int shieldAmount)
+    {
+        if (shieldAmount <= 0 || _currentHealth <= 0)
+        {
+            return;
+        }
+
+        _currentShield = Mathf.Max(_currentShield, shieldAmount);
+        UpdateHealthBar();
+    }
+
+    private int EvaluateIncomingDamage(int rawDamage, bool isArmorPiercing)
+    {
+        if (isArmorPiercing || _armorTier == EnemyArmorTier.None)
+        {
+            return rawDamage;
+        }
+
+        int adjustedDamage = Mathf.Max(1, Mathf.RoundToInt(rawDamage * _nonPiercingDamageMultiplier));
+        return adjustedDamage;
     }
 
     private void UpdateHealthBar()
@@ -364,6 +629,11 @@ public class Enemy : MonoBehaviour
         Vector3 fillPosition = _healthBarFill.localPosition;
         fillPosition.x = (healthRatio - 1f) * 0.5f;
         _healthBarFill.localPosition = fillPosition;
+
+        if (_healthBarFillRenderer != null)
+        {
+            _healthBarFillRenderer.color = _currentShield > 0 ? healthBarShieldColor : healthBarFillColor;
+        }
     }
 
     private void CacheReferences()
@@ -399,6 +669,13 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    private void CaptureNativeScale()
+    {
+        Transform scaleTarget = visualScaleRootReference != null ? visualScaleRootReference : transform;
+        _nativeScale = scaleTarget.localScale;
+        _configuredScale = _nativeScale;
+    }
+
     private void ApplyVisualTheme()
     {
         if (_healthBarFillRenderer != null)
@@ -408,7 +685,7 @@ public class Enemy : MonoBehaviour
                 _healthBarFillRenderer.sprite = healthBarFillSpriteOverride;
             }
 
-            _healthBarFillRenderer.color = healthBarFillColor;
+            _healthBarFillRenderer.color = _currentShield > 0 ? healthBarShieldColor : healthBarFillColor;
         }
 
         if (_healthBarBackgroundRenderer != null)
@@ -422,9 +699,6 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// A single helper makes the combat reaction readable without introducing a heavyweight status-effect system.
-    /// </summary>
     private void TriggerHitFeedback(DamageFeedbackType feedbackType)
     {
         switch (feedbackType)
@@ -470,6 +744,16 @@ public class Enemy : MonoBehaviour
             }
         }
 
+        if (_stealthTimer > 0f)
+        {
+            _stealthTimer = Mathf.Max(0f, _stealthTimer - Time.deltaTime);
+        }
+
+        if (_revealTimer > 0f)
+        {
+            _revealTimer = Mathf.Max(0f, _revealTimer - Time.deltaTime);
+        }
+
         if (_hitFlashTimer > 0f)
         {
             _hitFlashTimer = Mathf.Max(0f, _hitFlashTimer - Time.deltaTime);
@@ -481,14 +765,6 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Body feedback is layered in a deterministic order:
-    /// 1. base color
-    /// 2. slow tint
-    /// 3. temporary hit flash
-    ///
-    /// This gives us readable combat feedback without needing per-hit child effects on every enemy.
-    /// </summary>
     private void RefreshBodyVisualState()
     {
         if (_spriteRenderer == null)
@@ -497,9 +773,19 @@ public class Enemy : MonoBehaviour
         }
 
         Color bodyResult = bodyColor;
+        if (_currentShield > 0)
+        {
+            bodyResult = Color.Lerp(bodyResult, shieldTintColor, 0.32f);
+        }
+
         if (_slowTimer > 0f)
         {
             bodyResult = Color.Lerp(bodyResult, slowTintColor, 0.42f);
+        }
+
+        if (_stealthTimer > 0f && _revealTimer <= 0f && _definition != null && _definition.EntersStealthAfterFirstDirectHit)
+        {
+            bodyResult.a = Mathf.Min(bodyResult.a, _definition.HiddenAlpha);
         }
 
         if (_hitFlashTimer > 0f && _hitFlashDuration > 0.0001f)
@@ -518,6 +804,6 @@ public class Enemy : MonoBehaviour
         }
 
         Transform scaleTarget = visualScaleRootReference != null ? visualScaleRootReference : transform;
-        scaleTarget.localScale = _baseScale * pulseScale;
+        scaleTarget.localScale = _configuredScale * pulseScale;
     }
 }

@@ -26,7 +26,14 @@ using UnityEngine;
 [ExecuteAlways]
 public class EnemyPath : MonoBehaviour
 {
+    private const string WaypointRootName = "Waypoints";
     private const string ReadabilityRootName = "__PathReadability";
+
+    [Header("Waypoint Authoring")]
+    [Tooltip("可选的路径点根节点。指定后，只有这棵根下面的直接子物体会被当作真正路线点。")]
+    [SerializeField] private Transform waypointRootReference;
+    [Tooltip("如果还没显式拖路径点根，就尝试按约定名字自动找到名为 `Waypoints` 的子节点。")]
+    [SerializeField] private bool autoFindWaypointRoot = true;
 
     [Header("Readability Overlay")]
     [SerializeField] private bool showReadabilityOverlay = true;
@@ -73,6 +80,7 @@ public class EnemyPath : MonoBehaviour
     /// 当前路径点数量。
     /// </summary>
     public int WaypointCount => _waypoints.Count;
+    public Transform WaypointRoot => waypointRootReference;
 
     /// <summary>
     /// 在运行时初始化路径点缓存和路径表现。
@@ -113,6 +121,15 @@ public class EnemyPath : MonoBehaviour
     /// </summary>
     private void OnValidate()
     {
+        if (waypointRootReference == null && autoFindWaypointRoot)
+        {
+            Transform existingWaypointRoot = transform.Find(WaypointRootName);
+            if (existingWaypointRoot != null)
+            {
+                waypointRootReference = existingWaypointRoot;
+            }
+        }
+
         if (readabilityRootReference == null)
         {
             Transform existingRoot = transform.Find(ReadabilityRootName);
@@ -197,15 +214,32 @@ public class EnemyPath : MonoBehaviour
         _waypoints.Clear();
         _localRoutePoints.Clear();
 
+        Transform waypointContainer = ResolveWaypointRoot();
+        if (waypointContainer != null)
+        {
+            foreach (Transform child in waypointContainer)
+            {
+                if (child == null)
+                {
+                    continue;
+                }
+
+                _waypoints.Add(child);
+                _localRoutePoints.Add(transform.InverseTransformPoint(child.position));
+            }
+
+            return;
+        }
+
         foreach (Transform child in transform)
         {
-            if (child == null || child.name == ReadabilityRootName)
+            if (child == null || child.name == ReadabilityRootName || child.name == WaypointRootName)
             {
                 continue;
             }
 
             _waypoints.Add(child);
-            _localRoutePoints.Add(child.localPosition);
+            _localRoutePoints.Add(transform.InverseTransformPoint(child.position));
         }
     }
 
@@ -288,6 +322,17 @@ public class EnemyPath : MonoBehaviour
         }
 
         _runtimeReadabilityVisible = visible;
+        RefreshReadabilityVisuals(force: true);
+    }
+
+    /// <summary>
+    /// 给编辑器作者工具一个显式入口：
+    /// 当路径点层级被重排、移动到 `Waypoints` 根下，或刚手动补完可读性根时，
+    /// 可以通过这个方法立即让缓存和表现层重新同步。
+    /// </summary>
+    public void EditorRefreshAuthoringState()
+    {
+        CacheWaypoints();
         RefreshReadabilityVisuals(force: true);
     }
 
@@ -501,6 +546,28 @@ public class EnemyPath : MonoBehaviour
 
         readabilityRootReference = BattlefieldReadabilityVisualUtility.EnsureChild(transform, ReadabilityRootName);
         return readabilityRootReference;
+    }
+
+    private Transform ResolveWaypointRoot()
+    {
+        if (waypointRootReference != null)
+        {
+            return waypointRootReference;
+        }
+
+        if (!autoFindWaypointRoot)
+        {
+            return null;
+        }
+
+        Transform existingWaypointRoot = transform.Find(WaypointRootName);
+        if (existingWaypointRoot != null)
+        {
+            waypointRootReference = existingWaypointRoot;
+            return existingWaypointRoot;
+        }
+
+        return null;
     }
 }
 

@@ -12,21 +12,21 @@ using UnityEditor.SceneManagement;
 /// <summary>
 /// MainMenuController 负责当前项目的主菜单入口。
 ///
-/// 这次和上一版最大的不同，是它不再把 UI 只当成“运行时临时生成物”，
-/// 而是会在编辑器里把缺失的界面对象真正补进场景，
-/// 这样你打开 `MainMenu` 后，就能直接在 Scene 视图和 Inspector 里看到并修改这些对象。
+/// 这次这一版进一步把主菜单收口成“Scene 主导、脚本只接行为”的模式：
+/// 1. 场景里的 Canvas、按钮、文本和图片，默认由作者直接在 Scene / Inspector 中维护。
+/// 2. 这个脚本主要只负责按钮行为、快捷键和最轻量的引用体检。
+/// 3. 如果确实需要从空壳场景重新补一版默认骨架，则通过显式作者工具或显式菜单命令执行，
+///    而不是在 `OnEnable / OnValidate` 中自动接管场景。
 ///
-/// 这个脚本现在承担两类职责：
-/// 1. 如果主菜单场景还是一个空壳，就补齐 Canvas / EventSystem / 主要 UI 节点。
-/// 2. 在玩家点击“开始游戏”时，切换到当前玩法场景 `SampleScene`。
-///
-/// 其中第一类职责只用于“建好默认页面骨架”，
-/// 一旦页面已经搭好，我们就尽量不再覆盖你手动改过的布局，
-/// 避免出现“你刚在 Inspector 调好，脚本下一帧又给你改回去”的糟糕体验。
+/// 这样处理后，你手动改好的 UI 不会再被脚本反复覆盖；
+/// 同时项目仍然保留了一条“需要时可重新物化默认页面”的作者工作流。
 /// </summary>
-[ExecuteAlways]
 public sealed class MainMenuController : MonoBehaviour
 {
+#if UNITY_EDITOR
+    private const string DefaultCampaignFlowAssetPath = "Assets/Resources/TowerDefense/Configs/StoryTowerDefenseCampaign.asset";
+#endif
+
     [Header("Scene Flow")]
 
     /// <summary>
@@ -36,6 +36,8 @@ public sealed class MainMenuController : MonoBehaviour
     /// 如果你以后改了玩法场景名，要同步更新这里。
     /// </summary>
     [SerializeField] private string gameplaySceneName = "LevelSelect";
+    [SerializeField] private bool useCampaignFlowOnStart = true;
+    [SerializeField] private CampaignFlowAsset campaignFlowAsset;
 
     [Header("Visual Theme")]
 
@@ -334,15 +336,14 @@ public sealed class MainMenuController : MonoBehaviour
     private const string FooterRightName = "FooterRightText";
 
     /// <summary>
-    /// 无论在编辑器还是运行时，只要脚本启用，就先补齐场景骨架并绑定按钮。
+    /// 运行时启用时，只负责绑定行为层监听。
     ///
-    /// 用 `ExecuteAlways` 的意义就在这里：
-    /// 你打开场景时，哪怕没进 Play，也能看到 UI 被真正生成到层级里。
+    /// 主菜单的可视对象已经应该真实存在于场景里；
+    /// 这里不再在启用瞬间自动补骨架或重刷整套视觉主题，
+    /// 以免覆盖作者刚刚在 Scene 里做完的手动调整。
     /// </summary>
     private void OnEnable()
     {
-        EnsureSceneObjects();
-        ApplyThemeAndCopyToBoundSceneObjects();
         BindStartButton();
     }
 
@@ -355,14 +356,19 @@ public sealed class MainMenuController : MonoBehaviour
     }
 
     /// <summary>
-    /// 当 Inspector 中的主题或文案变化时，尽量立刻同步到当前场景对象。
+    /// 编辑器里只做最轻量的引用回填，不再自动改场景布局和视觉。
     ///
-    /// 这样主菜单也能像 `SampleScene` 一样，越来越接近“在 Scene / Inspector 里直接改样式”的工作流。
+    /// 这样你在 Scene 里手调颜色、文字和层级时，
+    /// 不会因为检查器刷新而又被脚本改回“作者默认值”。
     /// </summary>
     private void OnValidate()
     {
-        EnsureSceneObjects();
-        ApplyThemeAndCopyToBoundSceneObjects();
+        EnsureCampaignFlowAssetAssigned();
+
+        if (startButton != null)
+        {
+            startButtonImage = startButton.GetComponent<Image>();
+        }
     }
 
     /// <summary>
@@ -397,6 +403,11 @@ public sealed class MainMenuController : MonoBehaviour
             return;
         }
 
+        if (useCampaignFlowOnStart && campaignFlowAsset != null && CampaignFlowController.BeginCampaign(campaignFlowAsset))
+        {
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(gameplaySceneName))
         {
             Debug.LogWarning("MainMenuController 没有配置要进入的玩法场景名。", this);
@@ -404,6 +415,57 @@ public sealed class MainMenuController : MonoBehaviour
         }
 
         SceneManager.LoadScene(gameplaySceneName, LoadSceneMode.Single);
+    }
+
+    /// <summary>
+    /// Play 模式启动后，对当前场景做一次轻量体检。
+    ///
+    /// 这里的目标不是再偷偷补对象，
+    /// 而是尽早把“哪个引用没接好”明确暴露出来。
+    /// </summary>
+    private void Start()
+    {
+        EnsureCampaignFlowAssetAssigned();
+        ValidateBoundReferences();
+    }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// 显式把默认主菜单骨架物化到当前场景。
+    ///
+    /// 这个入口只在编辑器里手动调用，
+    /// 用来替代过去那种“只要脚本启用就自动改场景”的工作流。
+    /// </summary>
+    public void EditorMaterializeDefaultSceneUi()
+    {
+        EnsureSceneObjects();
+        ApplyThemeAndCopyToBoundSceneObjects();
+        BindStartButton();
+        MarkSceneDirty();
+    }
+
+    /// <summary>
+    /// 把当前控制器里的作者默认主题同步到已经存在的场景 UI。
+    ///
+    /// 这同样是显式作者命令，不是常驻自动同步。
+    /// </summary>
+    public void EditorApplyAuthoringToScene()
+    {
+        ValidateBoundReferences();
+        ApplyThemeAndCopyToBoundSceneObjects();
+        BindStartButton();
+        MarkSceneDirty();
+    }
+#endif
+
+    private void EnsureCampaignFlowAssetAssigned()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying && campaignFlowAsset == null)
+        {
+            campaignFlowAsset = AssetDatabase.LoadAssetAtPath<CampaignFlowAsset>(DefaultCampaignFlowAssetPath);
+        }
+#endif
     }
 
     /// <summary>
@@ -758,7 +820,7 @@ public sealed class MainMenuController : MonoBehaviour
             return TMP_Settings.defaultFontAsset;
         }
 
-        return Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+        return null;
     }
 
     /// <summary>
@@ -815,7 +877,11 @@ public sealed class MainMenuController : MonoBehaviour
             label = rectTransform.gameObject.AddComponent<TextMeshProUGUI>();
         }
 
-        label.font = ResolveFontAsset(preferredFontAsset);
+        TMP_FontAsset resolvedFontAsset = ResolveFontAsset(preferredFontAsset);
+        if (resolvedFontAsset != null)
+        {
+            label.font = resolvedFontAsset;
+        }
         label.text = text;
         label.fontSize = fontSize;
         label.fontStyle = fontStyle;

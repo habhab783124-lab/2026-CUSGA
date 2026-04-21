@@ -20,6 +20,9 @@ namespace TowerDefense.Editor
     /// </summary>
     public static class TowerDefensePrefabAuthoringTool
     {
+        private const float DefaultRelayPlacementRadius = 0.52f;
+        private const float DefaultCombatTowerPlacementRadius = 0.58f;
+
         private const string SampleScenePath = "Assets/Scenes/SampleScene.unity";
         private static readonly string[] GameplayScenePaths =
         {
@@ -59,6 +62,7 @@ namespace TowerDefense.Editor
             string bombardPrefabPath = $"{RuntimePrefabFolder}/BombardTowerPrototype.prefab";
             string enemyPrefabPath = $"{RuntimePrefabFolder}/EnemyPrototype.prefab";
 
+            EnsurePlacedStructureComponents(relayPrototype.gameObject, DefaultRelayPlacementRadius);
             GameObject relayPrefab = PrefabUtility.SaveAsPrefabAsset(relayPrototype.gameObject, relayPrefabPath);
             GameObject enemyPrefab = PrefabUtility.SaveAsPrefabAsset(enemyPrototype.gameObject, enemyPrefabPath);
 
@@ -169,6 +173,7 @@ namespace TowerDefense.Editor
                 }
 
                 tower.ConfigureBuildType(towerType);
+                EnsurePlacedStructureComponents(temporaryClone, DefaultCombatTowerPlacementRadius);
                 return PrefabUtility.SaveAsPrefabAsset(temporaryClone, assetPath);
             }
             finally
@@ -206,6 +211,37 @@ namespace TowerDefense.Editor
 
             property.objectReferenceValue = value;
             serializedObject.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>
+        /// 保证运行时塔 Prefab 自己就是一份“可落地实例资产”。
+        ///
+        /// 也就是说：
+        /// - 不要再依赖 `TowerPlacementBuildExecutor` 现场给 Prefab 补组件
+        /// - Collider 和 PlacedTower 应该直接存在于 Prefab 上
+        ///
+        /// 这样作者以后打开 Prefab 时，就能直接看到完整运行链依赖。
+        /// </summary>
+        private static void EnsurePlacedStructureComponents(GameObject target, float placementRadius)
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            CircleCollider2D circleCollider = target.GetComponent<CircleCollider2D>();
+            if (circleCollider == null)
+            {
+                circleCollider = target.AddComponent<CircleCollider2D>();
+            }
+
+            circleCollider.isTrigger = true;
+            circleCollider.radius = placementRadius;
+
+            if (target.GetComponent<PlacedTower>() == null)
+            {
+                target.AddComponent<PlacedTower>();
+            }
         }
 
         private static void WireGameplayScene(

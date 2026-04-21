@@ -12,19 +12,26 @@ using UnityEditor.SceneManagement;
 #endif
 
 /// <summary>
-/// `LevelSelectController` 负责整个关卡选择页的装配、显示和场景跳转。
+/// `LevelSelectController` 负责整个关卡选择页的行为层装配和场景跳转。
 ///
-/// 这里延续当前项目已经在主菜单里使用的工作流：
-/// 1. 场景第一次还是空壳时，自动补出一套默认 UI 骨架。
-/// 2. 后续尽量只同步文案、主题和引用，不去覆盖你在 Scene 里手调过的布局。
+/// 这一版进一步把关卡选择页收口成“Scene 主导、脚本只接行为”的模式：
+/// 1. 场景中的卡片、标题、返回按钮和背景，默认都由作者直接在 Scene / Inspector 中维护。
+/// 2. 控制器主要只负责：
+///    - 返回主菜单
+///    - 给每张卡绑定点击行为
+///    - 进行最轻量的引用体检
+/// 3. 如果需要从空壳场景重建默认骨架，改成显式作者命令执行，
+///    不再在 `OnEnable / OnValidate` 中自动接管整个场景。
 ///
-/// 这样能同时满足两件事：
-/// - 我们先把页面搭出来，省掉从零摆 UI 的重复工作。
-/// - 页面对象依旧真实存在于场景层级里，方便你之后继续手调。
+/// 这样做以后，Scene 里的卡片布局、文本和配色都可以稳定手调，
+/// 不会再因为脚本启用或字段变化而被整页回写。
 /// </summary>
-[ExecuteAlways]
 public sealed class LevelSelectController : MonoBehaviour
 {
+#if UNITY_EDITOR
+    private const string DefaultLevelSelectCatalogAssetPath = "Assets/Resources/TowerDefense/Configs/LevelSelectCatalog.asset";
+#endif
+
     [Serializable]
     public sealed class LevelDefinition
     {
@@ -120,6 +127,8 @@ public sealed class LevelSelectController : MonoBehaviour
 
     [Header("Scene Flow")]
     [SerializeField] private string mainMenuSceneName = "MainMenu";
+    [Tooltip("推荐使用的关卡目录资产。关卡卡片数据应优先维护在这份独立资产中，而不是继续塞在控制器里。")]
+    [SerializeField] private LevelSelectCatalogAsset levelCatalogAsset;
     [SerializeField] private LevelDefinition[] levels = Array.Empty<LevelDefinition>();
 
     [Header("Visual Theme")]
@@ -190,10 +199,7 @@ public sealed class LevelSelectController : MonoBehaviour
 
     private void OnEnable()
     {
-        EnsureDefaultLevelDefinitions();
-        EnsureEditorSceneReferences();
-        EnsureSceneObjects();
-        ApplyThemeAndCopyToBoundSceneObjects();
+        EnsureLevelCatalogAssetAssigned();
         BindButtons();
     }
 
@@ -204,10 +210,13 @@ public sealed class LevelSelectController : MonoBehaviour
 
     private void OnValidate()
     {
-        EnsureDefaultLevelDefinitions();
-        EnsureEditorSceneReferences();
-        EnsureSceneObjects();
-        ApplyThemeAndCopyToBoundSceneObjects();
+        EnsureLevelCatalogAssetAssigned();
+        if (backButton != null)
+        {
+            backButtonImage = backButton.GetComponent<Image>();
+        }
+
+        RefreshLevelCardCache();
     }
 
     private void Update()
@@ -262,11 +271,54 @@ public sealed class LevelSelectController : MonoBehaviour
     }
 
     /// <summary>
+    /// Play 模式启动后，对关卡选择页做一次轻量引用体检。
+    /// </summary>
+    private void Start()
+    {
+        ValidateBoundReferences();
+    }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// 显式把默认关卡选择页骨架物化到当前场景。
+    /// </summary>
+    public void EditorMaterializeSceneUi()
+    {
+        EnsureLevelCatalogAssetAssigned();
+        EnsureDefaultLevelDefinitions();
+        EnsureEditorSceneReferences();
+        EnsureSceneObjects();
+        ApplyThemeAndCopyToBoundSceneObjects();
+        BindButtons();
+        MarkSceneDirty();
+    }
+
+    /// <summary>
+    /// 显式把当前作者默认数据刷到现有卡片和页面对象上。
+    /// </summary>
+    public void EditorApplyAuthoringToScene()
+    {
+        EnsureLevelCatalogAssetAssigned();
+        EnsureDefaultLevelDefinitions();
+        EnsureEditorSceneReferences();
+        ValidateBoundReferences();
+        ApplyThemeAndCopyToBoundSceneObjects();
+        BindButtons();
+        MarkSceneDirty();
+    }
+#endif
+
+    /// <summary>
     /// 如果场景里还没有配置关卡列表，就先补一套默认 5 关数据。
     /// 这样你第一次打开 Inspector 时就已经有可改的入口。
     /// </summary>
     private void EnsureDefaultLevelDefinitions()
     {
+        if (ResolveLevelCatalogAsset() != null)
+        {
+            return;
+        }
+
         if (levels != null && levels.Length > 0)
         {
             return;
@@ -290,6 +342,17 @@ public sealed class LevelSelectController : MonoBehaviour
     private void EnsureEditorSceneReferences()
     {
 #if UNITY_EDITOR
+        LevelSelectCatalogAsset resolvedCatalogAsset = ResolveLevelCatalogAsset();
+        if (resolvedCatalogAsset != null)
+        {
+            if (resolvedCatalogAsset.SyncSceneReferences())
+            {
+                EditorUtility.SetDirty(resolvedCatalogAsset);
+            }
+
+            return;
+        }
+
         if (levels == null)
         {
             return;
@@ -498,7 +561,7 @@ public sealed class LevelSelectController : MonoBehaviour
 
         RefreshLevelCardCache();
 
-        int desiredCount = Mathf.Max(1, levels != null ? levels.Length : 0);
+        int desiredCount = Mathf.Max(1, GetConfiguredLevels().Length);
         while (levelCards.Length < desiredCount)
         {
             int newIndex = levelCards.Length;
@@ -613,7 +676,7 @@ public sealed class LevelSelectController : MonoBehaviour
             backButton.onClick.AddListener(ReturnToMainMenu);
         }
 
-        ApplyLevelCards();
+        BindLevelCardActionsOnly();
     }
 
     private void UnbindButtons()
@@ -746,12 +809,13 @@ public sealed class LevelSelectController : MonoBehaviour
     /// </summary>
     private void ApplyLevelCards()
     {
-        if (levels == null || levelCards == null)
+        LevelSelectCatalogAsset.LevelEntry[] configuredLevels = GetConfiguredLevels();
+        if (configuredLevels.Length == 0 || levelCards == null)
         {
             return;
         }
 
-        int visibleCount = Mathf.Min(levels.Length, levelCards.Length);
+        int visibleCount = Mathf.Min(configuredLevels.Length, levelCards.Length);
         for (int i = 0; i < levelCards.Length; i++)
         {
             if (levelCards[i] == null)
@@ -759,14 +823,14 @@ public sealed class LevelSelectController : MonoBehaviour
                 continue;
             }
 
-            if (i >= visibleCount || levels[i] == null)
+            if (i >= visibleCount || configuredLevels[i] == null)
             {
                 levelCards[i].gameObject.SetActive(false);
                 levelCards[i].SetClickAction(null);
                 continue;
             }
 
-            LevelDefinition level = levels[i];
+            LevelSelectCatalogAsset.LevelEntry level = configuredLevels[i];
             levelCards[i].gameObject.SetActive(true);
             levelCards[i].ApplyPresentation(
                 level.DisplayName,
@@ -792,6 +856,47 @@ public sealed class LevelSelectController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 运行时只绑定卡片点击行为，不主动覆写卡片视觉。
+    ///
+    /// 这样关卡卡片的标题、颜色、图标和排版可以继续直接在 Scene 中手调；
+    /// 脚本只负责把“点这张卡后该进哪一关”接起来。
+    /// </summary>
+    private void BindLevelCardActionsOnly()
+    {
+        LevelSelectCatalogAsset.LevelEntry[] configuredLevels = GetConfiguredLevels();
+        if (configuredLevels.Length == 0 || levelCards == null)
+        {
+            return;
+        }
+
+        int visibleCount = Mathf.Min(configuredLevels.Length, levelCards.Length);
+        for (int i = 0; i < levelCards.Length; i++)
+        {
+            if (levelCards[i] == null)
+            {
+                continue;
+            }
+
+            if (i >= visibleCount || configuredLevels[i] == null)
+            {
+                levelCards[i].SetClickAction(null);
+                continue;
+            }
+
+            LevelSelectCatalogAsset.LevelEntry level = configuredLevels[i];
+            string targetSceneName = level.SceneName;
+            if (level.Interactable && !string.IsNullOrWhiteSpace(targetSceneName))
+            {
+                levelCards[i].SetClickAction(() => LoadLevel(targetSceneName));
+            }
+            else
+            {
+                levelCards[i].SetClickAction(null);
+            }
+        }
+    }
+
     private static LevelDefinition CreateDefaultLevel(
         string sceneName,
         string scenePath,
@@ -802,6 +907,58 @@ public sealed class LevelSelectController : MonoBehaviour
         Color accentColor)
     {
         return new LevelDefinition(sceneName, scenePath, displayName, subtitle, description, statusLabel, accentColor, true);
+    }
+
+    private void EnsureLevelCatalogAssetAssigned()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying && levelCatalogAsset == null)
+        {
+            levelCatalogAsset = AssetDatabase.LoadAssetAtPath<LevelSelectCatalogAsset>(DefaultLevelSelectCatalogAssetPath);
+        }
+#endif
+    }
+
+    private LevelSelectCatalogAsset ResolveLevelCatalogAsset()
+    {
+        EnsureLevelCatalogAssetAssigned();
+        return levelCatalogAsset;
+    }
+
+    private LevelSelectCatalogAsset.LevelEntry[] GetConfiguredLevels()
+    {
+        LevelSelectCatalogAsset resolvedCatalogAsset = ResolveLevelCatalogAsset();
+        if (resolvedCatalogAsset != null && resolvedCatalogAsset.Levels.Length > 0)
+        {
+            return resolvedCatalogAsset.Levels;
+        }
+
+        if (levels == null || levels.Length == 0)
+        {
+            return Array.Empty<LevelSelectCatalogAsset.LevelEntry>();
+        }
+
+        LevelSelectCatalogAsset.LevelEntry[] migratedLevels = new LevelSelectCatalogAsset.LevelEntry[levels.Length];
+        for (int index = 0; index < levels.Length; index++)
+        {
+            LevelDefinition level = levels[index];
+            if (level == null)
+            {
+                continue;
+            }
+
+            migratedLevels[index] = BuildFallbackLevelEntry(level);
+        }
+
+        return migratedLevels;
+    }
+
+    private static LevelSelectCatalogAsset.LevelEntry BuildFallbackLevelEntry(LevelDefinition level)
+    {
+        string json = JsonUtility.ToJson(level);
+        LevelSelectCatalogAsset.LevelEntry migratedLevel = new LevelSelectCatalogAsset.LevelEntry();
+        JsonUtility.FromJsonOverwrite(json, migratedLevel);
+        return migratedLevel;
     }
 
     private static RectTransform EnsureRectTransform(RectTransform parent, string objectName, Vector2 anchor, Vector2 pivot, Vector2 anchoredPosition, Vector2 sizeDelta)
@@ -932,7 +1089,7 @@ public sealed class LevelSelectController : MonoBehaviour
             return TMP_Settings.defaultFontAsset;
         }
 
-        return Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+        return null;
     }
 
     private static RectTransform FindRect(RectTransform parent, string objectName)

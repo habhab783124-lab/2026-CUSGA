@@ -20,6 +20,8 @@ using UnityEngine.EventSystems;
 /// because "how a tower upgrades" and "how a tower attacks" are tightly coupled pieces of one design.
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
+[RequireComponent(typeof(CircleCollider2D))]
+[RequireComponent(typeof(PlacedTower))]
 public class DefenseTower : MonoBehaviour
 {
     /// <summary>
@@ -519,7 +521,11 @@ public class DefenseTower : MonoBehaviour
             return;
         }
 
-        target.TakeDamage(DamagePerShot, Enemy.DamageFeedbackType.Standard);
+        target.TakeDamage(
+            DamagePerShot,
+            Enemy.DamageFeedbackType.Standard,
+            isArmorPiercing: DoesCurrentTowerUseArmorPiercingDamage(),
+            isAreaDamage: false);
         StartCoroutine(FlashRoutine());
         StartCoroutine(PlayTracerFeedback(target.transform.position));
     }
@@ -543,8 +549,13 @@ public class DefenseTower : MonoBehaviour
                 continue;
             }
 
+            enemy.ApplyDetection(SlowDuration);
             enemy.ApplySlow(SlowMultiplier, SlowDuration);
-            enemy.TakeDamage(DamagePerShot, Enemy.DamageFeedbackType.SlowField);
+            enemy.TakeDamage(
+                DamagePerShot,
+                Enemy.DamageFeedbackType.SlowField,
+                isArmorPiercing: false,
+                isAreaDamage: true);
             affectedAnyEnemy = true;
         }
 
@@ -629,7 +640,11 @@ public class DefenseTower : MonoBehaviour
                 continue;
             }
 
-            enemy.TakeDamage(DamagePerShot, Enemy.DamageFeedbackType.Bombard);
+            enemy.TakeDamage(
+                DamagePerShot,
+                Enemy.DamageFeedbackType.Bombard,
+                isArmorPiercing: false,
+                isAreaDamage: true);
             hitCount++;
         }
 
@@ -827,6 +842,11 @@ public class DefenseTower : MonoBehaviour
                 continue;
             }
 
+            if (!candidate.CanBeDirectlyTargeted)
+            {
+                continue;
+            }
+
             float distanceSqr = (candidate.transform.position - transform.position).sqrMagnitude;
             if (distanceSqr > maxDistanceSqr || distanceSqr >= closestDistanceSqr)
             {
@@ -838,6 +858,19 @@ public class DefenseTower : MonoBehaviour
         }
 
         return bestTarget;
+    }
+
+    /// <summary>
+    /// 当前原型里还没有真正的“激光塔 / 电磁炮塔”，
+    /// 但为了先把重甲怪完整接入主玩法链，这里做一个明确的过渡约定：
+    /// - 单体塔先承担穿甲伤害角色
+    /// - 减速塔和炸弹塔仍然视为非穿甲
+    ///
+    /// 后续等真正的穿甲塔并入时，只需要把这条映射调整掉即可。
+    /// </summary>
+    private bool DoesCurrentTowerUseArmorPiercingDamage()
+    {
+        return buildType == TowerType.SingleTarget;
     }
 
     private IEnumerator FlashRoutine()

@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 031e38bf5acb46259b8c5931f3fe34b8, type: 3}
+  m_Name: TowerDefenseHudCopy
+  m_EditorClassIdentifier: 
+  scrapMetricLabel: SCRAP STOCK
+  baseMetricLabel: BASE CORE
+  waveMetricLabel: WAVE CLOCK
+  deployTraceTitle: DEPLOY TRACE
+  tacticalReadyTitle: TACTICAL READY
+  structureLinkTitle: STRUCTURE LINK
+  operationLinkTitle: OPERATION LINK
+  idleOperationSummary: Click or drag a tower card to project legal sectors
+  idleOperationHotkeys: 1 Relay / 2 Single / 3 Slow / 4 Bomb / Esc Cancel
+  dragGridLabel: GRID
+  dragLegalHint: Cyan sectors show exact legal drop zones
+  dragValidStateLabel: DROP POINT CONFIRMED
+  dragSelectedLegalHint: Cyan sectors = exact legal zone
+  liveStatusTitle: LIVE STATUS
+  powerGridTitle: POWER GRID
+  latestEventTitle: LATEST EVENT
+  recentLogTitle: RECENT LOG
+  relayCountLabel: Relays
+  onlineTowerCountLabel: Towers
+  onlineTowerSuffix: online
+  loadLabel: Load
+  freeDeployLine: FREE deploy. Scrap remains unchanged.
+  scrapLeftSuffix: SCRAP left after deploy.
+  needMoreScrapPrefix: Need
+  needMoreScrapSuffix: more SCRAP to deploy.
+  cancelDeployPrimary: CANCEL DEPLOY
+  cancelDeploySecondary: Esc / RMB

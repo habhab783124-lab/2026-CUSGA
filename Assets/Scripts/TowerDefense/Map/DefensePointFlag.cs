@@ -44,6 +44,17 @@ public sealed class DefensePointFlag : MonoBehaviour
     public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? PointId : displayName;
     public Vector3 WorldPosition => transform.position;
 
+    /// <summary>
+    /// 给编辑器作者工作流一个显式刷新入口。
+    ///
+    /// 当你刚手动补完目标表现根、换了材质或调了半径参数时，
+    /// 可以直接通过这一步让防御点标记重新同步。
+    /// </summary>
+    public void EditorRefreshAuthoringState()
+    {
+        RefreshReadabilityVisuals(force: true);
+    }
+
     private void Awake()
     {
         RefreshReadabilityVisuals(force: true);

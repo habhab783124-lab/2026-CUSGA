@@ -10,8 +10,10 @@ using UnityEngine.UI;
 /// 1. 关卡选择页总控不用把每个子文本和图片都攥在自己手里。
 /// 2. 以后你如果想单独改某一张卡片的层级、配色或装饰，改动范围更小。
 /// 3. 卡片对象本身就是场景里的真实 UI 物体，便于直接在 Scene 视图里拖动和调整。
+///
+/// 这一版里，卡片视觉默认由 Scene 自己维护；
+/// 控制器运行时只负责给它挂点击行为，不再持续回写标题、颜色和图标。
 /// </summary>
-[ExecuteAlways]
 public sealed class LevelSelectCard : MonoBehaviour
 {
     [Header("Scene Refs")]
@@ -121,6 +123,8 @@ public sealed class LevelSelectCard : MonoBehaviour
         {
             selectButton.onClick.AddListener(action);
         }
+
+        selectButton.interactable = action != null;
     }
 
     private void OnValidate()
@@ -163,6 +167,6 @@ public sealed class LevelSelectCard : MonoBehaviour
             return TMP_Settings.defaultFontAsset;
         }
 
-        return Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+        return null;
     }
 }

@@ -5,6 +5,10 @@ using UnityEngine.EventSystems;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 /// <summary>
 /// `TowerType` 描述当前原型里玩家可部署的建筑类型。
 /// `None` 表示未选择，`Relay` 表示发电机，`Defense` 表示防御塔。
@@ -27,6 +31,13 @@ public enum TowerType
 /// </summary>
 public class TowerDefenseGame : MonoBehaviour
 {
+#if UNITY_EDITOR
+    private const string DefaultTowerPresentationCatalogAssetPath = "Assets/Resources/TowerDefense/Configs/TowerPresentationCatalog.asset";
+    private const string DefaultHudThemeAssetPath = "Assets/Resources/TowerDefense/Configs/TowerDefenseHudTheme.asset";
+    private const string DefaultHudCopyAssetPath = "Assets/Resources/TowerDefense/Configs/TowerDefenseHudCopy.asset";
+    private const string DefaultPlacementVisualThemeAssetPath = "Assets/Resources/TowerDefense/Configs/TowerPlacementVisualTheme.asset";
+#endif
+
     /// <summary>
     /// `TowerPresentationAuthoring` 把“某种塔在 UI 和文案层该怎样被表现”收口成一组 Inspector 配置。
     ///
@@ -153,7 +164,17 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private Color starterZoneMarkerEdgeColor = new Color(0.9f, 1f, 0.98f, 1f);
     [SerializeField] private int starterZoneMarkerSortingOrder = 10;
 
-    [Header("Tower Presentation")]
+    [Header("Shared Presentation Assets")]
+    [Tooltip("推荐使用的共用塔展示配置资产。多个关卡可以共用这一份，而不是在每个场景里重复维护塔卡文案和配色。")]
+    [SerializeField] private TowerPresentationCatalogAsset towerPresentationCatalogAsset;
+    [Tooltip("推荐使用的共用 HUD 主题资产。多个关卡如果想保持统一 HUD 风格，应优先共用这一份资产。")]
+    [SerializeField] private TowerDefenseHudThemeAsset hudThemeAsset;
+    [Tooltip("推荐使用的共用 HUD 文案资产。操作区标题、拖拽提示固定文案等应优先统一收在这里。")]
+    [SerializeField] private TowerDefenseHudCopyAsset hudCopyAsset;
+    [Tooltip("推荐使用的共用放置可视化主题资产。预览颜色、覆盖层和首塔标记风格应优先统一维护在这里。")]
+    [SerializeField] private TowerPlacementVisualThemeAsset placementVisualThemeAsset;
+
+    [Header("Tower Presentation (Fallback)")]
     [SerializeField] private TowerPresentationAuthoring relayPresentation = new TowerPresentationAuthoring
     {
         displayName = "Relay Generator",
@@ -199,7 +220,7 @@ public class TowerDefenseGame : MonoBehaviour
         cardAccentTint = new Color(1f, 0.62f, 0.26f, 1f)
     };
 
-    [Header("HUD Theme")]
+    [Header("HUD Theme (Fallback)")]
     [SerializeField] private HudThemeAuthoring hudTheme = new HudThemeAuthoring();
 
     [Header("Scene References (Preferred)")]
@@ -236,6 +257,11 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private TMP_Text baseHealthTextReference;
     [SerializeField] private TMP_Text waveTextReference;
     [SerializeField] private TMP_Text selectionTextReference;
+    [SerializeField] private TMP_Text operationTextReference;
+    [SerializeField] private TMP_Text liveStatusTextReference;
+    [SerializeField] private TMP_Text powerGridTextReference;
+    [SerializeField] private TMP_Text latestEventTextReference;
+    [SerializeField] private TMP_Text recentLogTextReference;
 
     [SerializeField] private Button relayTowerButtonReference;
     [SerializeField] private Button defenseTowerButtonReference;
@@ -348,6 +374,7 @@ public class TowerDefenseGame : MonoBehaviour
         Time.timeScale = 1f;
         Application.runInBackground = true;
 
+        EnsureSharedPresentationAssetsAssigned();
         _sessionState = new TowerDefenseSessionState(startingScrap, startingBaseHealth);
         InitializeArchitectureModules();
     }
@@ -382,6 +409,11 @@ public class TowerDefenseGame : MonoBehaviour
         _placementSupportCoordinator?.HidePlacementAreaOverlay();
         _placementSupportCoordinator?.RunStarterPlacementSanityCheck();
         _powerGridCoordinator?.RecalculatePowerDistribution();
+    }
+
+    private void OnValidate()
+    {
+        EnsureSharedPresentationAssetsAssigned();
     }
 
     /// <summary>
@@ -694,63 +726,15 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private void InitializeArchitectureModules()
     {
+        TowerPresentationCatalogAsset resolvedPresentationCatalogAsset = ResolveTowerPresentationCatalogAsset();
+        TowerDefenseHudThemeAsset resolvedHudThemeAsset = ResolveHudThemeAsset();
+        TowerDefenseHudCopyAsset resolvedHudCopyAsset = ResolveHudCopyAsset();
+
         _towerCatalog = new TowerCatalog(
-            relayDefinition: new TowerDefinition(
-                towerType: TowerType.Relay,
-                displayName: relayPresentation.DisplayName,
-                buildCost: relayTowerCost,
-                placementRadius: relayPlacementRadius,
-                expansionSquareSize: relayExpansionSquareSize,
-                cardRoleSummary: relayPresentation.CardRoleSummary,
-                selectionHint: relayPresentation.SelectionHint,
-                upgradeFocusSummary: relayPresentation.UpgradeFocusSummary,
-                accentColor: relayPresentation.AccentColor,
-                cardIconSprite: relayPresentation.CardIconSprite,
-                cardIconTint: relayPresentation.CardIconTint,
-                cardBackgroundTint: relayPresentation.CardBackgroundTint,
-                cardAccentTint: relayPresentation.CardAccentTint),
-            singleTargetDefinition: new TowerDefinition(
-                towerType: TowerType.SingleTarget,
-                displayName: singleTargetPresentation.DisplayName,
-                buildCost: singleTargetTowerCost,
-                placementRadius: defensePlacementRadius,
-                expansionSquareSize: defenseExpansionSquareSize,
-                cardRoleSummary: singleTargetPresentation.CardRoleSummary,
-                selectionHint: singleTargetPresentation.SelectionHint,
-                upgradeFocusSummary: singleTargetPresentation.UpgradeFocusSummary,
-                accentColor: singleTargetPresentation.AccentColor,
-                cardIconSprite: singleTargetPresentation.CardIconSprite,
-                cardIconTint: singleTargetPresentation.CardIconTint,
-                cardBackgroundTint: singleTargetPresentation.CardBackgroundTint,
-                cardAccentTint: singleTargetPresentation.CardAccentTint),
-            slowFieldDefinition: new TowerDefinition(
-                towerType: TowerType.SlowField,
-                displayName: slowFieldPresentation.DisplayName,
-                buildCost: slowFieldTowerCost,
-                placementRadius: defensePlacementRadius,
-                expansionSquareSize: defenseExpansionSquareSize,
-                cardRoleSummary: slowFieldPresentation.CardRoleSummary,
-                selectionHint: slowFieldPresentation.SelectionHint,
-                upgradeFocusSummary: slowFieldPresentation.UpgradeFocusSummary,
-                accentColor: slowFieldPresentation.AccentColor,
-                cardIconSprite: slowFieldPresentation.CardIconSprite,
-                cardIconTint: slowFieldPresentation.CardIconTint,
-                cardBackgroundTint: slowFieldPresentation.CardBackgroundTint,
-                cardAccentTint: slowFieldPresentation.CardAccentTint),
-            bombardDefinition: new TowerDefinition(
-                towerType: TowerType.Bombard,
-                displayName: bombardPresentation.DisplayName,
-                buildCost: bombardTowerCost,
-                placementRadius: defensePlacementRadius,
-                expansionSquareSize: defenseExpansionSquareSize,
-                cardRoleSummary: bombardPresentation.CardRoleSummary,
-                selectionHint: bombardPresentation.SelectionHint,
-                upgradeFocusSummary: bombardPresentation.UpgradeFocusSummary,
-                accentColor: bombardPresentation.AccentColor,
-                cardIconSprite: bombardPresentation.CardIconSprite,
-                cardIconTint: bombardPresentation.CardIconTint,
-                cardBackgroundTint: bombardPresentation.CardBackgroundTint,
-                cardAccentTint: bombardPresentation.CardAccentTint));
+            relayDefinition: BuildTowerDefinition(TowerType.Relay, relayTowerCost, relayPlacementRadius, relayExpansionSquareSize, relayPresentation, resolvedPresentationCatalogAsset),
+            singleTargetDefinition: BuildTowerDefinition(TowerType.SingleTarget, singleTargetTowerCost, defensePlacementRadius, defenseExpansionSquareSize, singleTargetPresentation, resolvedPresentationCatalogAsset),
+            slowFieldDefinition: BuildTowerDefinition(TowerType.SlowField, slowFieldTowerCost, defensePlacementRadius, defenseExpansionSquareSize, slowFieldPresentation, resolvedPresentationCatalogAsset),
+            bombardDefinition: BuildTowerDefinition(TowerType.Bombard, bombardTowerCost, defensePlacementRadius, defenseExpansionSquareSize, bombardPresentation, resolvedPresentationCatalogAsset));
 
         _placementRules = new TowerPlacementRules(
             towerType => _placementSupportCoordinator != null ? _placementSupportCoordinator.GetPlacementRadius(towerType) : 0.5f,
@@ -830,9 +814,106 @@ public class TowerDefenseGame : MonoBehaviour
                 : new PowerGridHudSnapshot(0, 0, 0, 0, 0, 0, 0, string.Empty),
             canAffordTower: CanAffordTower,
             refreshStarterZoneMarker: () => _placementSupportCoordinator?.RefreshStarterZoneMarker());
-        _hudPresenter.SetTheme(hudTheme.ToRuntimeTheme());
+        _hudPresenter.SetTheme(resolvedHudThemeAsset != null ? resolvedHudThemeAsset.ToRuntimeTheme() : hudTheme.ToRuntimeTheme());
+        _hudPresenter.SetCopy(resolvedHudCopyAsset);
         _presentationCoordinator.BindPresentation(_hudPresenter, _towerCatalog);
         _sceneBootstrapper = new TowerDefenseSceneBootstrapper();
+    }
+
+    private TowerDefinition BuildTowerDefinition(
+        TowerType towerType,
+        int buildCost,
+        float placementRadius,
+        float expansionSquareSize,
+        TowerPresentationAuthoring fallbackPresentation,
+        TowerPresentationCatalogAsset resolvedCatalogAsset)
+    {
+        if (resolvedCatalogAsset != null &&
+            resolvedCatalogAsset.TryGetEntry(towerType, out TowerPresentationCatalogAsset.TowerPresentationEntry entry) &&
+            entry != null)
+        {
+            return new TowerDefinition(
+                towerType,
+                entry.DisplayName,
+                buildCost,
+                placementRadius,
+                expansionSquareSize,
+                entry.CardRoleSummary,
+                entry.SelectionHint,
+                entry.UpgradeFocusSummary,
+                entry.AccentColor,
+                entry.CardIconSprite,
+                entry.CardIconTint,
+                entry.CardBackgroundTint,
+                entry.CardAccentTint);
+        }
+
+        return new TowerDefinition(
+            towerType,
+            fallbackPresentation.DisplayName,
+            buildCost,
+            placementRadius,
+            expansionSquareSize,
+            fallbackPresentation.CardRoleSummary,
+            fallbackPresentation.SelectionHint,
+            fallbackPresentation.UpgradeFocusSummary,
+            fallbackPresentation.AccentColor,
+            fallbackPresentation.CardIconSprite,
+            fallbackPresentation.CardIconTint,
+            fallbackPresentation.CardBackgroundTint,
+            fallbackPresentation.CardAccentTint);
+    }
+
+    private void EnsureSharedPresentationAssetsAssigned()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            if (towerPresentationCatalogAsset == null)
+            {
+                towerPresentationCatalogAsset = AssetDatabase.LoadAssetAtPath<TowerPresentationCatalogAsset>(DefaultTowerPresentationCatalogAssetPath);
+            }
+
+            if (hudThemeAsset == null)
+            {
+                hudThemeAsset = AssetDatabase.LoadAssetAtPath<TowerDefenseHudThemeAsset>(DefaultHudThemeAssetPath);
+            }
+
+            if (hudCopyAsset == null)
+            {
+                hudCopyAsset = AssetDatabase.LoadAssetAtPath<TowerDefenseHudCopyAsset>(DefaultHudCopyAssetPath);
+            }
+
+            if (placementVisualThemeAsset == null)
+            {
+                placementVisualThemeAsset = AssetDatabase.LoadAssetAtPath<TowerPlacementVisualThemeAsset>(DefaultPlacementVisualThemeAssetPath);
+            }
+        }
+#endif
+    }
+
+    private TowerPresentationCatalogAsset ResolveTowerPresentationCatalogAsset()
+    {
+        EnsureSharedPresentationAssetsAssigned();
+        return towerPresentationCatalogAsset;
+    }
+
+    private TowerDefenseHudThemeAsset ResolveHudThemeAsset()
+    {
+        EnsureSharedPresentationAssetsAssigned();
+        return hudThemeAsset;
+    }
+
+    private TowerDefenseHudCopyAsset ResolveHudCopyAsset()
+    {
+        EnsureSharedPresentationAssetsAssigned();
+        return hudCopyAsset;
+    }
+
+    private TowerPlacementVisualThemeAsset ResolvePlacementVisualThemeAsset()
+    {
+        EnsureSharedPresentationAssetsAssigned();
+        return placementVisualThemeAsset;
     }
 
     /// <summary>
@@ -844,18 +925,30 @@ public class TowerDefenseGame : MonoBehaviour
     {
         _placementVisualController?.Dispose();
 
+        TowerPlacementVisualThemeAsset placementVisualTheme = ResolvePlacementVisualThemeAsset();
+        Sprite resolvedPlacementRingSprite = placementVisualTheme != null ? placementVisualTheme.PlacementRingSprite : placementRingSpriteReference;
+        Color resolvedValidPreviewColor = placementVisualTheme != null ? placementVisualTheme.ValidPreviewColor : validPreviewColor;
+        Color resolvedInvalidPreviewColor = placementVisualTheme != null ? placementVisualTheme.InvalidPreviewColor : invalidPreviewColor;
+        float resolvedOverlayPixelsPerUnit = placementVisualTheme != null ? placementVisualTheme.PlacementAreaOverlayPixelsPerUnit : placementAreaOverlayPixelsPerUnit;
+        Color resolvedOverlayFillColor = placementVisualTheme != null ? placementVisualTheme.PlacementAreaOverlayFillColor : placementAreaOverlayFillColor;
+        Color resolvedOverlayEdgeColor = placementVisualTheme != null ? placementVisualTheme.PlacementAreaOverlayEdgeColor : placementAreaOverlayEdgeColor;
+        int resolvedOverlaySortingOrder = placementVisualTheme != null ? placementVisualTheme.PlacementAreaOverlaySortingOrder : placementAreaOverlaySortingOrder;
+        Color resolvedStarterMarkerFillColor = placementVisualTheme != null ? placementVisualTheme.StarterZoneMarkerFillColor : starterZoneMarkerFillColor;
+        Color resolvedStarterMarkerEdgeColor = placementVisualTheme != null ? placementVisualTheme.StarterZoneMarkerEdgeColor : starterZoneMarkerEdgeColor;
+        int resolvedStarterMarkerSortingOrder = placementVisualTheme != null ? placementVisualTheme.StarterZoneMarkerSortingOrder : starterZoneMarkerSortingOrder;
+
         _placementVisualController = new TowerPlacementVisualController(
-            placementRingSpriteReference,
+            resolvedPlacementRingSprite,
             placementRingResourcePath,
-            validPreviewColor,
-            invalidPreviewColor,
-            placementAreaOverlayPixelsPerUnit,
-            placementAreaOverlayFillColor,
-            placementAreaOverlayEdgeColor,
-            placementAreaOverlaySortingOrder,
-            starterZoneMarkerFillColor,
-            starterZoneMarkerEdgeColor,
-            starterZoneMarkerSortingOrder,
+            resolvedValidPreviewColor,
+            resolvedInvalidPreviewColor,
+            resolvedOverlayPixelsPerUnit,
+            resolvedOverlayFillColor,
+            resolvedOverlayEdgeColor,
+            resolvedOverlaySortingOrder,
+            resolvedStarterMarkerFillColor,
+            resolvedStarterMarkerEdgeColor,
+            resolvedStarterMarkerSortingOrder,
             GetPrototype,
             GetTowerDisplayName,
             GetPlacementRadius);
@@ -1251,6 +1344,11 @@ public class TowerDefenseGame : MonoBehaviour
                 baseHealthTextReference,
                 waveTextReference,
                 selectionTextReference,
+                operationTextReference,
+                liveStatusTextReference,
+                powerGridTextReference,
+                latestEventTextReference,
+                recentLogTextReference,
                 relayTowerButtonReference,
                 defenseTowerButtonReference,
                 slowFieldTowerButtonReference,
@@ -1271,7 +1369,7 @@ public class TowerDefenseGame : MonoBehaviour
         _buildZone = bootstrapResult.BuildZone;
         _placedTowerRoot = bootstrapResult.PlacedTowerRoot;
         _placementPreviewRoot = bootstrapResult.PlacementPreviewRoot;
-        _battlefieldMapDefinition = battlefieldMapReference != null ? battlefieldMapReference : FindFirstObjectByType<BattlefieldMapDefinition>();
+        _battlefieldMapDefinition = battlefieldMapReference;
 
         mainCameraReference = _mainCamera;
         buildZoneReference = _buildZone;
@@ -1286,19 +1384,24 @@ public class TowerDefenseGame : MonoBehaviour
 
         if (_mainCamera == null)
         {
-            Debug.LogWarning("TowerDefenseGame is missing Main Camera reference. Camera.main fallback also failed.");
+            Debug.LogError("TowerDefenseGame 缺少 Main Camera 显式引用。当前玩法场景不再依赖 Camera.main 兜底。", this);
         }
 
         if (_relayTowerPrototype == null || _singleTargetTowerPrototype == null || _slowFieldTowerPrototype == null || _bombardTowerPrototype == null)
         {
-            Debug.LogWarning("TowerDefenseGame is missing one or more tower prototype references. Check the scene wiring.");
+            Debug.LogError("TowerDefenseGame 缺少一个或多个塔 Prefab 显式引用。请检查场景 Inspector 接线。", this);
+        }
+
+        if (_buildZone == null || _placedTowerRoot == null || _placementPreviewRoot == null || _battlefieldMapDefinition == null)
+        {
+            Debug.LogError("TowerDefenseGame 缺少 BuildZone / Runtime Root / BattlefieldMapDefinition 等关键场景引用。当前版本不再自动创建这些兜底对象。", this);
         }
     }
 
     /// <summary>
-    /// 让规则层和可视化层继续拿到当前真正可用的运行时根节点。
-    /// 由于根节点的确保存在已经由 `_sceneBootstrapper` 处理，
-    /// 这里主要负责把结果同步给其他子模块，而不是继续自己创建对象。
+    /// 让规则层和可视化层继续拿到当前场景里已经显式配置好的运行时根节点。
+    /// 这一版不再在这里补创建缺失节点；
+    /// 如果引用为空，应由场景接线和验证工具去修正，而不是继续在运行时兜底。
     /// </summary>
     private void EnsureRuntimeRoots()
     {

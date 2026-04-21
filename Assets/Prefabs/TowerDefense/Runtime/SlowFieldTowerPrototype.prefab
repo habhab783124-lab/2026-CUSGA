@@ -11,6 +11,8 @@ GameObject:
   - component: {fileID: 1719944051}
   - component: {fileID: 1719944050}
   - component: {fileID: 1719944052}
+  - component: {fileID: 1719944053}
+  - component: {fileID: 1719944054}
   m_Layer: 0
   m_Name: SlowFieldTowerPrototype
   m_TagString: Untagged
@@ -282,6 +284,53 @@ MonoBehaviour:
   levelPipSpacing: 0.22
   levelPipScale: 0.12
   levelPipSortingOffset: 3
+--- !u!58 &1719944053
+CircleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1719944049}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  serializedVersion: 3
+  m_Radius: 0.58
+--- !u!114 &1719944054
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1719944049}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec078ef1b92848debc325fe6cc5f9002, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2119000000
 GameObject:
   m_ObjectHideFlags: 0

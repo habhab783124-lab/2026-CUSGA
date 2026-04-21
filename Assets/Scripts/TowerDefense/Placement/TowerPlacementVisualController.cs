@@ -408,11 +408,6 @@ public sealed class TowerPlacementVisualController : IDisposable
     private void CreatePlacementRing(TowerType towerType)
     {
         Sprite ringSprite = _placementRingSprite;
-        if (ringSprite == null && !string.IsNullOrWhiteSpace(_placementRingResourcePath))
-        {
-            ringSprite = Resources.Load<Sprite>(_placementRingResourcePath);
-        }
-
         if (ringSprite == null)
         {
             return;

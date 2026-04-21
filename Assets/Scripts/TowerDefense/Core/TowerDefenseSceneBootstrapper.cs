@@ -16,6 +16,11 @@ public readonly struct TowerDefenseHudSceneReferences
         TMP_Text baseHealthText,
         TMP_Text waveText,
         TMP_Text selectionText,
+        TMP_Text operationText,
+        TMP_Text liveStatusText,
+        TMP_Text powerGridText,
+        TMP_Text latestEventText,
+        TMP_Text recentLogText,
         Button relayTowerButton,
         Button defenseTowerButton,
         Button slowFieldTowerButton,
@@ -31,6 +36,11 @@ public readonly struct TowerDefenseHudSceneReferences
         BaseHealthText = baseHealthText;
         WaveText = waveText;
         SelectionText = selectionText;
+        OperationText = operationText;
+        LiveStatusText = liveStatusText;
+        PowerGridText = powerGridText;
+        LatestEventText = latestEventText;
+        RecentLogText = recentLogText;
         RelayTowerButton = relayTowerButton;
         DefenseTowerButton = defenseTowerButton;
         SlowFieldTowerButton = slowFieldTowerButton;
@@ -47,6 +57,11 @@ public readonly struct TowerDefenseHudSceneReferences
     public TMP_Text BaseHealthText { get; }
     public TMP_Text WaveText { get; }
     public TMP_Text SelectionText { get; }
+    public TMP_Text OperationText { get; }
+    public TMP_Text LiveStatusText { get; }
+    public TMP_Text PowerGridText { get; }
+    public TMP_Text LatestEventText { get; }
+    public TMP_Text RecentLogText { get; }
     public Button RelayTowerButton { get; }
     public Button DefenseTowerButton { get; }
     public Button SlowFieldTowerButton { get; }
@@ -102,11 +117,16 @@ public readonly struct TowerDefenseSceneBootstrapResult
 ///
 /// 这一层专门收口三类事情：
 /// 1. 显式场景引用如何绑定到 HUD Presenter。
-/// 2. BuildZone 缺失时如何创建运行时兜底对象。
-/// 3. 运行时根节点缺失时如何补出稳定挂点。
+/// 2. 缺失关键引用时如何明确报错。
+/// 3. 把场景里已经显式配置好的对象收口成稳定结果。
 ///
 /// 这样做以后，`TowerDefenseGame` 不需要再自己持有整段“开局装配流水线”代码，
 /// 它只需要拿到一份已经解析好的结果，再把结果交给规则层、可视化层和别的子模块。
+///
+/// 需要特别强调的一点是：
+/// 这一版已经不再负责“偷偷创建运行时兜底节点”。
+/// 如果 `BuildZone`、运行时根节点或主相机没接好，就应该直接报错提醒作者补场景，
+/// 而不是继续把问题藏到运行时临时对象里。
 /// </summary>
 public sealed class TowerDefenseSceneBootstrapper
 {
@@ -133,6 +153,11 @@ public sealed class TowerDefenseSceneBootstrapper
             baseHealthText: hudSceneReferences.BaseHealthText,
             waveText: hudSceneReferences.WaveText,
             selectionText: hudSceneReferences.SelectionText,
+            operationText: hudSceneReferences.OperationText,
+            liveStatusText: hudSceneReferences.LiveStatusText,
+            powerGridText: hudSceneReferences.PowerGridText,
+            latestEventText: hudSceneReferences.LatestEventText,
+            recentLogText: hudSceneReferences.RecentLogText,
             relayTowerButton: hudSceneReferences.RelayTowerButton,
             defenseTowerButton: hudSceneReferences.DefenseTowerButton,
             slowFieldTowerButton: hudSceneReferences.SlowFieldTowerButton,
@@ -145,10 +170,15 @@ public sealed class TowerDefenseSceneBootstrapper
             dragPreviewLabel: hudSceneReferences.DragPreviewLabel);
         hudPresenter?.FindSceneReferences();
 
-        Camera resolvedMainCamera = mainCameraReference != null ? mainCameraReference : Camera.main;
-        BuildZone resolvedBuildZone = EnsureBuildZoneExists(buildZoneReference, buildZoneName);
-        Transform resolvedPlacedTowerRoot = EnsureRuntimeRoot(placedTowerRootReference, placedTowerRootName);
-        Transform resolvedPlacementPreviewRoot = EnsureRuntimeRoot(placementPreviewRootReference, placementPreviewRootName);
+        Camera resolvedMainCamera = mainCameraReference;
+        BuildZone resolvedBuildZone = buildZoneReference;
+        Transform resolvedPlacedTowerRoot = placedTowerRootReference;
+        Transform resolvedPlacementPreviewRoot = placementPreviewRootReference;
+
+        LogIfMissing(resolvedMainCamera, "Main Camera");
+        LogIfMissing(resolvedBuildZone, buildZoneName);
+        LogIfMissing(resolvedPlacedTowerRoot, placedTowerRootName);
+        LogIfMissing(resolvedPlacementPreviewRoot, placementPreviewRootName);
 
         return new TowerDefenseSceneBootstrapResult(
             mainCamera: resolvedMainCamera,
@@ -161,41 +191,13 @@ public sealed class TowerDefenseSceneBootstrapper
             placementPreviewRoot: resolvedPlacementPreviewRoot);
     }
 
-    /// <summary>
-    /// 确保某个运行时根节点一定存在。
-    /// 如果场景里已经显式拖好了引用，就直接复用；否则按约定名称新建一个父节点。
-    /// </summary>
-    private static Transform EnsureRuntimeRoot(Transform existingReference, string objectName)
+    private static void LogIfMissing(Object reference, string expectedName)
     {
-        if (existingReference != null)
+        if (reference != null)
         {
-            return existingReference;
+            return;
         }
 
-        GameObject runtimeRoot = new GameObject(objectName);
-        return runtimeRoot.transform;
-    }
-
-    /// <summary>
-    /// 确保当前关卡至少存在一个可用的 BuildZone。
-    /// 如果场景作者忘了在 Inspector 里拖引用，这里会创建一个运行时兜底对象并给出明确告警。
-    /// </summary>
-    private static BuildZone EnsureBuildZoneExists(BuildZone buildZoneReference, string buildZoneName)
-    {
-        if (buildZoneReference != null)
-        {
-            return buildZoneReference;
-        }
-
-        Debug.LogWarning("TowerDefenseGame is missing BuildZone reference. Creating a temporary runtime BuildZone fallback.");
-
-        GameObject buildZoneObject = new GameObject(buildZoneName);
-        buildZoneObject.transform.position = new Vector3(0f, 0.25f, 0f);
-
-        BoxCollider2D boxCollider = buildZoneObject.AddComponent<BoxCollider2D>();
-        boxCollider.isTrigger = true;
-        boxCollider.size = new Vector2(18f, 10.5f);
-
-        return buildZoneObject.AddComponent<BuildZone>();
+        Debug.LogError($"TowerDefenseSceneBootstrapper 缺少关键场景引用：{expectedName}。请在场景 Inspector 中显式补齐。");
     }
 }

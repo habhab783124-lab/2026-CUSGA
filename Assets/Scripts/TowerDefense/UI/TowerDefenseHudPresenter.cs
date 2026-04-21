@@ -303,11 +303,17 @@ public readonly struct TowerDefenseHudTheme
 public sealed class TowerDefenseHudPresenter
 {
     private TowerDefenseHudTheme _theme = TowerDefenseHudTheme.Default;
+    private TowerDefenseHudCopyAsset _copyAsset;
 
     private TMP_Text _scrapText;
     private TMP_Text _baseHealthText;
     private TMP_Text _waveText;
     private TMP_Text _selectionText;
+    private TMP_Text _operationText;
+    private TMP_Text _liveStatusText;
+    private TMP_Text _powerGridText;
+    private TMP_Text _latestEventText;
+    private TMP_Text _recentLogText;
 
     private TMP_Text _gameOverTitle;
     private TMP_Text _gameOverHint;
@@ -338,6 +344,14 @@ public sealed class TowerDefenseHudPresenter
     }
 
     /// <summary>
+    /// 注入 HUD 固定文案资产。
+    /// </summary>
+    public void SetCopy(TowerDefenseHudCopyAsset copyAsset)
+    {
+        _copyAsset = copyAsset;
+    }
+
+    /// <summary>
     /// 由外部把已经在 Inspector 里拖好的 HUD 引用直接注入进来。
     ///
     /// 这是项目从“按名字查找场景对象”逐步迁移到“显式 Inspector 引用”的关键步骤：
@@ -353,6 +367,11 @@ public sealed class TowerDefenseHudPresenter
         TMP_Text baseHealthText,
         TMP_Text waveText,
         TMP_Text selectionText,
+        TMP_Text operationText,
+        TMP_Text liveStatusText,
+        TMP_Text powerGridText,
+        TMP_Text latestEventText,
+        TMP_Text recentLogText,
         Button relayTowerButton,
         Button defenseTowerButton,
         Button slowFieldTowerButton,
@@ -368,6 +387,11 @@ public sealed class TowerDefenseHudPresenter
         _baseHealthText = baseHealthText;
         _waveText = waveText;
         _selectionText = selectionText;
+        _operationText = operationText;
+        _liveStatusText = liveStatusText;
+        _powerGridText = powerGridText;
+        _latestEventText = latestEventText;
+        _recentLogText = recentLogText;
         _relayTowerButton = relayTowerButton;
         _defenseTowerButton = defenseTowerButton;
         _slowFieldTowerButton = slowFieldTowerButton;
@@ -429,7 +453,15 @@ public sealed class TowerDefenseHudPresenter
         WarnIfMissing(_scrapText, "ScrapText");
         WarnIfMissing(_baseHealthText, "BaseHealthText");
         WarnIfMissing(_waveText, "WaveText");
-        WarnIfMissing(_selectionText, "SelectionText");
+        if (_selectionText == null && _operationText == null)
+        {
+            WarnIfMissing(_selectionText, "SelectionText / OperationText");
+        }
+
+        WarnIfMissing(_liveStatusText, "LiveStatusText");
+        WarnIfMissing(_powerGridText, "PowerGridText");
+        WarnIfMissing(_latestEventText, "LatestEventText");
+        WarnIfMissing(_recentLogText, "RecentLogText");
         WarnIfMissing(_relayTowerButton, "RelayTowerButton");
         WarnIfMissing(_defenseTowerButton, "DefenseTowerButton");
         WarnIfMissing(_slowFieldTowerButton, "SlowFieldTowerButton");
@@ -512,7 +544,7 @@ public sealed class TowerDefenseHudPresenter
         if (_clearSelectionButtonText != null)
         {
             string secondaryHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
-            _clearSelectionButtonText.text = $"CANCEL DEPLOY\n<size=20><color=#{secondaryHex}>Esc / RMB</color></size>";
+            _clearSelectionButtonText.text = $"{GetCopyText(_copyAsset != null ? _copyAsset.CancelDeployPrimary : null, "CANCEL DEPLOY")}\n<size=20><color=#{secondaryHex}>{GetCopyText(_copyAsset != null ? _copyAsset.CancelDeploySecondary : null, "Esc / RMB")}</color></size>";
             _clearSelectionButtonText.alignment = TextAlignmentOptions.Center;
         }
     }
@@ -528,25 +560,26 @@ public sealed class TowerDefenseHudPresenter
     {
         if (_scrapText != null)
         {
-            _scrapText.text = BuildMetricText("SCRAP STOCK", state.CurrentScrap.ToString(), _theme.ScrapValueColor);
+            _scrapText.text = BuildMetricText(GetCopyText(_copyAsset != null ? _copyAsset.ScrapMetricLabel : null, "SCRAP STOCK"), state.CurrentScrap.ToString(), _theme.ScrapValueColor);
         }
 
         if (_baseHealthText != null)
         {
-            _baseHealthText.text = BuildMetricText("BASE CORE", state.CurrentBaseHealth.ToString(), _theme.BaseValueColor);
+            _baseHealthText.text = BuildMetricText(GetCopyText(_copyAsset != null ? _copyAsset.BaseMetricLabel : null, "BASE CORE"), state.CurrentBaseHealth.ToString(), _theme.BaseValueColor);
         }
 
         if (_waveText != null)
         {
             string waveDisplay = state.TotalWaves > 0 ? $"{state.CurrentWave}/{state.TotalWaves}" : "0/0";
-            _waveText.text = BuildMetricText("WAVE CLOCK", waveDisplay, _theme.WaveValueColor);
+            _waveText.text = BuildMetricText(GetCopyText(_copyAsset != null ? _copyAsset.WaveMetricLabel : null, "WAVE CLOCK"), waveDisplay, _theme.WaveValueColor);
         }
 
         if (_selectionText != null)
         {
-            _selectionText.text = BuildSelectionText(state, towerCatalog);
+            _selectionText.text = HasSplitSelectionBlocks() ? string.Empty : BuildSelectionText(state, towerCatalog);
         }
 
+        RefreshSplitSelectionBlocks(state, towerCatalog);
         UpdateButtonInteractableState(canAffordTower);
     }
 
@@ -618,10 +651,10 @@ public sealed class TowerDefenseHudPresenter
             : $"<color=#{invalidHex}>{previewState.InvalidReason}</color>";
 
         _dragPreviewLabel.text =
-            $"<size=20><color=#{infoHex}>DEPLOY TRACE</color></size>\n" +
+            $"<size=20><color=#{infoHex}>{GetCopyText(_copyAsset != null ? _copyAsset.DeployTraceTitle : null, "DEPLOY TRACE")}</color></size>\n" +
             $"<size=34>{definition.DisplayName.ToUpperInvariant()}</size>\n" +
-            $"<size=20><color=#{accentHex}>{definition.BuildCostLabel}</color>  <color=#{infoHex}>GRID {definition.ExpansionSquareSize:0.0}</color></size>\n" +
-            $"<size=18><color=#{infoHex}>Cyan sectors show exact legal drop zones</color></size>\n" +
+            $"<size=20><color=#{accentHex}>{definition.BuildCostLabel}</color>  <color=#{infoHex}>{GetCopyText(_copyAsset != null ? _copyAsset.DragGridLabel : null, "GRID")} {definition.ExpansionSquareSize:0.0}</color></size>\n" +
+            $"<size=18><color=#{infoHex}>{GetCopyText(_copyAsset != null ? _copyAsset.DragLegalHint : null, "Cyan sectors show exact legal drop zones")}</color></size>\n" +
             $"<size=18>{stateLine}</size>";
     }
 
@@ -708,6 +741,44 @@ public sealed class TowerDefenseHudPresenter
     }
 
     /// <summary>
+    /// 如果场景里已经显式拆出了独立 HUD 文本块，
+    /// 就优先分别写入这些节点，而不是继续把所有区块拼成一段大富文本。
+    /// </summary>
+    private void RefreshSplitSelectionBlocks(TowerDefenseHudState state, TowerCatalog towerCatalog)
+    {
+        if (!HasSplitSelectionBlocks())
+        {
+            return;
+        }
+
+        ApplyBlockText(_operationText, BuildPrimaryOperationBlock(state, towerCatalog));
+        ApplyBlockText(_liveStatusText, BuildStatusBlock(state.CurrentStatusMessage));
+        ApplyBlockText(_powerGridText, BuildPowerGridBlock(state.PowerGridSnapshot));
+        ApplyBlockText(_latestEventText, BuildTransientNoticeBlock(state.TransientNotice));
+        ApplyBlockText(_recentLogText, BuildRecentNoticeBlock(state.RecentHudNotices, state.TransientNotice));
+    }
+
+    private bool HasSplitSelectionBlocks()
+    {
+        return _operationText != null
+            || _liveStatusText != null
+            || _powerGridText != null
+            || _latestEventText != null
+            || _recentLogText != null;
+    }
+
+    private static void ApplyBlockText(TMP_Text label, string content)
+    {
+        if (label == null)
+        {
+            return;
+        }
+
+        label.text = string.IsNullOrWhiteSpace(content) ? string.Empty : content;
+        label.gameObject.SetActive(true);
+    }
+
+    /// <summary>
     /// 组装操作区的主说明块。
     ///
     /// 这里继续只表达“玩家眼前主要在做什么”：
@@ -729,9 +800,9 @@ public sealed class TowerDefenseHudPresenter
                 string accentHex = ColorUtility.ToHtmlStringRGB(draggingDefinition.AccentColor);
                 string secondaryHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
                 return
-                    "DEPLOY TRACE\n" +
+                    $"{GetCopyText(_copyAsset != null ? _copyAsset.DeployTraceTitle : null, "DEPLOY TRACE")}\n" +
                     $"<size=30>{draggingDefinition.DisplayName}</size>\n" +
-                    $"<size=20><color=#{accentHex}>{draggingDefinition.BuildCostLabel}</color>  <color=#{secondaryHex}>Cyan sectors = exact legal zone</color></size>";
+                    $"<size=20><color=#{accentHex}>{draggingDefinition.BuildCostLabel}</color>  <color=#{secondaryHex}>{GetCopyText(_copyAsset != null ? _copyAsset.DragSelectedLegalHint : null, "Cyan sectors = exact legal zone")}</color></size>";
             }
         }
 
@@ -744,7 +815,7 @@ public sealed class TowerDefenseHudPresenter
                 string secondaryHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
                 string economyLine = BuildSelectionEconomyLine(state.CurrentScrap, selectedDefinition);
                 return
-                    "TACTICAL READY\n" +
+                    $"{GetCopyText(_copyAsset != null ? _copyAsset.TacticalReadyTitle : null, "TACTICAL READY")}\n" +
                     $"<size=30>{selectedDefinition.DisplayName}</size>\n" +
                     $"<size=20><color=#{accentHex}>{selectedDefinition.SelectionHint}</color></size>\n" +
                     $"<size=18><color=#{secondaryHex}>{selectedDefinition.UpgradeFocusSummary}</color></size>\n" +
@@ -756,16 +827,16 @@ public sealed class TowerDefenseHudPresenter
         {
             string secondaryHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
             return
-                "STRUCTURE LINK\n" +
+                $"{GetCopyText(_copyAsset != null ? _copyAsset.StructureLinkTitle : null, "STRUCTURE LINK")}\n" +
                 $"<size=30>{state.PlacedStructureState.Title}</size>\n" +
                 $"<size=18><color=#{secondaryHex}>{state.PlacedStructureState.Details}</color></size>";
         }
 
         string operationHintHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
         return
-            "OPERATION LINK\n" +
-            "<size=28>Click or drag a tower card to project legal sectors</size>\n" +
-            $"<size=20><color=#{operationHintHex}>1 Relay / 2 Single / 3 Slow / 4 Bomb / Esc Cancel</color></size>";
+            $"{GetCopyText(_copyAsset != null ? _copyAsset.OperationLinkTitle : null, "OPERATION LINK")}\n" +
+            $"<size=28>{GetCopyText(_copyAsset != null ? _copyAsset.IdleOperationSummary : null, "Click or drag a tower card to project legal sectors")}</size>\n" +
+            $"<size=20><color=#{operationHintHex}>{GetCopyText(_copyAsset != null ? _copyAsset.IdleOperationHotkeys : null, "1 Relay / 2 Single / 3 Slow / 4 Bomb / Esc Cancel")}</color></size>";
     }
 
     /// <summary>
@@ -784,7 +855,7 @@ public sealed class TowerDefenseHudPresenter
 
         string statusHex = ColorUtility.ToHtmlStringRGB(_theme.StatusTextColor);
         return
-            "LIVE STATUS\n" +
+            $"{GetCopyText(_copyAsset != null ? _copyAsset.LiveStatusTitle : null, "LIVE STATUS")}\n" +
             $"<size=18><color=#{statusHex}>{EscapeRichText(statusMessage)}</color></size>";
     }
 
@@ -809,9 +880,9 @@ public sealed class TowerDefenseHudPresenter
         string infoHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
 
         return
-            "POWER GRID\n" +
-            $"<size=18><color=#{infoHex}>Relays {snapshot.RelayCount}/{relayLimitText}  Towers {snapshot.PoweredTowerCount}/{snapshot.TotalTowerCount} online</color></size>\n" +
-            $"<size=18><color=#{infoHex}>Load {snapshot.AssignedLoad}/{snapshot.TotalCapacity}</color></size>\n" +
+            $"{GetCopyText(_copyAsset != null ? _copyAsset.PowerGridTitle : null, "POWER GRID")}\n" +
+            $"<size=18><color=#{infoHex}>{GetCopyText(_copyAsset != null ? _copyAsset.RelayCountLabel : null, "Relays")} {snapshot.RelayCount}/{relayLimitText}  {GetCopyText(_copyAsset != null ? _copyAsset.OnlineTowerCountLabel : null, "Towers")} {snapshot.PoweredTowerCount}/{snapshot.TotalTowerCount} {GetCopyText(_copyAsset != null ? _copyAsset.OnlineTowerSuffix : null, "online")}</color></size>\n" +
+            $"<size=18><color=#{infoHex}>{GetCopyText(_copyAsset != null ? _copyAsset.LoadLabel : null, "Load")} {snapshot.AssignedLoad}/{snapshot.TotalCapacity}</color></size>\n" +
             $"<size=18><color=#{statusHex}>{EscapeRichText(snapshot.StatusMessage)}</color></size>";
     }
 
@@ -829,7 +900,7 @@ public sealed class TowerDefenseHudPresenter
         }
 
         return
-            "LATEST EVENT\n" +
+            $"{GetCopyText(_copyAsset != null ? _copyAsset.LatestEventTitle : null, "LATEST EVENT")}\n" +
             $"<size=18><color={GetNoticeColor(transientNotice.Tone)}>{EscapeRichText(transientNotice.Message)}</color></size>";
     }
 
@@ -877,7 +948,7 @@ public sealed class TowerDefenseHudPresenter
         }
 
         return
-            "RECENT LOG\n" +
+            $"{GetCopyText(_copyAsset != null ? _copyAsset.RecentLogTitle : null, "RECENT LOG")}\n" +
             $"<size=16>{lines}</size>";
     }
 
@@ -904,6 +975,11 @@ public sealed class TowerDefenseHudPresenter
         }
 
         return value.Replace("<", "&lt;").Replace(">", "&gt;");
+    }
+
+    private static string GetCopyText(string configuredValue, string fallbackValue)
+    {
+        return string.IsNullOrWhiteSpace(configuredValue) ? fallbackValue : configuredValue;
     }
 
     private string GetNoticeColor(HudNoticeTone tone)
@@ -934,16 +1010,16 @@ public sealed class TowerDefenseHudPresenter
         string dangerHex = $"#{ColorUtility.ToHtmlStringRGB(_theme.DangerNoticeColor)}";
         if (definition.BuildCost <= 0)
         {
-            return $"<color={positiveHex}>FREE deploy. Scrap remains unchanged.</color>";
+            return $"<color={positiveHex}>{GetCopyText(_copyAsset != null ? _copyAsset.FreeDeployLine : null, "FREE deploy. Scrap remains unchanged.")}</color>";
         }
 
         int remainingAfterBuild = currentScrap - definition.BuildCost;
         if (remainingAfterBuild >= 0)
         {
-            return $"<color={positiveHex}>{remainingAfterBuild} SCRAP left after deploy.</color>";
+            return $"<color={positiveHex}>{remainingAfterBuild} {GetCopyText(_copyAsset != null ? _copyAsset.ScrapLeftSuffix : null, "SCRAP left after deploy.")}</color>";
         }
 
-        return $"<color={dangerHex}>Need {-remainingAfterBuild} more SCRAP to deploy.</color>";
+        return $"<color={dangerHex}>{GetCopyText(_copyAsset != null ? _copyAsset.NeedMoreScrapPrefix : null, "Need")} {-remainingAfterBuild} {GetCopyText(_copyAsset != null ? _copyAsset.NeedMoreScrapSuffix : null, "more SCRAP to deploy.")}</color>";
     }
 
     /// <summary>

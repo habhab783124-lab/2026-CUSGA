@@ -152,19 +152,17 @@ public sealed class TowerPlacementBuildExecutor
             defenseTower.ConfigureBuildType(towerType);
         }
 
-        EnsureTowerPlacementCollider(tower, towerType);
+        if (!PreparePlacedTowerComponents(tower, towerType, ownerPad, out string prefabError))
+        {
+            _setStatusMessage?.Invoke(prefabError);
+            _logPlacementDiagnostic?.Invoke($"TryPlace rejected after instantiate: tower={towerType} world={worldPosition} reason={prefabError}");
+            UnityEngine.Object.Destroy(tower);
+            return false;
+        }
 
         if (ownerPad != null)
         {
             ownerPad.SetOccupant(tower);
-
-            PlacedTower placedTower = tower.GetComponent<PlacedTower>();
-            if (placedTower == null)
-            {
-                placedTower = tower.AddComponent<PlacedTower>();
-            }
-
-            placedTower.Initialize(ownerPad, towerType);
         }
 
         _registerPlacedStructure?.Invoke(tower, towerType);
@@ -184,20 +182,34 @@ public sealed class TowerPlacementBuildExecutor
     /// 它不是为了让塔在物理世界里互相顶开，
     /// 而是为了让“塔之间不能贴太近”这条放置规则有稳定的运行时依据。
     /// </summary>
-    private void EnsureTowerPlacementCollider(GameObject tower, TowerType towerType)
+    private bool PreparePlacedTowerComponents(GameObject tower, TowerType towerType, BuildPad ownerPad, out string invalidReason)
     {
+        invalidReason = string.Empty;
+
         if (tower == null)
         {
-            return;
+            invalidReason = "Placed tower instance is null.";
+            return false;
         }
 
         CircleCollider2D circleCollider = tower.GetComponent<CircleCollider2D>();
         if (circleCollider == null)
         {
-            circleCollider = tower.AddComponent<CircleCollider2D>();
+            invalidReason = "Tower prefab is missing CircleCollider2D. Please fix the prefab asset instead of relying on runtime patching.";
+            return false;
         }
 
         circleCollider.isTrigger = true;
         circleCollider.radius = _getPlacementRadius != null ? _getPlacementRadius(towerType) : 0.5f;
+
+        PlacedTower placedTower = tower.GetComponent<PlacedTower>();
+        if (placedTower == null)
+        {
+            invalidReason = "Tower prefab is missing PlacedTower component. Please fix the prefab asset instead of relying on runtime patching.";
+            return false;
+        }
+
+        placedTower.Initialize(ownerPad, towerType);
+        return true;
     }
 }

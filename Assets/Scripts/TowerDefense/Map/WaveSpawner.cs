@@ -1,28 +1,84 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 /// <summary>
-/// `WaveSpawner` 负责按波次把敌人送进战场。
+/// `WaveSpawner` 负责把配置好的波次真正刷进战场。
 ///
-/// 旧原型默认只有“一条路径 + 一个出怪口”的思路，
-/// 这和新玩法文档里“地图中需要有多个出怪口”的要求已经不一致了。
+/// 这一版开始正式支持“多怪物系统”：
+/// - 每一波可以由多个刷怪组组成
+/// - 每个刷怪组可以指定不同敌人类型
+/// - 敌人的真实属性由 `EnemyCatalogAsset` 统一提供
 ///
-/// 所以这一轮不直接重做整套刷怪系统，
-/// 而是先做一层兼容迁移：
-/// - 优先读取新的 `BattlefieldMapDefinition`
-/// - 如果地图里已经配置了多个 `EnemySpawnGate`，就按轮询顺序把敌人分配到不同出怪口
-/// - 如果新地图结构还没接好，仍然允许回退到旧的单路径引用
+/// 这样波次系统就不再只会刷“同一种小怪的不同数值版本”，
+/// 而是能真正表达：
+/// - 快速突破怪
+/// - 护盾支援怪
+/// - 修理支援怪
+/// - 隐身怪
+/// - 重甲怪
+/// - 死亡分裂怪
+/// 这些结构差异。
 /// </summary>
 public sealed class WaveSpawner : MonoBehaviour
 {
-    [System.Serializable]
-    private struct WaveDefinition
+#if UNITY_EDITOR
+    private const string DefaultWaveCatalogAssetPath = "Assets/Resources/TowerDefense/Configs/WaveCatalog.asset";
+    private const string DefaultEnemyCatalogAssetPath = "Assets/Resources/TowerDefense/Configs/EnemyCatalog.asset";
+#endif
+
+    private readonly struct SpawnGroupRuntime
     {
-        public int enemyCount;
-        public float spawnInterval;
-        public float moveSpeed;
-        public int enemyHealth;
-        public int enemyScrapReward;
+        public SpawnGroupRuntime(EnemyArchetypeId enemyType, int enemyCount, float spawnInterval)
+        {
+            EnemyType = enemyType;
+            EnemyCount = enemyCount;
+            SpawnInterval = spawnInterval;
+        }
+
+        public EnemyArchetypeId EnemyType { get; }
+        public int EnemyCount { get; }
+        public float SpawnInterval { get; }
+    }
+
+    private readonly struct WaveRuntime
+    {
+        public WaveRuntime(string displayName, SpawnGroupRuntime[] spawnGroups)
+        {
+            DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Wave" : displayName;
+            SpawnGroups = spawnGroups ?? Array.Empty<SpawnGroupRuntime>();
+        }
+
+        public string DisplayName { get; }
+        public SpawnGroupRuntime[] SpawnGroups { get; }
+
+        public int TotalEnemyCount
+        {
+            get
+            {
+                int total = 0;
+                for (int index = 0; index < SpawnGroups.Length; index++)
+                {
+                    total += SpawnGroups[index].EnemyCount;
+                }
+
+                return total;
+            }
+        }
+    }
+
+    [Serializable]
+    private sealed class LegacyWaveDefinition
+    {
+        public int enemyCount = 4;
+        public float spawnInterval = 1f;
+        public float moveSpeed = 1.8f;
+        public int enemyHealth = 3;
+        public int enemyScrapReward = 8;
     }
 
     [Header("Wave Timing")]
@@ -34,26 +90,34 @@ public sealed class WaveSpawner : MonoBehaviour
     [Min(0f)]
     [SerializeField] private float routePreviewLeadTime = 2f;
 
+    [Header("Campaign Flow")]
+    [SerializeField] private bool continueCampaignAfterClear = true;
+    [SerializeField] private KeyCode clearContinuePrimaryKey = KeyCode.Return;
+    [SerializeField] private KeyCode clearContinueSecondaryKey = KeyCode.Space;
+    [SerializeField] private string clearContinueMessage = "Combat segment secured. Press Enter / Space to continue the story.";
+
     [Header("Map References")]
     [SerializeField] private BattlefieldMapDefinition battlefieldMapReference;
+    [SerializeField] private WaveCatalogAsset waveCatalogAsset;
+    [SerializeField] private EnemyCatalogAsset enemyCatalogAsset;
 
-    [Header("Scene References (Fallback)")]
+    [Header("Scene References")]
     [SerializeField] private EnemyPath enemyPathReference;
     [SerializeField] private GameObject enemyPrototypeReference;
     [SerializeField] private Transform enemyRootReference;
 
-    [Header("Scene Object Names")]
-    [SerializeField] private string enemyRootName = "EnemiesRoot";
-
-    [Header("Wave Content")]
-    [SerializeField] private WaveDefinition[] waves;
+    [Header("Legacy Wave Fallback")]
+    [SerializeField] private LegacyWaveDefinition[] waves;
 
     private BattlefieldMapDefinition _battlefieldMap;
     private EnemyPath _fallbackEnemyPath;
     private GameObject _enemyPrototype;
     private Transform _enemyRoot;
+    private WaveRuntime[] _resolvedWaves = Array.Empty<WaveRuntime>();
+
     private int _currentWaveIndex;
-    private int _spawnedInCurrentWave;
+    private int _currentSpawnGroupIndex;
+    private int _spawnedInCurrentGroup;
     private float _spawnTimer;
     private bool _waitingForFirstWave;
     private bool _levelClearMessageShown;
@@ -66,19 +130,14 @@ public sealed class WaveSpawner : MonoBehaviour
 
     private void Start()
     {
+        EnsureCatalogAssetsAssigned();
         EnsureWaveData();
 
-        // 阶段 A 里优先尝试显式地图定义；如果 Inspector 暂时没接，
-        // 就用按类型查找做一次过渡兜底，帮助当前样例场景平稳迁移。
-        _battlefieldMap = battlefieldMapReference != null
-            ? battlefieldMapReference
-            : Object.FindFirstObjectByType<BattlefieldMapDefinition>();
-        battlefieldMapReference = _battlefieldMap;
-
+        _battlefieldMap = battlefieldMapReference;
         _fallbackEnemyPath = enemyPathReference;
         _enemyPrototype = enemyPrototypeReference;
-        _enemyRoot = enemyRootReference != null ? enemyRootReference : new GameObject(enemyRootName).transform;
-        enemyRootReference = _enemyRoot;
+        _enemyRoot = enemyRootReference;
+
         CacheRoutePreviewPaths();
 
         if (_battlefieldMap != null)
@@ -87,9 +146,44 @@ public sealed class WaveSpawner : MonoBehaviour
             Debug.Log($"[WaveSpawner] Stage-A map summary: {_battlefieldMap.BuildDebugSummary()}", this);
         }
 
-        if (_enemyPrototype == null || !HasAnySpawnSource())
+        if (_battlefieldMap == null)
         {
-            Debug.LogWarning("WaveSpawner is missing a valid spawn source or enemy prototype. Check BattlefieldMapDefinition / EnemyPath wiring.", this);
+            Debug.LogError("WaveSpawner 缺少 BattlefieldMapDefinition 显式引用。当前版本不再按类型自动查找地图定义。", this);
+            enabled = false;
+            return;
+        }
+
+        if (_enemyRoot == null)
+        {
+            Debug.LogError("WaveSpawner 缺少 enemyRootReference。当前版本不再运行时自动创建 EnemiesRoot。", this);
+            enabled = false;
+            return;
+        }
+
+        if (_enemyPrototype == null)
+        {
+            Debug.LogError("WaveSpawner 缺少 EnemyPrototype 引用。", this);
+            enabled = false;
+            return;
+        }
+
+        if (enemyCatalogAsset == null)
+        {
+            Debug.LogError("WaveSpawner 缺少 EnemyCatalogAsset。当前多怪物主链必须依赖敌人目录资产。", this);
+            enabled = false;
+            return;
+        }
+
+        if (!HasAnySpawnSource())
+        {
+            Debug.LogError("WaveSpawner 缺少有效出怪来源。请检查 BattlefieldMapDefinition / EnemyPath 接线。", this);
+            enabled = false;
+            return;
+        }
+
+        if (_resolvedWaves.Length == 0)
+        {
+            Debug.LogError("WaveSpawner 当前没有任何有效波次配置。", this);
             enabled = false;
             return;
         }
@@ -107,14 +201,32 @@ public sealed class WaveSpawner : MonoBehaviour
             return;
         }
 
-        if (_currentWaveIndex >= waves.Length)
+        if (_currentWaveIndex >= _resolvedWaves.Length)
         {
             UpdateRoutePreviewVisibility(force: true, overrideVisible: false);
 
-            if (!_levelClearMessageShown && Enemy.ActiveEnemyCount == 0 && TowerDefenseGame.Instance != null)
+            if (Enemy.ActiveEnemyCount == 0 && TowerDefenseGame.Instance != null)
             {
-                TowerDefenseGame.Instance.SetStatusMessage("Test level complete! The base survived.");
-                _levelClearMessageShown = true;
+                if (continueCampaignAfterClear && CampaignFlowController.HasActiveCampaign)
+                {
+                    if (!_levelClearMessageShown)
+                    {
+                        TowerDefenseGame.Instance.SetStatusMessage(clearContinueMessage);
+                        TowerDefenseGame.Instance.ShowTransientHudNotice("Campaign segment clear. Continue to the next scene when ready.", duration: 3.2f);
+                        _levelClearMessageShown = true;
+                    }
+
+                    if (Input.GetKeyDown(clearContinuePrimaryKey) || Input.GetKeyDown(clearContinueSecondaryKey))
+                    {
+                        CampaignFlowController.AdvanceToNextStep();
+                        return;
+                    }
+                }
+                else if (!_levelClearMessageShown)
+                {
+                    TowerDefenseGame.Instance.SetStatusMessage("Test level complete! The base survived.");
+                    _levelClearMessageShown = true;
+                }
             }
 
             return;
@@ -122,53 +234,84 @@ public sealed class WaveSpawner : MonoBehaviour
 
         _spawnTimer -= Time.deltaTime;
         UpdateRoutePreviewVisibility(force: false);
-
         if (_spawnTimer > 0f)
         {
             return;
         }
 
-        WaveDefinition wave = waves[_currentWaveIndex];
-
-        if (_spawnedInCurrentWave == 0 && TowerDefenseGame.Instance != null)
+        WaveRuntime wave = _resolvedWaves[_currentWaveIndex];
+        if (_currentSpawnGroupIndex < 0 || _currentSpawnGroupIndex >= wave.SpawnGroups.Length)
         {
-            TowerDefenseGame.Instance.SetWaveProgress(_currentWaveIndex + 1, waves.Length);
+            CompleteCurrentWave();
+            return;
+        }
+
+        SpawnGroupRuntime spawnGroup = wave.SpawnGroups[_currentSpawnGroupIndex];
+        if (spawnGroup.EnemyCount <= 0)
+        {
+            AdvanceToNextSpawnGroupOrWave(wave);
+            return;
+        }
+
+        if (_spawnedInCurrentGroup == 0 && _currentSpawnGroupIndex == 0 && TowerDefenseGame.Instance != null)
+        {
+            TowerDefenseGame.Instance.SetWaveProgress(_currentWaveIndex + 1, _resolvedWaves.Length);
             MarkCurrentWaveRouteAsStarted();
 
             if (_waitingForFirstWave)
             {
-                TowerDefenseGame.Instance.SetStatusMessage($"Wave {_currentWaveIndex + 1} incoming. Hold the line!");
+                TowerDefenseGame.Instance.SetStatusMessage($"{wave.DisplayName} incoming. Hold the line!");
                 _waitingForFirstWave = false;
             }
             else
             {
-                TowerDefenseGame.Instance.SetStatusMessage($"Wave {_currentWaveIndex + 1} started.");
+                TowerDefenseGame.Instance.SetStatusMessage($"{wave.DisplayName} started.");
             }
 
             TowerDefenseGame.Instance.ShowTransientHudNotice(
-                $"Wave {_currentWaveIndex + 1}: salvage potential {GetWaveScrapRewardTotal(wave)} SCRAP.",
+                $"{wave.DisplayName}: salvage potential {GetWaveScrapRewardTotal(wave)} SCRAP.",
                 duration: 3.4f);
         }
 
-        if (!SpawnEnemy(wave, _currentWaveIndex + 1, _spawnedInCurrentWave + 1))
+        if (!SpawnEnemy(spawnGroup.EnemyType, _currentWaveIndex + 1, _spawnedInCurrentGroup + 1))
         {
             enabled = false;
             return;
         }
 
-        _spawnedInCurrentWave++;
+        _spawnedInCurrentGroup++;
         UpdateRoutePreviewVisibility(force: true);
 
-        if (_spawnedInCurrentWave < wave.enemyCount)
+        if (_spawnedInCurrentGroup < spawnGroup.EnemyCount)
         {
-            _spawnTimer = wave.spawnInterval;
+            _spawnTimer = spawnGroup.SpawnInterval;
             return;
         }
 
-        _currentWaveIndex++;
-        _spawnedInCurrentWave = 0;
+        AdvanceToNextSpawnGroupOrWave(wave);
+    }
 
-        if (_currentWaveIndex < waves.Length)
+    private void AdvanceToNextSpawnGroupOrWave(WaveRuntime currentWave)
+    {
+        _currentSpawnGroupIndex++;
+        _spawnedInCurrentGroup = 0;
+
+        if (_currentSpawnGroupIndex < currentWave.SpawnGroups.Length)
+        {
+            _spawnTimer = currentWave.SpawnGroups[_currentSpawnGroupIndex].SpawnInterval;
+            return;
+        }
+
+        CompleteCurrentWave();
+    }
+
+    private void CompleteCurrentWave()
+    {
+        _currentWaveIndex++;
+        _currentSpawnGroupIndex = 0;
+        _spawnedInCurrentGroup = 0;
+
+        if (_currentWaveIndex < _resolvedWaves.Length)
         {
             _spawnTimer = delayBetweenWaves;
             UpdateRoutePreviewVisibility(force: true);
@@ -187,20 +330,67 @@ public sealed class WaveSpawner : MonoBehaviour
 
     private void EnsureWaveData()
     {
-        if (waves != null && waves.Length > 0)
+        if (waveCatalogAsset != null && waveCatalogAsset.Waves.Length > 0)
         {
+            _resolvedWaves = ConvertWaveEntries(waveCatalogAsset.Waves);
             return;
         }
 
-        waves = new[]
+        if (waves != null && waves.Length > 0)
         {
-            new WaveDefinition { enemyCount = 4, spawnInterval = 1.0f, moveSpeed = 1.8f, enemyHealth = 3, enemyScrapReward = 8 },
-            new WaveDefinition { enemyCount = 6, spawnInterval = 0.85f, moveSpeed = 2.1f, enemyHealth = 4, enemyScrapReward = 11 },
-            new WaveDefinition { enemyCount = 8, spawnInterval = 0.70f, moveSpeed = 2.4f, enemyHealth = 6, enemyScrapReward = 15 }
-        };
+            _resolvedWaves = ConvertLegacyWaveEntries(waves);
+            return;
+        }
+
+        _resolvedWaves = Array.Empty<WaveRuntime>();
     }
 
-    private bool SpawnEnemy(WaveDefinition wave, int waveNumber, int enemyNumber)
+    private static WaveRuntime[] ConvertWaveEntries(WaveCatalogAsset.WaveEntry[] waveEntries)
+    {
+        WaveRuntime[] convertedWaves = new WaveRuntime[waveEntries.Length];
+        for (int waveIndex = 0; waveIndex < waveEntries.Length; waveIndex++)
+        {
+            WaveCatalogAsset.WaveEntry waveEntry = waveEntries[waveIndex];
+            if (waveEntry == null)
+            {
+                convertedWaves[waveIndex] = new WaveRuntime("Wave", Array.Empty<SpawnGroupRuntime>());
+                continue;
+            }
+
+            WaveCatalogAsset.SpawnGroup[] sourceGroups = waveEntry.SpawnGroups;
+            SpawnGroupRuntime[] convertedGroups = new SpawnGroupRuntime[sourceGroups.Length];
+            for (int groupIndex = 0; groupIndex < sourceGroups.Length; groupIndex++)
+            {
+                WaveCatalogAsset.SpawnGroup sourceGroup = sourceGroups[groupIndex];
+                convertedGroups[groupIndex] = sourceGroup == null
+                    ? new SpawnGroupRuntime(EnemyArchetypeId.Scavenger, 0, 1f)
+                    : new SpawnGroupRuntime(sourceGroup.EnemyType, sourceGroup.EnemyCount, sourceGroup.SpawnInterval);
+            }
+
+            convertedWaves[waveIndex] = new WaveRuntime(waveEntry.DisplayName, convertedGroups);
+        }
+
+        return convertedWaves;
+    }
+
+    private static WaveRuntime[] ConvertLegacyWaveEntries(LegacyWaveDefinition[] legacyWaves)
+    {
+        WaveRuntime[] convertedWaves = new WaveRuntime[legacyWaves.Length];
+        for (int waveIndex = 0; waveIndex < legacyWaves.Length; waveIndex++)
+        {
+            LegacyWaveDefinition legacyWave = legacyWaves[waveIndex];
+            SpawnGroupRuntime[] convertedGroups =
+            {
+                new SpawnGroupRuntime(EnemyArchetypeId.Scavenger, Mathf.Max(0, legacyWave.enemyCount), Mathf.Max(0.05f, legacyWave.spawnInterval))
+            };
+
+            convertedWaves[waveIndex] = new WaveRuntime($"Wave {waveIndex + 1:00}", convertedGroups);
+        }
+
+        return convertedWaves;
+    }
+
+    private bool SpawnEnemy(EnemyArchetypeId enemyType, int waveNumber, int enemyNumber)
     {
         EnemyPath spawnPath = ResolveSpawnPath(out EnemySpawnGate spawnGate);
         if (spawnPath == null)
@@ -209,16 +399,37 @@ public sealed class WaveSpawner : MonoBehaviour
             return false;
         }
 
-        GameObject enemyObject = Instantiate(_enemyPrototype, spawnPath.GetSpawnPosition(), Quaternion.identity, _enemyRoot);
+        EnemyCatalogAsset.EnemyArchetypeDefinition enemyDefinition = enemyCatalogAsset != null
+            ? enemyCatalogAsset.GetDefinition(enemyType)
+            : null;
+        if (enemyDefinition == null)
+        {
+            Debug.LogWarning($"WaveSpawner 无法找到敌人类型 `{enemyType}` 对应的定义。", this);
+            return false;
+        }
+
+        GameObject enemyPrefab = enemyDefinition.RuntimePrefab != null ? enemyDefinition.RuntimePrefab : _enemyPrototype;
+        if (enemyPrefab == null)
+        {
+            Debug.LogWarning($"WaveSpawner 找到了敌人类型 `{enemyType}`，但它没有可用的运行时 Prefab。", this);
+            return false;
+        }
+
+        GameObject enemyObject = Instantiate(enemyPrefab, spawnPath.GetSpawnPosition(), Quaternion.identity, _enemyRoot);
         enemyObject.name = spawnGate != null
-            ? $"Enemy_{spawnGate.GateId}_W{waveNumber}_{enemyNumber}"
-            : $"Enemy_W{waveNumber}_{enemyNumber}";
+            ? $"{enemyDefinition.DisplayName}_{spawnGate.GateId}_W{waveNumber}_{enemyNumber}"
+            : $"{enemyDefinition.DisplayName}_W{waveNumber}_{enemyNumber}";
         enemyObject.SetActive(true);
 
         Enemy enemy = enemyObject.GetComponent<Enemy>();
         if (enemy != null)
         {
-            enemy.Initialize(spawnPath, wave.moveSpeed, wave.enemyHealth, wave.enemyScrapReward);
+            enemy.Initialize(
+                path: spawnPath,
+                enemyCatalog: enemyCatalogAsset,
+                archetypeId: enemyType,
+                enemyPrototypePrefab: enemyPrefab,
+                enemyRoot: _enemyRoot);
         }
 
         return true;
@@ -229,9 +440,27 @@ public sealed class WaveSpawner : MonoBehaviour
         return (_battlefieldMap != null && _battlefieldMap.HasAnyValidSpawnGate()) || _fallbackEnemyPath != null;
     }
 
-    private static int GetWaveScrapRewardTotal(WaveDefinition wave)
+    private int GetWaveScrapRewardTotal(WaveRuntime wave)
     {
-        return Mathf.Max(0, wave.enemyCount) * Mathf.Max(0, wave.enemyScrapReward);
+        if (enemyCatalogAsset == null)
+        {
+            return 0;
+        }
+
+        int total = 0;
+        for (int groupIndex = 0; groupIndex < wave.SpawnGroups.Length; groupIndex++)
+        {
+            SpawnGroupRuntime group = wave.SpawnGroups[groupIndex];
+            EnemyCatalogAsset.EnemyArchetypeDefinition definition = enemyCatalogAsset.GetDefinition(group.EnemyType);
+            if (definition == null)
+            {
+                continue;
+            }
+
+            total += Mathf.Max(0, group.EnemyCount) * definition.ScrapReward;
+        }
+
+        return total;
     }
 
     private EnemyPath ResolveSpawnPath(out EnemySpawnGate spawnGate)
@@ -247,10 +476,6 @@ public sealed class WaveSpawner : MonoBehaviour
         return _fallbackEnemyPath;
     }
 
-    /// <summary>
-    /// 缓存本关所有需要参与“波前路线预告”的路径。
-    /// 多出怪口地图会把所有有效路径都收进来；旧版单路径回退则只保留一条。
-    /// </summary>
     private void CacheRoutePreviewPaths()
     {
         _allRoutePreviewPaths.Clear();
@@ -278,9 +503,6 @@ public sealed class WaveSpawner : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 根据当前计时器状态统一更新路径预告显隐。
-    /// </summary>
     private void UpdateRoutePreviewVisibility(bool force, bool? overrideVisible = null)
     {
         bool shouldShow = overrideVisible ?? ShouldShowRoutePreview();
@@ -305,12 +527,12 @@ public sealed class WaveSpawner : MonoBehaviour
 
     private bool ShouldShowRoutePreview()
     {
-        if (_currentWaveIndex >= waves.Length)
+        if (_currentWaveIndex >= _resolvedWaves.Length)
         {
             return false;
         }
 
-        if (_spawnedInCurrentWave > 0)
+        if (_spawnedInCurrentGroup > 0)
         {
             return false;
         }
@@ -326,7 +548,7 @@ public sealed class WaveSpawner : MonoBehaviour
             return true;
         }
 
-        return !string.Equals(upcomingSignature, _lastStartedWaveRouteSignature, System.StringComparison.Ordinal);
+        return !string.Equals(upcomingSignature, _lastStartedWaveRouteSignature, StringComparison.Ordinal);
     }
 
     private void MarkCurrentWaveRouteAsStarted()
@@ -335,23 +557,21 @@ public sealed class WaveSpawner : MonoBehaviour
         _hasStartedAnyWave = true;
     }
 
-    /// <summary>
-    /// 计算当前波次真正会走到的“预告路线集合”。
-    /// 这里按唯一路径去重，因为玩家看到的是路线图层本身，而不是同一路径被刷了几只怪。
-    /// </summary>
     private void BuildActiveRoutePreviewPaths(List<EnemyPath> output)
     {
         output.Clear();
 
-        if (_currentWaveIndex >= waves.Length)
+        if (_currentWaveIndex >= _resolvedWaves.Length)
         {
             return;
         }
 
+        WaveRuntime wave = _resolvedWaves[_currentWaveIndex];
+        int totalEnemyCount = wave.TotalEnemyCount;
+
         if (_battlefieldMap != null && _battlefieldMap.HasAnyValidSpawnGate())
         {
-            WaveDefinition wave = waves[_currentWaveIndex];
-            for (int enemyIndex = 0; enemyIndex < wave.enemyCount; enemyIndex++)
+            for (int enemyIndex = 0; enemyIndex < totalEnemyCount; enemyIndex++)
             {
                 int gateSequence = _spawnGateSequence + enemyIndex;
                 if (!_battlefieldMap.TryGetSpawnGateBySequence(gateSequence, out EnemySpawnGate spawnGate) || spawnGate == null)
@@ -373,23 +593,19 @@ public sealed class WaveSpawner : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 把某一波的预告路线集合压成稳定签名，用来和上一波比较。
-    /// 只有当签名不同，才说明玩家看到的路线真的发生了变化。
-    /// </summary>
     private string BuildWaveRouteSignature(int waveIndex, int spawnGateSequenceAtWaveStart)
     {
-        if (waveIndex < 0 || waveIndex >= waves.Length)
+        if (waveIndex < 0 || waveIndex >= _resolvedWaves.Length)
         {
             return string.Empty;
         }
 
         List<int> instanceIds = new List<int>();
+        int totalEnemyCount = _resolvedWaves[waveIndex].TotalEnemyCount;
 
         if (_battlefieldMap != null && _battlefieldMap.HasAnyValidSpawnGate())
         {
-            WaveDefinition wave = waves[waveIndex];
-            for (int enemyIndex = 0; enemyIndex < wave.enemyCount; enemyIndex++)
+            for (int enemyIndex = 0; enemyIndex < totalEnemyCount; enemyIndex++)
             {
                 int gateSequence = spawnGateSequenceAtWaveStart + enemyIndex;
                 if (!_battlefieldMap.TryGetSpawnGateBySequence(gateSequence, out EnemySpawnGate spawnGate) || spawnGate == null)
@@ -417,5 +633,28 @@ public sealed class WaveSpawner : MonoBehaviour
 
         instanceIds.Sort();
         return string.Join("|", instanceIds);
+    }
+
+    private void OnValidate()
+    {
+        EnsureCatalogAssetsAssigned();
+    }
+
+    private void EnsureCatalogAssetsAssigned()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            if (waveCatalogAsset == null)
+            {
+                waveCatalogAsset = AssetDatabase.LoadAssetAtPath<WaveCatalogAsset>(DefaultWaveCatalogAssetPath);
+            }
+
+            if (enemyCatalogAsset == null)
+            {
+                enemyCatalogAsset = AssetDatabase.LoadAssetAtPath<EnemyCatalogAsset>(DefaultEnemyCatalogAssetPath);
+            }
+        }
+#endif
     }
 }
