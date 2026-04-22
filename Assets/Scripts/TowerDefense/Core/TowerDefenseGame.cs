@@ -241,11 +241,6 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private BuildZone buildZoneReference;
     [SerializeField] private BattlefieldMapDefinition battlefieldMapReference;
 
-    [Header("Scene Object Names")]
-    [SerializeField] private string placedTowerRootName = "PlacedTowers";
-    [SerializeField] private string placementPreviewRootName = "PlacementPreviewRoot";
-    [SerializeField] private string buildZoneName = "BuildZone";
-
     [Header("HUD References (Preferred)")]
 
     /// <summary>
@@ -1334,11 +1329,8 @@ public class TowerDefenseGame : MonoBehaviour
             slowFieldTowerPrototypeReference,
             bombardTowerPrototypeReference,
             placedTowerRootReference,
-            placedTowerRootName,
             placementPreviewRootReference,
-            placementPreviewRootName,
             buildZoneReference,
-            buildZoneName,
             new TowerDefenseHudSceneReferences(
                 scrapTextReference,
                 baseHealthTextReference,

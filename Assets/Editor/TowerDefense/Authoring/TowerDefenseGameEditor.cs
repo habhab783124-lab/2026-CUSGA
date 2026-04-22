@@ -102,6 +102,7 @@ namespace TowerDefense.Editor
 
             DrawSceneValidationSummary();
             DrawMapSummary();
+            DrawHudStructureSummary();
             DrawPropertySection("Shared Presentation Assets", SharedPresentationAssetFields);
             DrawAuthoringActions();
             DrawPropertySection("Core Rules", CoreRuleFields);
@@ -109,7 +110,6 @@ namespace TowerDefense.Editor
             DrawPropertySection("Placement Visuals", PlacementVisualFields);
             DrawFallbackPresentationSections();
             DrawPropertySection("Scene References", SceneReferenceFields);
-            DrawSinglePropertySection("Scene Object Names", "placedTowerRootName", "placementPreviewRootName", "buildZoneName");
             DrawPropertySection("HUD References", HudReferenceFields);
 
             serializedObject.ApplyModifiedProperties();
@@ -147,6 +147,24 @@ namespace TowerDefense.Editor
             }
 
             EditorGUILayout.HelpBox($"Map Summary\n{mapDefinition.BuildAuthoringSummary()}", MessageType.None);
+        }
+
+        private void DrawHudStructureSummary()
+        {
+            bool hasSplitOperationBlock =
+                HasObjectReference("operationTextReference") ||
+                HasObjectReference("liveStatusTextReference") ||
+                HasObjectReference("powerGridTextReference") ||
+                HasObjectReference("latestEventTextReference") ||
+                HasObjectReference("recentLogTextReference");
+
+            if (hasSplitOperationBlock)
+            {
+                EditorGUILayout.HelpBox("当前 HUD 已经开始走拆分文本块结构。你可以直接在 Scene 里分别调整操作区、状态区、供电区和事件区。", MessageType.Info);
+                return;
+            }
+
+            EditorGUILayout.HelpBox("当前 HUD 仍主要依赖旧的 SelectionText 单块文本。若你想把操作区彻底改成 Scene 主导，建议点击下方的 `Materialize HUD Split Texts`。", MessageType.Warning);
         }
 
         private void DrawFallbackPresentationSections()
@@ -366,6 +384,12 @@ namespace TowerDefense.Editor
                     }
                 }
             }
+        }
+
+        private bool HasObjectReference(string propertyName)
+        {
+            SerializedProperty property = serializedObject.FindProperty(propertyName);
+            return property != null && property.objectReferenceValue != null;
         }
 
         private void AppendMissingRef(ref string currentMessage, string propertyName, string displayName)

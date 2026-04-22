@@ -23,10 +23,6 @@ using UnityEditor.SceneManagement;
 /// </summary>
 public sealed class MainMenuController : MonoBehaviour
 {
-#if UNITY_EDITOR
-    private const string DefaultCampaignFlowAssetPath = "Assets/Resources/TowerDefense/Configs/StoryTowerDefenseCampaign.asset";
-#endif
-
     [Header("Scene Flow")]
 
     /// <summary>
@@ -363,8 +359,6 @@ public sealed class MainMenuController : MonoBehaviour
     /// </summary>
     private void OnValidate()
     {
-        EnsureCampaignFlowAssetAssigned();
-
         if (startButton != null)
         {
             startButtonImage = startButton.GetComponent<Image>();
@@ -425,7 +419,6 @@ public sealed class MainMenuController : MonoBehaviour
     /// </summary>
     private void Start()
     {
-        EnsureCampaignFlowAssetAssigned();
         ValidateBoundReferences();
     }
 
@@ -457,16 +450,6 @@ public sealed class MainMenuController : MonoBehaviour
         MarkSceneDirty();
     }
 #endif
-
-    private void EnsureCampaignFlowAssetAssigned()
-    {
-#if UNITY_EDITOR
-        if (!Application.isPlaying && campaignFlowAsset == null)
-        {
-            campaignFlowAsset = AssetDatabase.LoadAssetAtPath<CampaignFlowAsset>(DefaultCampaignFlowAssetPath);
-        }
-#endif
-    }
 
     /// <summary>
     /// 确保主菜单场景拥有一套可编辑、可运行的基础对象。
@@ -533,7 +516,7 @@ public sealed class MainMenuController : MonoBehaviour
     {
         if (sceneCamera == null)
         {
-            sceneCamera = Camera.main;
+            sceneCamera = FindRootComponentByName<Camera>("Main Camera");
         }
 
         if (sceneCamera != null)
@@ -560,7 +543,7 @@ public sealed class MainMenuController : MonoBehaviour
     {
         if (eventSystem == null)
         {
-            eventSystem = FindObjectOfType<EventSystem>();
+            eventSystem = FindRootComponentByName<EventSystem>(EventSystemName);
         }
 
         if (eventSystem != null)
@@ -586,7 +569,7 @@ public sealed class MainMenuController : MonoBehaviour
     {
         if (mainCanvas == null)
         {
-            mainCanvas = FindObjectOfType<Canvas>();
+            mainCanvas = FindRootComponentByName<Canvas>(CanvasName);
         }
 
         if (mainCanvas == null)
@@ -981,6 +964,28 @@ public sealed class MainMenuController : MonoBehaviour
 
         Transform child = parent.Find(objectName);
         return child as RectTransform;
+    }
+
+    private T FindRootComponentByName<T>(string objectName) where T : Component
+    {
+        if (!gameObject.scene.IsValid())
+        {
+            return null;
+        }
+
+        GameObject[] rootObjects = gameObject.scene.GetRootGameObjects();
+        for (int index = 0; index < rootObjects.Length; index++)
+        {
+            GameObject rootObject = rootObjects[index];
+            if (rootObject == null || rootObject.name != objectName)
+            {
+                continue;
+            }
+
+            return rootObject.GetComponent<T>();
+        }
+
+        return null;
     }
 
     /// <summary>

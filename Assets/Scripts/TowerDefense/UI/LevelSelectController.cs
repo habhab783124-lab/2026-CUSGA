@@ -28,10 +28,6 @@ using UnityEditor.SceneManagement;
 /// </summary>
 public sealed class LevelSelectController : MonoBehaviour
 {
-#if UNITY_EDITOR
-    private const string DefaultLevelSelectCatalogAssetPath = "Assets/Resources/TowerDefense/Configs/LevelSelectCatalog.asset";
-#endif
-
     [Serializable]
     public sealed class LevelDefinition
     {
@@ -199,7 +195,6 @@ public sealed class LevelSelectController : MonoBehaviour
 
     private void OnEnable()
     {
-        EnsureLevelCatalogAssetAssigned();
         BindButtons();
     }
 
@@ -210,7 +205,6 @@ public sealed class LevelSelectController : MonoBehaviour
 
     private void OnValidate()
     {
-        EnsureLevelCatalogAssetAssigned();
         if (backButton != null)
         {
             backButtonImage = backButton.GetComponent<Image>();
@@ -284,7 +278,6 @@ public sealed class LevelSelectController : MonoBehaviour
     /// </summary>
     public void EditorMaterializeSceneUi()
     {
-        EnsureLevelCatalogAssetAssigned();
         EnsureDefaultLevelDefinitions();
         EnsureEditorSceneReferences();
         EnsureSceneObjects();
@@ -298,7 +291,6 @@ public sealed class LevelSelectController : MonoBehaviour
     /// </summary>
     public void EditorApplyAuthoringToScene()
     {
-        EnsureLevelCatalogAssetAssigned();
         EnsureDefaultLevelDefinitions();
         EnsureEditorSceneReferences();
         ValidateBoundReferences();
@@ -399,7 +391,7 @@ public sealed class LevelSelectController : MonoBehaviour
     {
         if (sceneCamera == null)
         {
-            sceneCamera = Camera.main;
+            sceneCamera = FindRootComponentByName<Camera>("Main Camera");
         }
 
         if (sceneCamera != null)
@@ -423,7 +415,7 @@ public sealed class LevelSelectController : MonoBehaviour
     {
         if (eventSystem == null)
         {
-            eventSystem = FindObjectOfType<EventSystem>();
+            eventSystem = FindRootComponentByName<EventSystem>(EventSystemName);
         }
 
         if (eventSystem != null)
@@ -446,7 +438,7 @@ public sealed class LevelSelectController : MonoBehaviour
     {
         if (mainCanvas == null)
         {
-            mainCanvas = FindObjectOfType<Canvas>();
+            mainCanvas = FindRootComponentByName<Canvas>(CanvasName);
         }
 
         if (mainCanvas == null)
@@ -909,19 +901,8 @@ public sealed class LevelSelectController : MonoBehaviour
         return new LevelDefinition(sceneName, scenePath, displayName, subtitle, description, statusLabel, accentColor, true);
     }
 
-    private void EnsureLevelCatalogAssetAssigned()
-    {
-#if UNITY_EDITOR
-        if (!Application.isPlaying && levelCatalogAsset == null)
-        {
-            levelCatalogAsset = AssetDatabase.LoadAssetAtPath<LevelSelectCatalogAsset>(DefaultLevelSelectCatalogAssetPath);
-        }
-#endif
-    }
-
     private LevelSelectCatalogAsset ResolveLevelCatalogAsset()
     {
-        EnsureLevelCatalogAssetAssigned();
         return levelCatalogAsset;
     }
 
@@ -1101,6 +1082,28 @@ public sealed class LevelSelectController : MonoBehaviour
 
         Transform child = parent.Find(objectName);
         return child as RectTransform;
+    }
+
+    private T FindRootComponentByName<T>(string objectName) where T : Component
+    {
+        if (!gameObject.scene.IsValid())
+        {
+            return null;
+        }
+
+        GameObject[] rootObjects = gameObject.scene.GetRootGameObjects();
+        for (int index = 0; index < rootObjects.Length; index++)
+        {
+            GameObject rootObject = rootObjects[index];
+            if (rootObject == null || rootObject.name != objectName)
+            {
+                continue;
+            }
+
+            return rootObject.GetComponent<T>();
+        }
+
+        return null;
     }
 
     private void WarnIfMissing(UnityEngine.Object reference, string fieldName)

@@ -140,11 +140,8 @@ public sealed class TowerDefenseSceneBootstrapper
         GameObject slowFieldTowerPrototypeReference,
         GameObject bombardTowerPrototypeReference,
         Transform placedTowerRootReference,
-        string placedTowerRootName,
         Transform placementPreviewRootReference,
-        string placementPreviewRootName,
         BuildZone buildZoneReference,
-        string buildZoneName,
         TowerDefenseHudSceneReferences hudSceneReferences,
         TowerDefenseHudPresenter hudPresenter)
     {
@@ -176,9 +173,9 @@ public sealed class TowerDefenseSceneBootstrapper
         Transform resolvedPlacementPreviewRoot = placementPreviewRootReference;
 
         LogIfMissing(resolvedMainCamera, "Main Camera");
-        LogIfMissing(resolvedBuildZone, buildZoneName);
-        LogIfMissing(resolvedPlacedTowerRoot, placedTowerRootName);
-        LogIfMissing(resolvedPlacementPreviewRoot, placementPreviewRootName);
+        LogIfMissing(resolvedBuildZone, "BuildZone");
+        LogIfMissing(resolvedPlacedTowerRoot, "PlacedTowers Root");
+        LogIfMissing(resolvedPlacementPreviewRoot, "PlacementPreviewRoot");
 
         return new TowerDefenseSceneBootstrapResult(
             mainCamera: resolvedMainCamera,

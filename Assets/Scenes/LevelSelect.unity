@@ -167,6 +167,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainMenuSceneName: MainMenu
+  levelCatalogAsset: {fileID: 11400000, guid: 3d24bf41013a4eb1be01bc5a5cc3e157, type: 2}
   levels:
   - sceneAsset: {fileID: 0}
     sceneName: SampleScene

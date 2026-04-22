@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -62,6 +63,13 @@ public class TowerShopCard : MonoBehaviour,
     /// 这让“卡片用什么图标”从场景零散子节点，变成一个更明确的替换入口。
     /// </summary>
     [SerializeField] private Image iconImageReference;
+
+    /// <summary>
+    /// 卡片主文本引用。
+    /// 这样卡片自己的文案入口就能继续留在卡片组件上，
+    /// 方便直接在 Inspector 中确认和替换，而不是让别的系统跨层级去猜。
+    /// </summary>
+    [SerializeField] private TMP_Text labelTextReference;
 
     /// <summary>
     /// 卡片上的强调图形。
@@ -149,6 +157,8 @@ public class TowerShopCard : MonoBehaviour,
     /// `Update()` 会根据这个状态驱动轻量缩放和呼吸动画。
     /// </summary>
     private bool _isPointerOver;
+
+    public TMP_Text LabelText => labelTextReference;
 
     /// <summary>
     /// 缓存并补齐运行时需要的 UI 组件引用。
@@ -555,6 +565,11 @@ public class TowerShopCard : MonoBehaviour,
         if (backgroundImageReference == null)
         {
             backgroundImageReference = GetComponent<Image>();
+        }
+
+        if (labelTextReference == null)
+        {
+            labelTextReference = GetComponentInChildren<TMP_Text>(true);
         }
 
         Image[] childImages = GetComponentsInChildren<Image>(true);

@@ -317,10 +317,6 @@ public sealed class TowerDefenseHudPresenter
 
     private TMP_Text _gameOverTitle;
     private TMP_Text _gameOverHint;
-    private TMP_Text _relayTowerButtonText;
-    private TMP_Text _defenseTowerButtonText;
-    private TMP_Text _slowFieldTowerButtonText;
-    private TMP_Text _bombardTowerButtonText;
     private TMP_Text _clearSelectionButtonText;
     private TMP_Text _dragPreviewLabel;
 
@@ -404,11 +400,6 @@ public sealed class TowerDefenseHudPresenter
         _dragPreviewLabel = dragPreviewLabel;
 
         EnsureDragPreviewDoesNotBlockRaycasts();
-
-        _relayTowerButtonText = _relayTowerButton != null ? _relayTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
-        _defenseTowerButtonText = _defenseTowerButton != null ? _defenseTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
-        _slowFieldTowerButtonText = _slowFieldTowerButton != null ? _slowFieldTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
-        _bombardTowerButtonText = _bombardTowerButton != null ? _bombardTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
         _clearSelectionButtonText = _clearSelectionButton != null ? _clearSelectionButton.GetComponentInChildren<TMP_Text>(true) : null;
     }
 
@@ -423,26 +414,6 @@ public sealed class TowerDefenseHudPresenter
     /// </summary>
     public void FindSceneReferences()
     {
-        if (_relayTowerButtonText == null && _relayTowerButton != null)
-        {
-            _relayTowerButtonText = _relayTowerButton.GetComponentInChildren<TMP_Text>(true);
-        }
-
-        if (_defenseTowerButtonText == null && _defenseTowerButton != null)
-        {
-            _defenseTowerButtonText = _defenseTowerButton.GetComponentInChildren<TMP_Text>(true);
-        }
-
-        if (_slowFieldTowerButtonText == null && _slowFieldTowerButton != null)
-        {
-            _slowFieldTowerButtonText = _slowFieldTowerButton.GetComponentInChildren<TMP_Text>(true);
-        }
-
-        if (_bombardTowerButtonText == null && _bombardTowerButton != null)
-        {
-            _bombardTowerButtonText = _bombardTowerButton.GetComponentInChildren<TMP_Text>(true);
-        }
-
         if (_clearSelectionButtonText == null && _clearSelectionButton != null)
         {
             _clearSelectionButtonText = _clearSelectionButton.GetComponentInChildren<TMP_Text>(true);
@@ -466,6 +437,10 @@ public sealed class TowerDefenseHudPresenter
         WarnIfMissing(_defenseTowerButton, "DefenseTowerButton");
         WarnIfMissing(_slowFieldTowerButton, "SlowFieldTowerButton");
         WarnIfMissing(_bombardTowerButton, "BombardTowerButton");
+        WarnIfMissing(GetTowerCardLabel(_relayTowerButton), "RelayTowerCard.LabelText");
+        WarnIfMissing(GetTowerCardLabel(_defenseTowerButton), "SingleTargetTowerCard.LabelText");
+        WarnIfMissing(GetTowerCardLabel(_slowFieldTowerButton), "SlowFieldTowerCard.LabelText");
+        WarnIfMissing(GetTowerCardLabel(_bombardTowerButton), "BombardTowerCard.LabelText");
         WarnIfMissing(_clearSelectionButton, "ClearSelectionButton");
         WarnIfMissing(_gameOverPanel, "GameOverPanel");
         WarnIfMissing(_gameOverTitle, "GameOverTitle");
@@ -536,10 +511,10 @@ public sealed class TowerDefenseHudPresenter
     /// </summary>
     public void ConfigureCardLabels(TowerCatalog towerCatalog)
     {
-        ConfigureTowerCard(_relayTowerButton, _relayTowerButtonText, towerCatalog.GetDefinition(TowerType.Relay));
-        ConfigureTowerCard(_defenseTowerButton, _defenseTowerButtonText, towerCatalog.GetDefinition(TowerType.SingleTarget));
-        ConfigureTowerCard(_slowFieldTowerButton, _slowFieldTowerButtonText, towerCatalog.GetDefinition(TowerType.SlowField));
-        ConfigureTowerCard(_bombardTowerButton, _bombardTowerButtonText, towerCatalog.GetDefinition(TowerType.Bombard));
+        ConfigureTowerCard(_relayTowerButton, towerCatalog.GetDefinition(TowerType.Relay));
+        ConfigureTowerCard(_defenseTowerButton, towerCatalog.GetDefinition(TowerType.SingleTarget));
+        ConfigureTowerCard(_slowFieldTowerButton, towerCatalog.GetDefinition(TowerType.SlowField));
+        ConfigureTowerCard(_bombardTowerButton, towerCatalog.GetDefinition(TowerType.Bombard));
 
         if (_clearSelectionButtonText != null)
         {
@@ -697,8 +672,10 @@ public sealed class TowerDefenseHudPresenter
     /// 只是为了确保多行卡片文案在当前卡片里能稳定读清楚。
     /// 但它不会再去改按钮位置、父物体布局或整个右侧区结构。
     /// </summary>
-    private void ConfigureTowerCard(Button button, TMP_Text label, TowerDefinition definition)
+    private void ConfigureTowerCard(Button button, TowerDefinition definition)
     {
+        TMP_Text label = GetTowerCardLabel(button);
+
         if (button != null)
         {
             TowerShopCard towerShopCard = button.GetComponent<TowerShopCard>();
@@ -720,6 +697,17 @@ public sealed class TowerDefenseHudPresenter
         label.characterSpacing = _theme.CardLabelCharacterSpacing;
         label.lineSpacing = _theme.CardLabelLineSpacing;
         label.color = _theme.CardTextColor;
+    }
+
+    private static TMP_Text GetTowerCardLabel(Button button)
+    {
+        if (button == null)
+        {
+            return null;
+        }
+
+        TowerShopCard towerShopCard = button.GetComponent<TowerShopCard>();
+        return towerShopCard != null ? towerShopCard.LabelText : null;
     }
 
     /// <summary>
