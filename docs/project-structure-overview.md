@@ -52,6 +52,8 @@ Updated: 2026-04-20
   放战斗塔、继电器、供电协调器、塔目录和塔类型工具。
 - `Assets/Scripts/TowerDefense/Enemies`
   放敌人本体逻辑。
+- `Assets/Scripts/TowerDefense/Enemies/Modules`
+  放敌人特殊机制模块。
 - `Assets/Scripts/TowerDefense/UI`
   放主菜单、关卡选择页、HUD 和卡片脚本。
 - `Assets/Editor/TowerDefense/Authoring`
@@ -147,6 +149,12 @@ Updated: 2026-04-20
 ### 第三阶段塔类型体系
 - `Assets/Scripts/TowerDefense/Towers/DefenseTower.cs`
 - `Assets/Scripts/TowerDefense/Enemies/Enemy.cs`
+- `Assets/Scripts/TowerDefense/Enemies/Modules/EnemyMechanicModule.cs`
+- `Assets/Scripts/TowerDefense/Enemies/Modules/EnemyStealthModule.cs`
+- `Assets/Scripts/TowerDefense/Enemies/Modules/EnemyShieldAuraModule.cs`
+- `Assets/Scripts/TowerDefense/Enemies/Modules/EnemyRepairModule.cs`
+- `Assets/Scripts/TowerDefense/Enemies/Modules/EnemySplitOnDeathModule.cs`
+- `Assets/Editor/TowerDefense/Authoring/EnemyMechanicModuleEditors.cs`
 - `Assets/Scripts/TowerDefense/Towers/TowerCatalog.cs`
 - `Assets/Scripts/TowerDefense/Towers/TowerTypeUtility.cs`
 

@@ -1,4 +1,4 @@
-﻿%YAML 1.1
+%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!1 &18041264370856023
 GameObject:
@@ -211,6 +211,7 @@ GameObject:
   m_Component:
   - component: {fileID: 12472910763174817}
   - component: {fileID: 8745601186219457358}
+  - component: {fileID: 6611000000000000002}
   - component: {fileID: 3537248986107967254}
   m_Layer: 0
   m_Name: MechanicEnemy
@@ -252,6 +253,7 @@ MonoBehaviour:
   bodyRendererReference: {fileID: 4703230808979152243}
   visualScaleRootReference: {fileID: 2955791358491000165}
   bodyColor: {r: 0.9, g: 0.25, b: 0.25, a: 1}
+  shieldTintColor: {r: 0.42, g: 0.9, b: 1, a: 1}
   slowTintColor: {r: 0.42, g: 0.95, b: 0.9, a: 1}
   standardHitFlashColor: {r: 1, g: 0.96, b: 0.9, a: 1}
   bombardHitFlashColor: {r: 1, g: 0.74, b: 0.45, a: 1}
@@ -263,6 +265,7 @@ MonoBehaviour:
   slowHitPulseScale: 1.04
   hitPulseDuration: 0.12
   healthBarFillColor: {r: 0.2, g: 0.9, b: 0.35, a: 1}
+  healthBarShieldColor: {r: 0.44, g: 0.9, b: 1, a: 1}
   healthBarBackgroundColor: {r: 0.15, g: 0.15, b: 0.15, a: 1}
   healthBarFillSpriteOverride: {fileID: 0}
   healthBarBackgroundSpriteOverride: {fileID: 0}
@@ -270,6 +273,23 @@ MonoBehaviour:
   healthBarFillReference: {fileID: 73256587356198457}
   healthBarFillRendererReference: {fileID: 6767933192600016444}
   healthBarBackgroundRendererReference: {fileID: 2381135231609418050}
+--- !u!114 &6611000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5863667738006183233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a4f3fc0888642e8b96e4542c771c7fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  useLocalOverrides: 0
+  localRepairEnabled: 1
+  localRepairAmount: 2
+  localRepairRadius: 2.2
+  localRepairCooldown: 2.6
 --- !u!212 &3537248986107967254
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -406,4 +426,3 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
-

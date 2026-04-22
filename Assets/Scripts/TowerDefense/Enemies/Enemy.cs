@@ -78,6 +78,8 @@ public class Enemy : MonoBehaviour
     private Transform _healthBarFill;
     private SpriteRenderer _healthBarFillRenderer;
     private SpriteRenderer _healthBarBackgroundRenderer;
+    private EnemyMechanicModule[] _mechanicModules = new EnemyMechanicModule[0];
+    private EnemyStealthModule _stealthModule;
 
     private EnemyPath _path;
     private EnemyCatalogAsset _enemyCatalog;
@@ -101,13 +103,6 @@ public class Enemy : MonoBehaviour
     private bool _ignoresSlowEffects;
     private bool _canBeRepairedByMechanic;
 
-    private bool _stealthTriggered;
-    private float _stealthTimer;
-    private float _revealTimer;
-
-    private float _shieldAuraTimer;
-    private float _repairTimer;
-
     private Vector3 _nativeScale = Vector3.one;
     private Vector3 _configuredScale = Vector3.one;
     private float _bodyScaleMultiplier = 1f;
@@ -126,7 +121,15 @@ public class Enemy : MonoBehaviour
     }
 
     public EnemyArchetypeId ArchetypeId => _definition != null ? _definition.ArchetypeId : EnemyArchetypeId.None;
-    public bool CanBeDirectlyTargeted => _stealthTimer <= 0f || _revealTimer > 0f;
+    public bool CanBeDirectlyTargeted => _stealthModule == null || _stealthModule.CanBeDirectlyTargeted;
+    public int CurrentHealth => _currentHealth;
+    public int MaxHealth => _maxHealth;
+    public bool IsAlive => _currentHealth > 0;
+    public bool CanReceiveMechanicRepair => _canBeRepairedByMechanic && _currentHealth > 0;
+    internal EnemyCatalogAsset.EnemyArchetypeDefinition CurrentDefinition => _definition;
+    internal EnemyPath CurrentPath => _path;
+    internal Transform EnemyRoot => _enemyRoot;
+    internal int CurrentWaypointIndex => _targetWaypointIndex;
 
     public void SetHealthBarVisible(bool visible)
     {
@@ -218,11 +221,14 @@ public class Enemy : MonoBehaviour
         {
             healthBarFillRendererReference = healthBarFillReference.GetComponent<SpriteRenderer>();
         }
+
+        CacheMechanicModules();
     }
 
     private void Awake()
     {
         CacheReferences();
+        CacheMechanicModules();
         CaptureNativeScale();
         ApplyVisualTheme();
         RefreshBodyVisualState();
@@ -245,7 +251,7 @@ public class Enemy : MonoBehaviour
     private void Update()
     {
         AdvanceFeedbackTimers();
-        ExecuteSupportAbilities();
+        TickMechanicModules(Time.deltaTime);
         RefreshBodyVisualState();
 
         if (TowerDefenseGame.Instance != null && TowerDefenseGame.Instance.IsGameOver)
@@ -314,15 +320,7 @@ public class Enemy : MonoBehaviour
             _currentHealth = Mathf.Max(0, _currentHealth - adjustedDamage);
         }
 
-        if (_definition != null &&
-            _definition.EntersStealthAfterFirstDirectHit &&
-            !_stealthTriggered &&
-            !isAreaDamage)
-        {
-            _stealthTriggered = true;
-            _stealthTimer = Mathf.Max(_stealthTimer, _definition.StealthDuration);
-            _revealTimer = 0f;
-        }
+        NotifyModulesDamageResolved(isAreaDamage);
 
         TriggerHitFeedback(feedbackType);
         UpdateHealthBar();
@@ -356,15 +354,13 @@ public class Enemy : MonoBehaviour
     /// </summary>
     public void ApplyDetection(float duration)
     {
-        if (_currentHealth <= 0 || _definition == null || !_definition.EntersStealthAfterFirstDirectHit)
+        if (_currentHealth <= 0 || _stealthModule == null)
         {
             return;
         }
 
-        _revealTimer = Mathf.Max(_revealTimer, duration);
+        _stealthModule.ApplyDetection(duration);
     }
-
-    public bool CanReceiveMechanicRepair => _canBeRepairedByMechanic && _currentHealth > 0;
 
     private void InitializeInternal(
         EnemyPath path,
@@ -383,6 +379,7 @@ public class Enemy : MonoBehaviour
         int targetWaypointIndexOverride)
     {
         CacheReferences();
+        CacheMechanicModules();
         CaptureNativeScale();
         ApplyVisualTheme();
 
@@ -406,11 +403,6 @@ public class Enemy : MonoBehaviour
         _hitFlashTimer = 0f;
         _pulseTimer = 0f;
         _pulseScaleMultiplier = 1f;
-        _stealthTriggered = false;
-        _stealthTimer = 0f;
-        _revealTimer = 0f;
-        _shieldAuraTimer = 0f;
-        _repairTimer = 0f;
 
         _bodyScaleMultiplier = Mathf.Max(0.2f, bodyScaleMultiplier);
         _configuredScale = _nativeScale * _bodyScaleMultiplier;
@@ -427,6 +419,7 @@ public class Enemy : MonoBehaviour
 
         transform.position = spawnPositionOverride ?? (_path != null ? _path.GetSpawnPosition() : transform.position);
 
+        BindMechanicModules();
         RefreshBodyVisualState();
         UpdateHealthBar();
     }
@@ -443,9 +436,55 @@ public class Enemy : MonoBehaviour
         Destroy(gameObject);
     }
 
+    /// <summary>
+    /// 按当前敌人目录继续生成某个子类型敌人。
+    ///
+    /// 这个入口主要给死亡分裂模块使用，
+    /// 让模块不必知道“应该怎么找目录、怎么选 prefab、怎么初始化子怪”这些基础细节。
+    /// </summary>
+    internal void SpawnConfiguredChild(
+        EnemyArchetypeId childType,
+        Vector3 spawnPosition,
+        int targetWaypointIndexOverride,
+        string objectName)
+    {
+        if (_enemyCatalog == null || _enemyRoot == null || _path == null || childType == EnemyArchetypeId.None)
+        {
+            return;
+        }
+
+        EnemyCatalogAsset.EnemyArchetypeDefinition childDefinition = _enemyCatalog.GetDefinition(childType);
+        GameObject childPrototype = childDefinition != null && childDefinition.RuntimePrefab != null
+            ? childDefinition.RuntimePrefab
+            : _enemyPrototypePrefab;
+        if (childPrototype == null)
+        {
+            return;
+        }
+
+        GameObject childObject = Instantiate(childPrototype, spawnPosition, Quaternion.identity, _enemyRoot);
+        childObject.name = string.IsNullOrWhiteSpace(objectName) ? childType.ToString() : objectName;
+        childObject.SetActive(true);
+
+        Enemy childEnemy = childObject.GetComponent<Enemy>();
+        if (childEnemy == null)
+        {
+            return;
+        }
+
+        childEnemy.Initialize(
+            path: _path,
+            enemyCatalog: _enemyCatalog,
+            archetypeId: childType,
+            enemyPrototypePrefab: childPrototype,
+            enemyRoot: _enemyRoot,
+            spawnPositionOverride: spawnPosition,
+            targetWaypointIndexOverride: targetWaypointIndexOverride);
+    }
+
     private void Die()
     {
-        SpawnSplitChildrenOnDeath();
+        NotifyModulesBeforeDeath();
 
         if (_scrapRewardOnDeath > 0 && TowerDefenseGame.Instance != null && !TowerDefenseGame.Instance.IsGameOver)
         {
@@ -455,131 +494,7 @@ public class Enemy : MonoBehaviour
         Destroy(gameObject);
     }
 
-    private void SpawnSplitChildrenOnDeath()
-    {
-        if (_definition == null ||
-            _definition.SplitChildType == EnemyArchetypeId.None ||
-            _definition.SplitChildCount <= 0 ||
-            _enemyRoot == null ||
-            _enemyCatalog == null ||
-            _path == null)
-        {
-            return;
-        }
-
-        EnemyCatalogAsset.EnemyArchetypeDefinition childDefinition = _enemyCatalog.GetDefinition(_definition.SplitChildType);
-        GameObject childPrototype = childDefinition != null && childDefinition.RuntimePrefab != null
-            ? childDefinition.RuntimePrefab
-            : _enemyPrototypePrefab;
-        if (childPrototype == null)
-        {
-            return;
-        }
-
-        for (int childIndex = 0; childIndex < _definition.SplitChildCount; childIndex++)
-        {
-            Vector2 randomOffset = UnityEngine.Random.insideUnitCircle * _definition.SplitSpawnRadius;
-            Vector3 spawnPosition = transform.position + new Vector3(randomOffset.x, randomOffset.y, 0f);
-
-            GameObject childObject = Instantiate(childPrototype, spawnPosition, Quaternion.identity, _enemyRoot);
-            childObject.name = $"{_definition.SplitChildType}_Split_{childIndex + 1}";
-            childObject.SetActive(true);
-
-            Enemy childEnemy = childObject.GetComponent<Enemy>();
-            if (childEnemy != null)
-            {
-                childEnemy.Initialize(
-                    path: _path,
-                    enemyCatalog: _enemyCatalog,
-                    archetypeId: _definition.SplitChildType,
-                    enemyPrototypePrefab: childPrototype,
-                    enemyRoot: _enemyRoot,
-                    spawnPositionOverride: spawnPosition,
-                    targetWaypointIndexOverride: _targetWaypointIndex);
-            }
-        }
-    }
-
-    private void ExecuteSupportAbilities()
-    {
-        if (_definition == null || _currentHealth <= 0)
-        {
-            return;
-        }
-
-        if (_definition.ShieldAmount > 0)
-        {
-            _shieldAuraTimer -= Time.deltaTime;
-            if (_shieldAuraTimer <= 0f)
-            {
-                ApplyShieldAura();
-                _shieldAuraTimer = _definition.ShieldRefreshInterval;
-            }
-        }
-
-        if (_definition.RepairAmount > 0)
-        {
-            _repairTimer -= Time.deltaTime;
-            if (_repairTimer <= 0f)
-            {
-                TryRepairNearbyMechanicalAlly();
-                _repairTimer = _definition.RepairCooldown;
-            }
-        }
-    }
-
-    private void ApplyShieldAura()
-    {
-        float shieldRadiusSqr = _definition.ShieldAuraRadius * _definition.ShieldAuraRadius;
-        for (int enemyIndex = 0; enemyIndex < ActiveEnemyCount; enemyIndex++)
-        {
-            Enemy ally = GetActiveEnemy(enemyIndex);
-            if (ally == null || ally == this || ally._currentHealth <= 0)
-            {
-                continue;
-            }
-
-            float distanceSqr = (ally.transform.position - transform.position).sqrMagnitude;
-            if (distanceSqr > shieldRadiusSqr)
-            {
-                continue;
-            }
-
-            ally.ApplyShieldIfWeaker(_definition.ShieldAmount);
-        }
-    }
-
-    private void TryRepairNearbyMechanicalAlly()
-    {
-        Enemy bestTarget = null;
-        float bestDistanceSqr = float.MaxValue;
-        float repairRadiusSqr = _definition.RepairRadius * _definition.RepairRadius;
-
-        for (int enemyIndex = 0; enemyIndex < ActiveEnemyCount; enemyIndex++)
-        {
-            Enemy ally = GetActiveEnemy(enemyIndex);
-            if (ally == null || ally == this || !ally.CanReceiveMechanicRepair || ally._currentHealth >= ally._maxHealth)
-            {
-                continue;
-            }
-
-            float distanceSqr = (ally.transform.position - transform.position).sqrMagnitude;
-            if (distanceSqr > repairRadiusSqr || distanceSqr >= bestDistanceSqr)
-            {
-                continue;
-            }
-
-            bestDistanceSqr = distanceSqr;
-            bestTarget = ally;
-        }
-
-        if (bestTarget != null)
-        {
-            bestTarget.Repair(_definition.RepairAmount);
-        }
-    }
-
-    private void Repair(int amount)
+    internal void ReceiveRepair(int amount)
     {
         if (amount <= 0 || _currentHealth <= 0)
         {
@@ -591,7 +506,7 @@ public class Enemy : MonoBehaviour
         UpdateHealthBar();
     }
 
-    private void ApplyShieldIfWeaker(int shieldAmount)
+    internal void ApplyShieldIfWeaker(int shieldAmount)
     {
         if (shieldAmount <= 0 || _currentHealth <= 0)
         {
@@ -669,6 +584,113 @@ public class Enemy : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 缓存当前敌人 prefab 上实际挂着的机制模块。
+    ///
+    /// 这里刻意不通过敌人类型名字去猜有哪些能力，
+    /// 而是以 prefab 上真实挂载的组件为准。
+    /// 这样以后你自己做新敌人时，也会更符合 Unity 的编辑器工作流：
+    /// 看组件就能知道这只怪到底拥有哪些额外机制。
+    /// </summary>
+    private void CacheMechanicModules()
+    {
+        _mechanicModules = GetComponents<EnemyMechanicModule>();
+        _stealthModule = null;
+
+        for (int moduleIndex = 0; moduleIndex < _mechanicModules.Length; moduleIndex++)
+        {
+            if (_mechanicModules[moduleIndex] is EnemyStealthModule stealthModule)
+            {
+                _stealthModule = stealthModule;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 当敌人的目录定义和运行时上下文已经准备好后，
+    /// 统一把它们绑定给当前 prefab 上挂着的机制模块。
+    /// </summary>
+    private void BindMechanicModules()
+    {
+        for (int moduleIndex = 0; moduleIndex < _mechanicModules.Length; moduleIndex++)
+        {
+            if (_mechanicModules[moduleIndex] != null)
+            {
+                _mechanicModules[moduleIndex].BindOwner(this);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 每帧把时间推进委托给机制模块。
+    /// 这样持续运行的特殊能力就不再继续堆进 `Enemy.Update()` 自己体内。
+    /// </summary>
+    private void TickMechanicModules(float deltaTime)
+    {
+        if (_currentHealth <= 0)
+        {
+            return;
+        }
+
+        for (int moduleIndex = 0; moduleIndex < _mechanicModules.Length; moduleIndex++)
+        {
+            if (_mechanicModules[moduleIndex] != null && _mechanicModules[moduleIndex].enabled)
+            {
+                _mechanicModules[moduleIndex].Tick(deltaTime);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 伤害结算完成后，把命中上下文继续通知给机制模块。
+    /// 目前主要是给隐身模块判断“首次直接命中后进入隐身”。
+    /// </summary>
+    private void NotifyModulesDamageResolved(bool isAreaDamage)
+    {
+        for (int moduleIndex = 0; moduleIndex < _mechanicModules.Length; moduleIndex++)
+        {
+            if (_mechanicModules[moduleIndex] != null && _mechanicModules[moduleIndex].enabled)
+            {
+                _mechanicModules[moduleIndex].OnDamageResolved(isAreaDamage);
+            }
+        }
+    }
+
+    /// <summary>
+    /// 在敌人正式死亡销毁前，先给机制模块一个收尾机会。
+    /// 例如死亡分裂就在这里生成子怪。
+    /// </summary>
+    private void NotifyModulesBeforeDeath()
+    {
+        for (int moduleIndex = 0; moduleIndex < _mechanicModules.Length; moduleIndex++)
+        {
+            if (_mechanicModules[moduleIndex] != null && _mechanicModules[moduleIndex].enabled)
+            {
+                _mechanicModules[moduleIndex].OnBeforeDeath();
+            }
+        }
+    }
+
+    /// <summary>
+    /// 汇总所有机制模块对身体透明度的影响。
+    /// 当前主要是隐身模块会把这个值压低。
+    /// </summary>
+    private float GetMechanicBodyAlphaMultiplier()
+    {
+        float alphaMultiplier = 1f;
+        for (int moduleIndex = 0; moduleIndex < _mechanicModules.Length; moduleIndex++)
+        {
+            if (_mechanicModules[moduleIndex] == null || !_mechanicModules[moduleIndex].enabled)
+            {
+                continue;
+            }
+
+            alphaMultiplier = Mathf.Min(alphaMultiplier, _mechanicModules[moduleIndex].BodyAlphaMultiplier);
+        }
+
+        return Mathf.Clamp(alphaMultiplier, 0.05f, 1f);
+    }
+
     private void CaptureNativeScale()
     {
         Transform scaleTarget = visualScaleRootReference != null ? visualScaleRootReference : transform;
@@ -744,16 +766,6 @@ public class Enemy : MonoBehaviour
             }
         }
 
-        if (_stealthTimer > 0f)
-        {
-            _stealthTimer = Mathf.Max(0f, _stealthTimer - Time.deltaTime);
-        }
-
-        if (_revealTimer > 0f)
-        {
-            _revealTimer = Mathf.Max(0f, _revealTimer - Time.deltaTime);
-        }
-
         if (_hitFlashTimer > 0f)
         {
             _hitFlashTimer = Mathf.Max(0f, _hitFlashTimer - Time.deltaTime);
@@ -782,11 +794,7 @@ public class Enemy : MonoBehaviour
         {
             bodyResult = Color.Lerp(bodyResult, slowTintColor, 0.42f);
         }
-
-        if (_stealthTimer > 0f && _revealTimer <= 0f && _definition != null && _definition.EntersStealthAfterFirstDirectHit)
-        {
-            bodyResult.a = Mathf.Min(bodyResult.a, _definition.HiddenAlpha);
-        }
+        bodyResult.a = Mathf.Min(bodyResult.a, GetMechanicBodyAlphaMultiplier());
 
         if (_hitFlashTimer > 0f && _hitFlashDuration > 0.0001f)
         {
