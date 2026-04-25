@@ -1,191 +1,419 @@
-﻿# 对话Demo完整操作指导（可直接在 Unity 按此执行）
+﻿# 对话 Demo 完整操作指导（当前版本）
 
 > 目标：
-> **主角走到 NPC 附近，按 `E` 开始对话，在 NPC 头上显示对话框，并通过左键点击任意位置推进对话。**
+> **玩家左右移动，靠近 NPC 后显示提示，按 `E` 开始对话，在 NPC 头顶显示对话框，并通过左键点击推进对白。**
 
-本项目已提供的脚本：
-- `Assets/DialogueManager.cs`：全局对话管理器（统一打字机与翻页）
-- `Assets/TypewriterEffect.cs`：对话触发入口（保留兼容）
-- `Assets/PlayerController.cs`：角色控制与交互检测
-- `Assets/PlayerMovement.cs`：兼容过渡脚本（继承 `PlayerController`）
-- `Assets/IInteractable.cs`：可交互对象接口
-- `Assets/NPCInteractable.cs`：NPC 示例交互组件
+## 当前版本说明（非常重要）
+
+当前项目中，这个 Demo 的主流程是：
+
+- `Assets/PlayerController.cs`
+  - 负责玩家移动、翻转、动画、冻结
+- `Assets/NPCInteractable.cs`
+  - 负责 Trigger 检测、提示显示、按 `E` 开始对话、左键推进、逐字显示
+- `Assets/DialogueManager.cs`
+- `Assets/TypewriterEffect.cs`
+  - 这两者是**可选的全局对话方案**，不是当前 NPC 头顶对话的主路径
+
+也就是说：
+
+- 当前 `SampleScene` 里的 `NPC2` 头顶对话，主要靠 `NPCInteractable` 完成
+- `DialogueManager + TypewriterEffect` 更适合做共享面板、排队对白、开场对白等扩展功能
+
+另外，当前场景中对象命名有一点历史遗留：
+
+- 玩家对象叫 `NPC`
+- 可交互 NPC 叫 `NPC2`
+
+你可以保留这套命名，也可以在新场景中改成更直观的：
+
+- `Player`
+- `NPC_A`
 
 ---
 
-## 一、准备清单
+## 一、最快的重建方式
 
-确认当前场景至少有这些组件：
+如果你只是想快速恢复一套默认测试用 Demo：
 
-1. **主角角色对象**（可先用当前场景里的 `NPC` 临时代替测试）
+1. 打开 Unity 顶部菜单
+2. 点击：`Tools > Demo Setup > Rebuild NPC Demo Pair`
+3. 工具会自动重建：
+   - 玩家对象
+   - NPC 对象
+   - 提示 UI
+   - 对话 UI
+   - 黑白占位素材
+
+对应编辑器脚本：
+
+- `Assets/Editor/DemoNpcSetupUtility.cs`
+
+如果你想完全手动搭建，请继续看后面的步骤。
+
+---
+
+## 二、手动搭建时需要的最小对象
+
+你至少需要这些对象：
+
+1. 一个玩家对象
+2. 一个 NPC 对象
+3. 一个挂在 NPC 下的提示 UI
+4. 一个挂在 NPC 下的 World Space 对话 UI
+
+推荐层级：
+
+```text
+Player
+NPC_A
+├─ InteractPrompt
+│  └─ PromptCanvas
+│     └─ PromptBg
+│        └─ PromptText
+└─ DialogueCanvas
+   └─ DialogueBackground
+      └─ DialogueText
+```
+
+---
+
+## 三、第一阶段：让玩家可移动
+
+### 1. 创建玩家对象
+
+1. 在 Hierarchy 新建空对象，例如命名 `Player`
+2. 添加组件：
    - `SpriteRenderer`
-   - `Rigidbody2D`（建议，能更稳定）
-   - `Collider2D`（建议加）
-   - `PlayerController`（或保留 `PlayerMovement` 兼容层也可以）
-2. **NPC 对象**（可交互对象）
-   - `Collider2D`
-   - `SpriteRenderer`（可选）
+   - `Rigidbody2D`
+   - `BoxCollider2D`
+   - `PlayerController`
+   - `Animator`（推荐）
+
+### 2. 推荐参数
+
+`Rigidbody2D`：
+- `Body Type = Dynamic`
+- `Gravity Scale = 0`
+- `Collision Detection = Continuous`
+- `Freeze Rotation Z = true`
+
+`BoxCollider2D`：
+- `Is Trigger = false`
+- 尺寸按角色调整
+
+`PlayerController`：
+- `Move Speed = 5`
+- `Use Boundary = true`
+- `Min X = -8`
+- `Max X = 8`
+- `Horizontal Axis = Horizontal`
+- `Input Dead Zone = 0.01`
+- `Move Smoothing = 20`
+- `Walking Bool Parameter = isWalking`
+
+### 3. 动画建议
+
+如果要做待机/行走切换：
+
+1. 在 Animator 中创建 `Bool` 参数：`isWalking`
+2. 建两个状态：
+   - `Idle`
+   - `Walk`
+3. 条件：
+   - `Idle -> Walk`：`isWalking = true`
+   - `Walk -> Idle`：`isWalking = false`
+
+### 4. 运行验证
+
+- 按 `A/D` 或左右方向键
+- 角色应能左右移动
+- 左右移动时朝向自动翻转
+- 若配置了动画，移动时进入 Walk，停止时回到 Idle
+
+---
+
+## 四、第二阶段：建立可交互 NPC
+
+### 1. 创建 NPC 对象
+
+1. 在 Hierarchy 新建空对象，例如命名 `NPC_A`
+2. 添加组件：
+   - `SpriteRenderer`
+   - `BoxCollider2D`
    - `NPCInteractable`
-3. **对话 UI（挂在 NPC 头上的）**
-   - 一个 `TMP Text`（`TextMeshPro - Text (UI)`）用于显示文字
-   - 一个对话框背景图（Image）
-   - 二者可放在同一个面板下（例如 `DialogueBox`）
+   - `Animator`（可选）
+
+### 2. 关键设置
+
+`BoxCollider2D`：
+- `Is Trigger = true`
+- 尺寸按 NPC 实际大小调整
+
+说明：
+- 这里必须勾选 `Is Trigger`
+- 当前版本靠 `OnTriggerEnter2D / OnTriggerExit2D` 做接近检测
+
+### 3. 配置 NPCInteractable
+
+先填这些：
+
+- `Interactable = true`
+- `Interaction Prompt = 按 E 交互`
+- `Player Layer =` 包含玩家所在层
+- `Typing Speed = 0.05`
+
+后面 UI 做好以后，再回来绑定：
+
+- `Interact Prompt Root`
+- `Interact Prompt Text`
+- `Dialogue Canvas Root`
+- `Dialogue Text`
+- `Dialogue Lines`
 
 ---
 
-## 二、第一阶段：让角色可移动且播放走路动画
+## 五、第三阶段：创建 NPC 头顶提示 UI
 
-### 1. 配置 PlayerController
+### 1. 创建 InteractPrompt 根节点
 
-1. 选中主角对象，添加组件：
-   - `PlayerController`（推荐）
-   - 或保留原有 `PlayerMovement`，它会自动继承 `PlayerController`。
-2. Inspector 配置：
-   - `Move Speed`：比如 `5`
-   - `Use Boundary` 勾选（边界）
-   - `Min X`、`Max X` 按场景范围设置
-3. Animator：
-   - 指定 `Animator`（若留空，会自动 `GetComponent<Animator>()`）
-   - `Walking Bool Parameter` 默认是 `isWalking`
-   - 在 Animator 里创建同名 `Bool` 参数并与待机/行走状态机绑定
+1. 在 `NPC_A` 下新建空对象：`InteractPrompt`
+2. 设置：
+   - `Local Position = (0, 2.2, 0)`
+   - `Local Scale = (0.01, 0.01, 0.01)`
 
-### 2. 运行验证
+### 2. 创建 PromptCanvas
 
-- 按 `A/D` 或左右方向键：角色应移动
-- 走路时 `isWalking=true`，停止时 `isWalking=false`
-- 左右移动时角色朝向会翻转
+1. 在 `InteractPrompt` 下新建对象：`PromptCanvas`
+2. 添加组件：
+   - `Canvas`
+   - `CanvasScaler`
+   - `GraphicRaycaster`
+3. 设置：
+   - `Canvas.Render Mode = World Space`
+   - `RectTransform` 尺寸可先设 `180 x 40`
 
----
+### 3. 创建 PromptBg
 
-## 三、第二阶段：建立“可交互对象”
+1. 在 `PromptCanvas` 下创建 `UI > Image`
+2. 命名：`PromptBg`
+3. 可选两种做法：
+   - 没有美术图：直接用半透明黑色背景
+   - 有美术图：把提示框背景拖到 `Source Image`
 
-### 1. 给 NPC 加上交互触发
+### 4. 创建 PromptText
 
-1. 在 NPC 上添加 `Collider2D`（如 BoxCollider2D）
-2. 添加 `NPCInteractable` 组件
-3. 填写关键字段：
-   - `Interaction Prompt`：例如「按 E 与我交话」
-   - `Use Dialogue` 勾选
-   - `Dialogue Lines`：填入要显示的台词列表（每行一条）
-   - `Dialogue Text`：拖入 NPC 头上 `TMP Text`
-   - `Dialogue Panel`：拖入 NPC 头上对话框父节点（如 `DialogueBox`）
-4. `Typing Speed` 和 `Hide Panel When Finish` 可按需调整
+1. 在 `PromptBg` 下创建 `TextMeshPro - Text (UI)`
+2. 命名：`PromptText`
+3. 设置：
+   - `Text = 按 E 交互`
+   - `Alignment = Center`
+   - `Color = 白色`
+   - `Font Size = 24 ~ 32`
+   - 使用支持中文的 TMP 字体资源
 
-### 2. 玩家检测设置（关键）
+### 5. 绑定回 NPCInteractable
 
-在 `PlayerController` 中：
+回到 `NPC_A` 的 `NPCInteractable`：
 
-- `Interactable Layer` 要包含 NPC 所在层
-- 若你用的是 Tag 过滤：
-  - `Interactable Tag` 填 `NPC`，并在 NPC 上设置同样 Tag
-  - 如果不想用 Tag 过滤，留空
-- `Use Raycast Detection`：默认 `true`，用射线检测
-- `Interact Distance`：约 `1.2`
-- `Interaction Offset`：可留默认，或调到角色前方一点
+- `Interact Prompt Root = InteractPrompt`
+- `Interact Prompt Text = PromptText`
 
 ---
 
-## 四、第三阶段：让 NPC 对话显示在 NPC 头上
+## 六、第四阶段：创建 NPC 头顶对话 UI
 
-默认 `DialogueManager` 显示逻辑由 `NPCInteractable` 传入 `dialogueText / dialoguePanel` 决定。
+### 1. 创建 DialogueCanvas 根节点
 
-### 推荐挂载结构（示例）
+1. 在 `NPC_A` 下新建空对象：`DialogueCanvas`
+2. 设置：
+   - `Local Position = (0, 1.9, 0)`
+   - `Local Scale = (0.01, 0.01, 0.01)`
 
-```
-NPC
-├─ Sprite
-├─ DialogueBox（Panel / Image）
-│  └─ DialogueText（TextMeshPro - Text UI）
-└─ 其他子物件
-```
+### 2. 添加 Canvas 组件
 
-并确保：
-- `NPCInteractable.dialogueText` 指向 `DialogueText`
-- `NPCInteractable.dialoguePanel` 指向 `DialogueBox`
+给 `DialogueCanvas` 添加：
 
-`DialogueBox` 是 NPC 的子物体时，对话会随 NPC 移动（“头上”显示效果更自然）。
+- `Canvas`
+- `CanvasScaler`
+- `GraphicRaycaster`
+
+并设置：
+
+- `Canvas.Render Mode = World Space`
+- `Canvas.Sorting Order = 50`
+
+### 3. 创建 DialogueBackground
+
+1. 在 `DialogueCanvas` 下创建 `UI > Image`
+2. 命名：`DialogueBackground`
+3. 你可以：
+   - 用纯色半透明底图
+   - 或换成正式对话框 Sprite
+4. 如果是边框型 UI 图，建议：
+   - 设置 `9-slice`
+   - 使用 `Image Type = Sliced`
+
+### 4. 创建 DialogueText
+
+1. 在 `DialogueBackground` 下创建 `TextMeshPro - Text (UI)`
+2. 命名：`DialogueText`
+3. 设置：
+   - `Text = 空`
+   - `Alignment = Top Left`
+   - `Enable Word Wrapping = true`
+   - `Font Size = 24 ~ 32`
+   - `Color = 白色`
+   - 使用支持中文的 TMP 字体
+
+### 5. 默认隐藏对话框
+
+将 `DialogueCanvas` 默认设为不激活。
+
+说明：
+- 当前脚本会在开始对话时自动显示它
+- 对话结束时自动隐藏它
+
+### 6. 绑定回 NPCInteractable
+
+回到 `NPC_A` 的 `NPCInteractable`：
+
+- `Dialogue Canvas Root = DialogueCanvas`
+- `Dialogue Text = DialogueText`
 
 ---
 
-## 五、完整联动流程（按键动作）
+## 七、第五阶段：填写对白内容
 
-1. 角色向右/左移动，走近 NPC
-2. `PlayerController` 持续检测到附近交互对象（射线/范围）
-3. 玩家按 `E`
-4. `PlayerController` 调用该 NPC 的 `IInteractable.Interact(player)`
-5. `NPCInteractable` 调用 `DialogueManager.ShowDialogue(...)`
-6. 对话框出现，逐字显示第一句
-7. 玩家左键点击（任意位置）：
-   - 若当前句仍在打字，立即显示完整当前句
-   - 若当前句已显示完，进入下一句
-8. 最后一句结束后，按 `DialogueManager` 配置可自动隐藏对话框
+在 `NPC_A` 的 `NPCInteractable` 中，找到：
 
----
+- `Dialogue Lines`
 
-## 六、左键推进确认（默认行为）
+一项填一句。例如：
 
-`DialogueManager` 使用的是：
+1. `你好，欢迎来到这里。`
+2. `当你靠近我时，我会显示交互提示。`
+3. `按 E 可以开始对话。`
+4. `左键可以补齐当前句，或继续下一句。`
 
-- `Input.GetMouseButtonDown(0)`（左键）
-
-所以只要左键有点击动作，就会触发对话推进。当前设置满足「任意地方点击」。
+推荐：
+- 一句不要过长
+- 优先“一项一句”
+- 中文字体要确保覆盖你输入的字符
 
 ---
 
-## 七、常见问题排查
+## 八、当前实际运行流程
 
-### 1）按 E 没反应
-- NPC 无 `Collider2D`
-- `NPCInteractable` 未挂载
-- `PlayerController` 的 `Interactable Layer` 没包含 NPC 所在 Layer
-- `interactableTag` 被设置但 NPC Tag 不匹配（或留空以避免误过滤）
+当前脚本实际流程如下：
+
+1. 玩家左右移动
+2. 玩家进入 NPC 的 Trigger 区域
+3. `NPCInteractable` 记录当前玩家并显示提示 UI
+4. 玩家按 `E`
+5. `NPCInteractable`：
+   - 冻结玩家移动
+   - 隐藏提示 UI
+   - 显示对话 UI
+   - 开始逐字显示第一句
+6. 玩家左键：
+   - 若当前句还在打字：补齐当前句
+   - 若当前句已打完：进入下一句
+7. 最后一句结束后：
+   - 隐藏对话 UI
+   - 恢复玩家移动
+   - 若玩家仍在范围内，重新显示提示 UI
+
+这套逻辑全部由 `NPCInteractable.cs` 自己完成。
+
+---
+
+## 九、最小验收清单
+
+以下 5 条全部满足，说明 Demo 已搭成：
+
+1. 玩家能左右移动
+2. 靠近 NPC 时会显示提示
+3. 按 `E` 可以开始对话
+4. 左键可以推进对白
+5. 对话结束后玩家恢复移动
+
+---
+
+## 十、常见问题排查
+
+### 1）按 `E` 没反应
+
+检查：
+- NPC 是否挂了 `NPCInteractable`
+- NPC 的 `BoxCollider2D` 是否勾选 `Is Trigger`
+- 玩家是否有 `Rigidbody2D`
+- `NPCInteractable.playerLayer` 是否包含玩家所在层
+- `Dialogue Lines` 是否为空
 
 ### 2）对话框没有出现
-- `NPCInteractable.dialogueText` 为空
-- `dialogueText` 或 `dialoguePanel` 没拖正确
-- `dialogueLines` 为空
 
-### 3）左右键能动但无动画
-- Animator 未挂或参数名不对（默认 `isWalking`）
-- 参数类型不是 Bool
+检查：
+- `Dialogue Canvas Root` 是否绑定
+- `Dialogue Text` 是否绑定
+- `DialogueCanvas` 是否放在 NPC 下
+- `DialogueLines` 是否为空
 
-### 4）左键不推进
-- 屏幕有多个点击拦截（UI Block）可先在空白区域测试
-- `DialogueManager` 没有成功接收该请求（可在 Console 看警告）
+### 3）提示框没有出现
 
-### 5）对话出现在错误 UI 上
-- 先检查 `NPCInteractable` 的 `dialogueText/panel` 是否是 NPC 头部 UI，不是全局对话 UI
+检查：
+- `Interact Prompt Root` 是否绑定
+- `Interact Prompt Text` 是否绑定
+- 玩家是否真的进入了 NPC 的 Trigger 区
 
----
+### 4）对话期间玩家还能移动
 
-## 八、建议的最终配置（推荐）
+检查：
+- `NPCInteractable` 是否正确找到玩家对象上的 `PlayerController`
+- 是否有其他脚本在同时移动玩家
 
-- `PlayerController`：在场景主角上使用，`interact key=E`
-- NPC 身上只要挂 `NPCInteractable` + Collider2D
-- 对话 UI 作为 NPC 子对象，绑定到 `dialogueText` 和 `dialoguePanel`
-- `DialogueManager`：放一个全局对象 `GlobalDialogueManager`，不重复创建
+### 5）中文显示异常
 
----
-
-## 九、最小成功验收清单
-
-1. 角色能移动并播放走路动画
-2. 接近 NPC 可通过 `E` 触发
-3. NPC 头上出现对话框并逐字显示
-4. 左键点击任意位置可推进到下一句
-5. 全部台词播放完成后对话框按预期隐藏
+检查：
+- TMP Font Asset 是否支持当前字符
+- 文本颜色是否和背景过于接近
 
 ---
 
-## 十、可选增强（后续）
+## 十一、可选增强（后续扩展）
 
-如果你希望：
-- 交互显示提示文本（“按 E 对话”）
-- 走到 NPC 自动高亮
-- 左键仅在对话中有效，平时点击只走逻辑
+### 1. 给 NPC 增加待机动画
 
-可以在 `PlayerController` 和 `DialogueManager` 上继续扩展状态控制（例如：对话开始时禁用玩家移动、加互动提示 UI）。
+直接给 NPC 添加 `Animator`，建立一个循环播放的 `Idle` 状态即可。
+
+### 2. 给 NPC 增加说话动画
+
+可在后续扩展中：
+- 给 NPC Animator 增加参数 `isTalking`
+- 对话开始时切入说话状态
+- 对话结束时回到待机状态
+
+### 3. 改成屏幕固定对话框
+
+如果你不想让对话框显示在 NPC 头顶，而想做屏幕底部统一对白框，建议改用：
+
+- `Assets/DialogueManager.cs`
+- `Assets/TypewriterEffect.cs`
+
+### 4. 使用 Demo Setup 快速生成占位版
+
+如果你只是要快速起一版默认测试场景，可以直接用：
+
+- `Tools > Demo Setup > Rebuild NPC Demo Pair`
 
 ---
 
-到这里，三部分（角色控制 + 交互 + 对话系统）就形成了完整闭环。
+## 十二、结论
+
+当前项目中，“角色控制 + NPC 触发交互 + 头顶对话框”这条 Demo 路线，应该这样理解：
+
+- `PlayerController`：玩家移动与动画
+- `NPCInteractable`：NPC 近距离交互与逐字对话
+- `DialogueManager / TypewriterEffect`：可选扩展系统，不是当前 NPC2 对话的主路径
+
+如果你后续继续更新这个 Demo，请优先对照当前脚本实现，而不是旧版本文档描述。

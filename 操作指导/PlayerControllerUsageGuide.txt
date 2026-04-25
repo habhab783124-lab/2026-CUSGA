@@ -1,228 +1,265 @@
-﻿【Unity 2D 项目 · PlayerController（角色控制与交互）使用指导】
+﻿【Unity 2D 项目 · PlayerController 使用指导（当前版本）】
 
 文件位置
 - 角色控制脚本：Assets/PlayerController.cs
-- 兼容旧脚本：Assets/PlayerMovement.cs
+- 兼容脚本：Assets/PlayerMovement.cs
+- NPC 交互脚本：Assets/NPCInteractable.cs
 - 交互接口：Assets/IInteractable.cs
-- NPC 示例脚本：Assets/NPCInteractable.cs
 - 本指导文件：操作指导/PlayerControllerUsageGuide.txt
 
-目标
-这部分脚本用于：
-1) 左右移动角色
-2) 播放走路动画（Animator）
-3) 检测附近可交互对象（默认通过射线）
-4) 按 E 键时调用对象的交互接口
+当前定位（先看这段）
+- `PlayerController` 在当前项目里只负责：
+  1) 左右移动
+  2) 角色朝向翻转
+  3) 动画参数更新
+  4) 对话期间冻结移动
+- 当前版本的 `PlayerController` 不负责：
+  - 射线交互检测
+  - `E` 键寻找 NPC
+  - 调用 `IInteractable.Interact(...)`
+- 当前 NPC 交互主流程在 `NPCInteractable`：
+  - 玩家进入 NPC 的 Trigger 区域
+  - NPC 显示提示
+  - 玩家按 `E` 开始对话
+  - 对话时 `NPCInteractable` 调用 `PlayerController.SetFrozen(true)` 锁定玩家
+
+也就是说：
+- `PlayerController` = 纯移动 + 动画 + 冻结
+- `NPCInteractable` = 交互 + 对话
 
 ------------------------------------------------------------
-一、先理解新架构（先看这段最重要）
+一、脚本关系怎么理解
 ------------------------------------------------------------
 
-你现在有两个核心脚本：
-- PlayerController：新的主要角色控制脚本。
-- IInteractable：可交互对象的统一接口。
+1. `PlayerController`
+- 当前主控制脚本
+- 推荐直接挂在玩家对象上使用
 
-PlayerMovement 现在是兼容层（保留原本脚本名），内部继承 PlayerController。也就是说：
-- 场景里如果还挂着 PlayerMovement，仍可工作。
-- 建议后续逐步换成 PlayerController，减少歧义。
+2. `PlayerMovement`
+- 兼容层脚本
+- 继承自 `PlayerController`
+- 如果老场景仍挂着 `PlayerMovement`，也能继续工作
+- 新内容建议直接使用 `PlayerController`
 
-------------------------------------------------------------
-二、最小配置（能直接运行）
-------------------------------------------------------------
-
-1) 给角色挂上控制器
-1. 选中场景里的角色对象（你当前是 NPC 根对象也挂了旧脚本）。
-2. 在 Inspector 中移除旧逻辑（可选），添加以下任意一种：
-   - PlayerController（推荐）
-   - PlayerMovement（兼容旧名，也会用到 PlayerController 的能力）
-
-2) 准备动画（可选但推荐）
-1. 在角色对象上挂 Animator（如果还没有）。
-2. 打开角色 Animator Controller。
-3. 建议先配置一个 Bool 参数：isWalking。
-4. 在移动时切换：
-   - isWalking = true：播放走路
-   - isWalking = false：播放待机
-
-3) 给角色加刚体/碰撞（可选）
-- 建议添加 Rigidbody2D（Kinematic 或 Dynamic），脚本会优先使用 MovePosition。
-- 如果没有 Rigidbody2D，会退化为直接改 transform.position。
-
-4) 给角色加交互检测
-- 脚本里有两个模式：
-  - 射线检测（useRaycastDetection = true，默认）
-  - 球形范围检测（useRaycastDetection = false）
-
-5) 给 NPC/可交互对象加 Collider2D
-- 必须有 2D 碰撞体（例如 BoxCollider2D/CircleCollider2D），否则无法检测。
+3. `NPCInteractable`
+- 当前示例 NPC 交互组件
+- 它并不依赖 `PlayerController` 去扫描 NPC，而是依赖 Trigger 进入范围后自己处理输入
 
 ------------------------------------------------------------
-三、核心接口说明（给不会写脚本的人看）
+二、最小配置（当前版本）
 ------------------------------------------------------------
 
-A) IInteractable（接口文件）
-接口定义在 Assets/IInteractable.cs。
+给玩家对象准备以下组件：
 
-- string InteractionPrompt { get; }
-  - 说明：对象的交互提示文本。
-- bool IsInteractable { get; }
-  - 说明：是否当前可交互。
-- void Interact(PlayerController player)
-  - 说明：按 E 键触发的交互逻辑。
+必需：
+- `SpriteRenderer`
+- `Rigidbody2D`
+- `Collider2D`
+- `PlayerController`
 
-你不用手写这个接口。
-你只需要把 NPC 放到 `NPCInteractable.cs`，它已经实现了这个接口。
+推荐：
+- `Animator`
 
-B) PlayerController 的可配置字段（Unity Inspector）
-
-[Movement]
-- moveSpeed：移动速度（默认 5）
-- useBoundary：是否限制 X 轴边界
-- minX / maxX：边界数值
-
-[Animator]
-- animator：角色 Animator（可留空自动从同物体取）
-- walkingBoolParameter：默认 isWalking
-- moveXFloatParameter：可选的 float 参数（可用于 BlendTree）
-
-[Interaction]
-- useRaycastDetection：true=射线检测，false=范围检测
-- interactionOffset：射线/检测原点偏移
-- interactDistance：射线长度
-- triggerRadius：范围检测半径
-- interactableLayer：仅检测这些 Layer
-- interactableTag：可选 Tag 过滤（空代表不过滤）
-- interactKey：交互按键（默认 E）
-
-C) PlayerController 的可读属性
-- CurrentInteractable：当前角色正面对/范围内最近可交互对象
-- CurrentInteractPrompt：当前对象的提示文本（如果有）
-
-注意：这些是 C# 侧属性，Inspector 不直接显示。
+说明：
+- `PlayerController` 上有 `RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))`。
+- 也就是说，玩家对象必须有 `Rigidbody2D` 和某种 `Collider2D`。
 
 ------------------------------------------------------------
-四、NPC 如何“可交互”（零代码方案）
+三、Inspector 字段说明
 ------------------------------------------------------------
 
-给想被交互的 NPC 挂上：Assets/NPCInteractable.cs
+A）Movement
 
-步骤：
-1. 选中 NPC 对象（含可交互碰撞体）。
-2. Add Component -> NPCInteractable。
-3. 配置字段：
-   - interactionPrompt：例如“按 E 和我对话”。
-   - useDialogue：是否播放对话。
-   - dialogueLines：每行一句。
-   - dialogueText：拖你的 TMP 文本组件。
-   - dialoguePanel：拖对话框面板（可选）。
-   - typingSpeed、hidePanelWhenFinish：打字速度和结束后是否收起。
-   - onInteract：可用 UnityEvent 添加其他效果（比如加血、开门、切场景）。
+- `moveSpeed`
+  - 左右移动速度，默认 `5`
 
-这样角色靠近 NPC 按 E，就会触发交互。
+- `useBoundary`
+  - 是否限制 X 轴活动范围
 
-------------------------------------------------------------
-五、运行时逻辑（你只需记 3 规则）
-------------------------------------------------------------
+- `minX / maxX`
+  - X 轴边界数值
 
-1. 左右移动
-- 玩家水平轴由 Input.GetAxisRaw("Horizontal") 驱动。
-- 移动时：
-  - isWalking 参数会自动设为 true
-  - 朝向会自动翻转角色 sprite（向左 flipX=true）
+B）Movement Input
 
-2. 检测交互
-- 默认射线模式：从角色出发，朝朝向方向发射 interactDistance 长度检测。
-- 范围模式：以 interactionOffset 为圆心，triggerRadius 为半径检测周围。
+- `horizontalAxis`
+  - 输入轴名称，默认 `Horizontal`
+  - 对应 A/D 或左右方向键
 
-3. 按 E 触发
-- 当前检测到并且可交互后，按 E 键触发 `Interact`。
+- `inputDeadZone`
+  - 输入死区，过滤细小抖动
 
-------------------------------------------------------------
-六、推荐一套“最直接能跑”的设置清单
-------------------------------------------------------------
+- `moveSmoothing`
+  - 平滑移动系数，值越大越快接近目标速度
 
-角色（Player）：
-- 组件：SpriteRenderer、Animator、Rigidbody2D（可选）、Collider2D、PlayerController
-- 设参数（示例）：
-  - moveSpeed = 5
-  - useBoundary = true
-  - minX = -8
-  - maxX = 8
-  - walkingBoolParameter = isWalking
-  - useRaycastDetection = true
-  - interactDistance = 1.2
-  - interactableLayer = 你创建的 NPC 层
+C）Animator
 
-NPC（可交互）：
-- 组件：SpriteRenderer、Collider2D、NPCInteractable
-- 设参数（示例）：
-  - interactionPrompt = "按 E 与我对话"
-  - useDialogue = true
-  - dialogueLines 添加你想显示的台词
-  - dialogueText 关联对话文本组件
-  - dialoguePanel 关联对话框面板
+- `animator`
+  - 可选
+  - 若为空，会自动尝试读取同物体上的 `Animator`
+
+- `walkingBoolParameter`
+  - 行走状态参数名
+  - 默认 `isWalking`
+
+- `moveXFloatParameter`
+  - 可选的 Float 参数名
+  - 若你使用 BlendTree，可在这里填入，例如 `moveX`
+
+D）Runtime State
+
+- `isFrozen`
+  - 运行时冻结状态
+  - 对话或演出时可设为 `true`
 
 ------------------------------------------------------------
-七、如果你要扩展交互（高级但不复杂）
+四、运行时逻辑（当前实现）
 ------------------------------------------------------------
 
-你可以让对象直接实现 IInteractable 接口。
-示例（在新脚本里）:
+1. Update 阶段
+- 读取 `Horizontal` 输入
+- 判断当前是否正在移动
+- 根据移动方向自动翻转朝向
+- 更新 Animator 参数
 
-public class MyDoor : MonoBehaviour, IInteractable
-{
-    [SerializeField] private bool canOpen = true;
-    [SerializeField] private string prompt = "按 E 打开门";
+2. FixedUpdate 阶段
+- 根据输入计算水平速度
+- 使用 `Mathf.Lerp` 进行平滑速度过渡
+- 如果启用了边界，则对 X 坐标做 `Clamp`
 
-    public string InteractionPrompt => prompt;
-    public bool IsInteractable => canOpen;
+3. 冻结逻辑
+- 当 `isFrozen = true` 时：
+  - 停止水平输入
+  - 清除水平速度
+  - 保持动画为非移动状态
+- 当前项目中，通常由 `NPCInteractable` 在对话开始时调用 `SetFrozen(true)`，在对话结束时调用 `SetFrozen(false)`
 
-    public void Interact(PlayerController player)
-    {
-        // 打开门、播放动画、发送事件等等
-        canOpen = false;
-    }
-}
+------------------------------------------------------------
+五、推荐的一套可运行参数
+------------------------------------------------------------
 
-这样你可以给任何对象定义自己的交互行为，不必改 PlayerController。
+玩家对象（示例）：
+
+组件：
+- `SpriteRenderer`
+- `Rigidbody2D`
+- `BoxCollider2D`
+- `Animator`
+- `PlayerController`
+
+推荐参数：
+- `moveSpeed = 5`
+- `useBoundary = true`
+- `minX = -8`
+- `maxX = 8`
+- `horizontalAxis = Horizontal`
+- `inputDeadZone = 0.01`
+- `moveSmoothing = 20`
+- `walkingBoolParameter = isWalking`
+- `moveXFloatParameter =` 留空（初版可不填）
+
+Rigidbody2D 推荐：
+- `Body Type = Dynamic`
+- `Gravity Scale = 0`
+- `Collision Detection = Continuous`
+- `Freeze Rotation Z = true`
+
+Collider2D 推荐：
+- 使用 `BoxCollider2D`
+- `Is Trigger = false`
+- 尺寸与偏移按角色外形调整
+
+------------------------------------------------------------
+六、如何与 NPCInteractable 配合
+------------------------------------------------------------
+
+当前项目中，玩家和 NPC 的配合方式如下：
+
+1. 玩家对象身上挂 `PlayerController`
+2. 玩家对象有 `Rigidbody2D + Collider2D`
+3. NPC 对象身上挂 `NPCInteractable`
+4. NPC 对象的 `BoxCollider2D` 勾选 `Is Trigger`
+5. 玩家进入 NPC 的触发区后：
+   - `NPCInteractable` 会记录当前玩家
+   - 显示提示 UI
+6. 玩家按 `E` 后：
+   - `NPCInteractable` 开始对话
+   - 调用 `currentPlayer.SetFrozen(true)`
+7. 对话结束后：
+   - `NPCInteractable` 调用 `SetFrozen(false)`
+   - 玩家恢复移动
+
+结论：
+- 玩家是否能与 NPC 正常交互，关键不在 `PlayerController` 有没有“交互扫描”功能。
+- 关键在于：
+  - 玩家有没有进入 NPC 的 Trigger
+  - NPC 的 `playerLayer` 是否能识别玩家
+
+------------------------------------------------------------
+七、动画配置建议
+------------------------------------------------------------
+
+如果你要做最常见的待机/行走切换：
+
+1. 给玩家对象添加 `Animator`
+2. 创建一个 `Bool` 参数：`isWalking`
+3. 建立两个状态：
+   - `Idle`
+   - `Walk`
+4. 切换条件：
+   - `Idle -> Walk`：`isWalking = true`
+   - `Walk -> Idle`：`isWalking = false`
+
+如果你要做 BlendTree：
+
+1. 在 Animator 中增加一个 Float 参数，例如 `moveX`
+2. 在 `PlayerController.moveXFloatParameter` 中填写同名参数
+3. 脚本会把当前水平输入写入 Animator
 
 ------------------------------------------------------------
 八、常见问题排查
 ------------------------------------------------------------
 
-Q1：按 E 没反应？
-- 检查 NPC 有 Collider2D 且没被设置成触发后没被误过滤。
-- 检查 PlayerController 的 interactableLayer 包含 NPC Layer。
-- 检查 interactableTag 是否为空（默认推荐空）。
-- 检查对象是否真的实现了 IInteractable（比如挂了 NPCInteractable）。
+Q1：角色不能移动
+- 检查是否挂了 `PlayerController`
+- 检查 `Horizontal` 输入轴是否可用
+- 检查 `isFrozen` 是否被保持为 `true`
+- 检查是否被边界锁住（`minX/maxX` 太小）
 
-Q2：动画不播放？
-- 确认 Animator 已挂。
-- 确认 Animator 参数名和脚本一致（默认 isWalking）。
-- 确认参数类型匹配（bool）。
+Q2：角色能移动但不播放动画
+- 检查是否挂了 `Animator`
+- 检查 `walkingBoolParameter` 是否与 Animator 中的参数名一致
+- 检查参数类型是否为 `Bool`
 
-Q3：角色没移动？
-- 检查是否在 Scene 有 Horizontal 输入（键盘左右键/AD）。
-- 检查是否在边界之外，minX/maxX 太紧。
-- 检查是否有冲突脚本重复改位置。
+Q3：角色移动方向和朝向翻转相反
+- 检查角色原始 Sprite 是否默认朝右
+- 若原图默认朝左，翻转逻辑看起来会反过来
 
-Q4：NPC 可以被检测到但提示不对？
-- interactionPrompt 为空会显示默认或空（CurrentInteractPrompt 的行为取决于对象返回值）。
+Q4：靠近 NPC 没有提示
+- 这通常不是 `PlayerController` 的问题
+- 请检查：
+  - NPC 是否挂了 `NPCInteractable`
+  - NPC 的碰撞体是否勾选 `Is Trigger`
+  - 玩家是否有 `Rigidbody2D`
+  - NPC 的 `playerLayer` 是否包含玩家所在 Layer
 
-Q5：旧脚本兼容问题
-- 你场景里旧挂的是 PlayerMovement 时也能运行，但它是过渡兼容。
-- 建议以后直接用 PlayerController，方便后续迭代。
+Q5：对话期间玩家还能动
+- 检查 `NPCInteractable` 是否正确拿到了 `PlayerController`
+- 检查 `SetFrozen(true)` 是否被执行
+- 检查是否有其他脚本同时在控制玩家位移
 
 ------------------------------------------------------------
-九、可立即执行的验证流程（5 分钟）
+九、版本结论
 ------------------------------------------------------------
 
-1. 运行场景。
-2. 按左右键：角色能移动且能看到翻转。
-3. 把角色挪到 NPC 前。
-4. 看是否命中（可打开 Gizmos 看射线）。
-5. 按 E：
-   - 如果 NPC 配了 Dialogue：应出现打字对话。
-   - 如果没配 Dialogue：仍会触发 onInteract 事件。
+请以当前代码为准：
 
-到这里就能完成“角色控制 + 交互 + E 键调用接口”。
+- `PlayerController`：玩家移动、翻转、动画、冻结
+- `PlayerMovement`：兼容层
+- `NPCInteractable`：当前 NPC 交互和对话主逻辑
+
+如果旧文档或旧理解里还提到：
+- 射线检测
+- 范围交互扫描
+- PlayerController 直接按 `E` 调用 NPC 接口
+
+请视为旧版本描述，不适用于当前项目实现。
