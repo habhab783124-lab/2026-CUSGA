@@ -27,8 +27,10 @@ namespace TowerDefense.Editor
             serializedObject.Update();
 
             DefensePointFlag defensePoint = (DefensePointFlag)target;
+            bool proceduralMarker = serializedObject.FindProperty("proceduralReadabilityMarker")?.boolValue ?? true;
+            string readabilityMode = proceduralMarker ? "Procedural Marker" : "Authored Root Only";
             EditorGUILayout.HelpBox(
-                $"Defense Point: {defensePoint.DisplayName}\nPoint ID: {defensePoint.PointId}",
+                $"Defense Point: {defensePoint.DisplayName}\nPoint ID: {defensePoint.PointId}\nReadability Mode: {readabilityMode}",
                 MessageType.Info);
 
             EditorGUILayout.BeginHorizontal();

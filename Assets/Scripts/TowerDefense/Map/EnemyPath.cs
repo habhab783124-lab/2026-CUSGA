@@ -37,6 +37,7 @@ public class EnemyPath : MonoBehaviour
 
     [Header("Readability Overlay")]
     [SerializeField] private bool showReadabilityOverlay = true;
+    [SerializeField] private bool proceduralReadabilityOverlay = true;
     [SerializeField] private bool autoCreateReadabilityRoot = true;
     [SerializeField] private Transform readabilityRootReference;
     [SerializeField] private Material readabilityMaterialOverride;
@@ -295,6 +296,18 @@ public class EnemyPath : MonoBehaviour
             return;
         }
 
+        if (!proceduralReadabilityOverlay)
+        {
+            Transform readabilityRoot = ResolveReadabilityRoot(allowCreate: false);
+            if (readabilityRoot != null)
+            {
+                readabilityRoot.gameObject.SetActive(true);
+            }
+
+            _lastReadabilityHash = 0;
+            return;
+        }
+
         int readabilityHash = ComputeReadabilityHash();
         if (!force && readabilityHash == _lastReadabilityHash)
         {
@@ -493,6 +506,7 @@ public class EnemyPath : MonoBehaviour
         {
             int hash = 17;
             hash = hash * 31 + showReadabilityOverlay.GetHashCode();
+            hash = hash * 31 + proceduralReadabilityOverlay.GetHashCode();
             hash = hash * 31 + autoCreateReadabilityRoot.GetHashCode();
             hash = hash * 31 + routeLineColor.GetHashCode();
             hash = hash * 31 + routeArrowColor.GetHashCode();

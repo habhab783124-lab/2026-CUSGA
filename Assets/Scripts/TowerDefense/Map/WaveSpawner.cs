@@ -2,10 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
 /// <summary>
 /// `WaveSpawner` 负责把配置好的波次真正刷进战场。
 ///
@@ -26,10 +22,6 @@ using UnityEditor;
 /// </summary>
 public sealed class WaveSpawner : MonoBehaviour
 {
-#if UNITY_EDITOR
-    private const string DefaultWaveCatalogAssetPath = "Assets/Resources/TowerDefense/Configs/WaveCatalog.asset";
-    private const string DefaultEnemyCatalogAssetPath = "Assets/Resources/TowerDefense/Configs/EnemyCatalog.asset";
-#endif
 
     private readonly struct SpawnGroupRuntime
     {
@@ -71,16 +63,6 @@ public sealed class WaveSpawner : MonoBehaviour
         }
     }
 
-    [Serializable]
-    private sealed class LegacyWaveDefinition
-    {
-        public int enemyCount = 4;
-        public float spawnInterval = 1f;
-        public float moveSpeed = 1.8f;
-        public int enemyHealth = 3;
-        public int enemyScrapReward = 8;
-    }
-
     [Header("Wave Timing")]
     [SerializeField] private float initialDelay = 1.5f;
     [SerializeField] private float delayBetweenWaves = 4f;
@@ -106,9 +88,6 @@ public sealed class WaveSpawner : MonoBehaviour
     [SerializeField] private GameObject enemyPrototypeReference;
     [SerializeField] private Transform enemyRootReference;
 
-    [Header("Legacy Wave Fallback")]
-    [SerializeField] private LegacyWaveDefinition[] waves;
-
     private BattlefieldMapDefinition _battlefieldMap;
     private EnemyPath _fallbackEnemyPath;
     private GameObject _enemyPrototype;
@@ -130,7 +109,6 @@ public sealed class WaveSpawner : MonoBehaviour
 
     private void Start()
     {
-        EnsureCatalogAssetsAssigned();
         EnsureWaveData();
 
         _battlefieldMap = battlefieldMapReference;
@@ -336,12 +314,6 @@ public sealed class WaveSpawner : MonoBehaviour
             return;
         }
 
-        if (waves != null && waves.Length > 0)
-        {
-            _resolvedWaves = ConvertLegacyWaveEntries(waves);
-            return;
-        }
-
         _resolvedWaves = Array.Empty<WaveRuntime>();
     }
 
@@ -368,23 +340,6 @@ public sealed class WaveSpawner : MonoBehaviour
             }
 
             convertedWaves[waveIndex] = new WaveRuntime(waveEntry.DisplayName, convertedGroups);
-        }
-
-        return convertedWaves;
-    }
-
-    private static WaveRuntime[] ConvertLegacyWaveEntries(LegacyWaveDefinition[] legacyWaves)
-    {
-        WaveRuntime[] convertedWaves = new WaveRuntime[legacyWaves.Length];
-        for (int waveIndex = 0; waveIndex < legacyWaves.Length; waveIndex++)
-        {
-            LegacyWaveDefinition legacyWave = legacyWaves[waveIndex];
-            SpawnGroupRuntime[] convertedGroups =
-            {
-                new SpawnGroupRuntime(EnemyArchetypeId.Scavenger, Mathf.Max(0, legacyWave.enemyCount), Mathf.Max(0.05f, legacyWave.spawnInterval))
-            };
-
-            convertedWaves[waveIndex] = new WaveRuntime($"Wave {waveIndex + 1:00}", convertedGroups);
         }
 
         return convertedWaves;
@@ -635,26 +590,4 @@ public sealed class WaveSpawner : MonoBehaviour
         return string.Join("|", instanceIds);
     }
 
-    private void OnValidate()
-    {
-        EnsureCatalogAssetsAssigned();
-    }
-
-    private void EnsureCatalogAssetsAssigned()
-    {
-#if UNITY_EDITOR
-        if (!Application.isPlaying)
-        {
-            if (waveCatalogAsset == null)
-            {
-                waveCatalogAsset = AssetDatabase.LoadAssetAtPath<WaveCatalogAsset>(DefaultWaveCatalogAssetPath);
-            }
-
-            if (enemyCatalogAsset == null)
-            {
-                enemyCatalogAsset = AssetDatabase.LoadAssetAtPath<EnemyCatalogAsset>(DefaultEnemyCatalogAssetPath);
-            }
-        }
-#endif
-    }
 }

@@ -31,9 +31,11 @@ namespace TowerDefense.Editor
             EnemySpawnGate spawnGate = (EnemySpawnGate)target;
             string routeName = spawnGate.EnemyPath != null ? spawnGate.EnemyPath.name : "None";
             string defensePointName = spawnGate.TargetDefensePoint != null ? spawnGate.TargetDefensePoint.name : "None";
+            bool proceduralMarker = serializedObject.FindProperty("proceduralReadabilityMarker")?.boolValue ?? true;
+            string readabilityMode = proceduralMarker ? "Procedural Marker" : "Authored Root Only";
 
             EditorGUILayout.HelpBox(
-                $"Gate: {spawnGate.DisplayName}\nEnemyPath: {routeName}\nTargetDefensePoint: {defensePointName}",
+                $"Gate: {spawnGate.DisplayName}\nEnemyPath: {routeName}\nTargetDefensePoint: {defensePointName}\nReadability Mode: {readabilityMode}",
                 MessageType.Info);
 
             EditorGUILayout.BeginHorizontal();

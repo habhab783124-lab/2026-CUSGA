@@ -26,6 +26,7 @@ public sealed class EnemySpawnGate : MonoBehaviour
 
     [Header("Readability Visual")]
     [SerializeField] private bool showReadabilityMarker = true;
+    [SerializeField] private bool proceduralReadabilityMarker = true;
     [SerializeField] private bool autoCreateReadabilityRoot = true;
     [SerializeField] private Transform readabilityRootReference;
     [SerializeField] private Material readabilityMaterialOverride;
@@ -118,6 +119,18 @@ public sealed class EnemySpawnGate : MonoBehaviour
             if (readabilityRoot != null && readabilityRoot.gameObject.activeSelf)
             {
                 readabilityRoot.gameObject.SetActive(false);
+            }
+
+            _lastReadabilityHash = 0;
+            return;
+        }
+
+        if (!proceduralReadabilityMarker)
+        {
+            Transform readabilityRoot = ResolveReadabilityRoot(allowCreate: false);
+            if (readabilityRoot != null)
+            {
+                readabilityRoot.gameObject.SetActive(true);
             }
 
             _lastReadabilityHash = 0;
@@ -243,6 +256,7 @@ public sealed class EnemySpawnGate : MonoBehaviour
         {
             int hash = 17;
             hash = hash * 31 + showReadabilityMarker.GetHashCode();
+            hash = hash * 31 + proceduralReadabilityMarker.GetHashCode();
             hash = hash * 31 + autoCreateReadabilityRoot.GetHashCode();
             hash = hash * 31 + readabilityColor.GetHashCode();
             hash = hash * 31 + secondaryReadabilityColor.GetHashCode();

@@ -28,7 +28,9 @@ namespace TowerDefense.Editor
             EnemyPath enemyPath = (EnemyPath)target;
 
             string waypointRootName = enemyPath.WaypointRoot != null ? enemyPath.WaypointRoot.name : "(Direct Children)";
-            EditorGUILayout.HelpBox($"Waypoint Count: {enemyPath.WaypointCount}\nWaypoint Root: {waypointRootName}", MessageType.Info);
+            bool proceduralOverlay = serializedObject.FindProperty("proceduralReadabilityOverlay")?.boolValue ?? true;
+            string readabilityMode = proceduralOverlay ? "Procedural Overlay" : "Authored Root Only";
+            EditorGUILayout.HelpBox($"Waypoint Count: {enemyPath.WaypointCount}\nWaypoint Root: {waypointRootName}\nReadability Mode: {readabilityMode}", MessageType.Info);
 
             EditorGUILayout.BeginHorizontal();
             if (GUILayout.Button("Assign / Create Waypoints Root"))

@@ -1,423 +1,193 @@
 # 美术替换工作流
-
-Updated: 2026-04-20
+Updated: 2026-04-27
 
 ## 这份文档是干什么的
 这份文档专门告诉你：
-
-- 以后如果你要替换塔、敌人、UI、地图的美术资源
-- 应该优先去改哪些场景对象
-- 应该优先去看哪些 Inspector 字段
-- 哪些地方已经整理成“不需要改玩法代码”
+- 以后如果你要替换塔、敌人、UI、地图和菜单的美术资源
+- 应该优先改哪些 Prefab、哪些资产、哪些 Inspector 字段
+- 哪些地方已经收口到“不需要改玩法代码”的状态
 
 目标只有一个：
-
-让你以后换自己的美术资源时，尽量不需要重写玩法脚本。
+让你以后换正式美术资源时，尽量不需要重写玩法脚本。
 
 ## 最推荐的替换顺序
-1. 先换运行时 Prefab 的外观，并把场景原型当结构对照
-2. 再换 UI 卡片和 HUD 样式
-3. 最后换地图场景装饰和路径表现
+1. 先替换运行时 prefab 外观
+2. 再替换塔卡与 HUD 样式
+3. 再替换地图可读性与场景装饰
+4. 最后替换主菜单与关卡选择页
 
-原因是：
-
-- 原型外观会直接影响游戏里生成出来的塔和敌人
-- UI 只是显示入口，晚一点改不会影响玩法
-- 地图装饰最自由，放到最后最不容易返工
-
-## 运行时 Prefab 入口
-当前真正用于运行时生成的实体，已经整理到这些 Prefab 资产里：
-
+## 一、塔的美术入口
+### 运行时 prefab
 - `Assets/Prefabs/TowerDefense/Runtime/RelayTowerPrototype.prefab`
 - `Assets/Prefabs/TowerDefense/Runtime/SingleTargetTowerPrototype.prefab`
 - `Assets/Prefabs/TowerDefense/Runtime/SlowFieldTowerPrototype.prefab`
 - `Assets/Prefabs/TowerDefense/Runtime/BombardTowerPrototype.prefab`
-- `Assets/Prefabs/TowerDefense/Runtime/EnemyPrototype.prefab`
 
-战斗反馈也已经整理成单独的 Prefab 入口：
+### 三类战斗塔
+三类战斗塔现在共用 `DefenseTower` 主逻辑，但已经分成独立运行时 prefab。  
+所以你以后换正式塔身外观时，优先改各自 prefab 和 `DefenseTower` 的对应 tuning。
 
+重点入口：
+- `singleTargetTuning.bodySprite`
+- `slowFieldTuning.bodySprite`
+- `bombardTuning.bodySprite`
+
+### 塔反馈与挂点
+在 `DefenseTower` 这边，当前已显式收口这些视觉挂点：
+- `bodyRendererReference`
+- `feedbackRootReference`
+- `typeSignatureRootReference`
+- `levelMarkerRootReference`
+
+如果你只是改外观、层级位置或反馈 prefab，优先改这些入口，不要先改玩法逻辑。
+
+### 战斗反馈 prefab
 - `Assets/Prefabs/TowerDefense/Vfx/ShotTrace.prefab`
 - `Assets/Prefabs/TowerDefense/Vfx/SlowPulse.prefab`
 - `Assets/Prefabs/TowerDefense/Vfx/BombProjectile.prefab`
 - `Assets/Prefabs/TowerDefense/Vfx/BombExplosion.prefab`
 
-这意味着你后面如果想直接替换“真正运行时会生成出来的实体美术”，
-优先改这些 Prefab 资产就行。
+## 二、敌人的美术入口
+### 运行时敌人 prefab
+每种敌人现在都有自己的运行时 prefab：
+- `ScavengerEnemy.prefab`
+- `WolfEnemy.prefab`
+- `BannerScavengerEnemy.prefab`
+- `MechanicEnemy.prefab`
+- `HeavyArmoredMachineEnemy.prefab`
+- `StealthStalkerEnemy.prefab`
+- `AbominationEnemy.prefab`
+- `SmallScavengerEnemy.prefab`
 
-`SampleScene / RuntimePrototypes` 下面那些对象现在更适合当作作者参考原型和结构对照。
-如果你刻意改了场景里的原型，并且想把它们重新同步回 Prefab，
-就需要重新执行编辑器工具 `TowerDefensePrefabAuthoringTool.BatchCreateOrUpdateRuntimePrefabs`。
+这意味着以后你改敌人外观时，优先改对应 prefab，而不是去复制敌人脚本。
 
-## 一、替换塔的美术
+### 全局敌人静态参数
+如果你改的是“这类敌人的默认速度、血量、护甲、奖励、被动特征”，优先改：
+- `Assets/Resources/TowerDefense/Configs/EnemyCatalog.asset`
 
-### 1. 战斗塔
-先说明这一点：
+### 敌人特殊机制参数
+如果你改的是某个具体 prefab 的特殊机制参数，优先改 prefab 上挂着的模块：
+- `EnemyStealthModule`
+- `EnemyShieldAuraModule`
+- `EnemyRepairModule`
+- `EnemySplitOnDeathModule`
 
-- `SampleScene / RuntimePrototypes / DefenseTowerPrototype` 现在更适合拿来对照层级和挂点
-- 真正运行时会生成的战斗塔，优先分别改：
-  - `Assets/Prefabs/TowerDefense/Runtime/SingleTargetTowerPrototype.prefab`
-  - `Assets/Prefabs/TowerDefense/Runtime/SlowFieldTowerPrototype.prefab`
-  - `Assets/Prefabs/TowerDefense/Runtime/BombardTowerPrototype.prefab`
+工作方式：
+- `useLocalOverrides = false`
+  继续吃 `EnemyCatalogAsset` 的默认值
+- `useLocalOverrides = true`
+  当前 prefab 本地参数优先生效
 
-如果你只是想知道有哪些挂点，就先在 `SampleScene` 里展开：
+### 敌人编辑器入口
+- `EnemyEditor`
+  用来看这只 prefab 在目录里被识别成哪一类怪、有哪些被动特征、是否缺少应挂模块
+- `EnemyMechanicModuleEditors`
+  用来看模块当前到底在吃目录默认值还是本地覆盖值
 
-- `RuntimePrototypes`
-- `DefenseTowerPrototype`
+如果目录要求某个敌人有模块，但 prefab 上没挂出来，`EnemyEditor` 里会出现：
+- `Attach Missing Catalog Modules`
 
-你会看到这几个关键层级：
+## 三、塔卡与 HUD 样式入口
+### 塔卡
+塔卡样式主要由两层决定：
+- 共享目录：`TowerPresentationCatalog.asset`
+- 场景卡片组件：`TowerShopCard`
 
-- `DefenseTowerPrototype`
-- `FeedbackRoot`
-- `TypeSignatureRoot`
-- `LevelMarkerRoot`
-
-重点怎么改：
-
-- 想换塔本体外观：
-  现在三种战斗塔已经支持各自独立主塔身 Sprite
-  不再只是共用一个主体图片。
-  重点改 `DefenseTower` 组件里三套 `CombatTuning` 各自的：
-  - `singleTargetTuning.bodySprite`
-  - `slowFieldTuning.bodySprite`
-  - `bombardTuning.bodySprite`
-
-  如果某一类没指定 `bodySprite`，
-  会自动回退到原型体当前默认主 Sprite，
-  所以老场景不会因为新增这个入口而突然丢图。
-- 想换攻击反馈：
-  现在建议优先改反馈 Prefab 资产本身：
-  - `Assets/Prefabs/TowerDefense/Vfx/ShotTrace.prefab`
-  - `Assets/Prefabs/TowerDefense/Vfx/SlowPulse.prefab`
-  - `Assets/Prefabs/TowerDefense/Vfx/BombProjectile.prefab`
-  - `Assets/Prefabs/TowerDefense/Vfx/BombExplosion.prefab`
-
-  如果你只是想让单体塔 tracer、炸弹塔飞行物、爆炸更明显，
-  这一步通常确实需要你自己补正式美术资源，或者至少调这些 Prefab 里的：
-  - `SpriteRenderer.sprite`
-  - `SpriteRenderer.color`
-  - `Transform.localScale`
-  - 你自己额外加的子物体、粒子或发光图层
-
-  `DefenseTower` 组件里的三套 `CombatTuning` 已经接好了对应入口：
-  - `singleTargetTuning.shotTracePrefab`
-  - `slowFieldTuning.slowPulsePrefab`
-  - `bombardTuning.bombProjectilePrefab`
-  - `bombardTuning.bombExplosionPrefab`
-
-  所以后面你主要是换 Prefab 资源，而不是改玩法逻辑。
-- 想调整反馈出现位置：
-  改 `FeedbackRoot`
-- 想调整塔型签名位置：
-  改 `TypeSignatureRoot`
-- 想调整等级标记位置：
-  改 `LevelMarkerRoot`
-
-### 2. 继电器
-同样建议这样理解：
-
-- `SampleScene / RuntimePrototypes / RelayTowerPrototype` 主要用于看结构和挂点
-- 真正运行时会生成的继电器，优先改 `Assets/Prefabs/TowerDefense/Runtime/RelayTowerPrototype.prefab`
-
-在 `SampleScene` 里展开：
-
-- `RuntimePrototypes`
-- `RelayTowerPrototype`
-
-你会看到：
-
-- `RelayTowerPrototype`
-- `VisualRoot`
-
-重点怎么改：
-
-- 想换继电器本体外观：
-  改 `VisualRoot` 上的 `SpriteRenderer`
-- 想改继电器运行时颜色逻辑：
-  改 `RelayTower` 组件里的：
-  - `normalColor`
-  - `saturatedColor`
-
-### 3. 这些改动会不会影响逻辑
-正常不会。
-
-因为现在战斗塔、继电器的玩法脚本都已经尽量通过这些显式引用工作：
-
-- `bodyRendererReference`
-- `feedbackRootReference`
-- `typeSignatureRootReference`
-- `levelMarkerRootReference`
-- `visualRootReference`
-
-而且战斗塔主体外观本身也已经按塔类型分开到各自 tuning 里：
-
-- `singleTargetTuning.bodySprite`
-- `slowFieldTuning.bodySprite`
-- `bombardTuning.bodySprite`
-
-所以你改的是外观挂点，不是玩法算法。
-
-## 二、替换敌人的美术
-
-同样地：
-
-- `SampleScene / RuntimePrototypes / EnemyPrototype` 主要用于看结构和挂点
-- 真正运行时会生成的敌人，优先改 `Assets/Prefabs/TowerDefense/Runtime/EnemyPrototype.prefab`
-
-在 `SampleScene` 里展开：
-
-- `RuntimePrototypes`
-- `EnemyPrototype`
-
-你会看到：
-
-- `EnemyPrototype`
-- `VisualScaleRoot`
-- `HealthBarRoot`
-
-重点怎么改：
-
-- 想换敌人本体外观：
-  改 `VisualScaleRoot` 上的 `SpriteRenderer`
-- 想换敌人受击时的颜色反馈：
-  改 `Enemy` 组件里的：
-  - `bodyColor`
-  - `slowTintColor`
-  - `standardHitFlashColor`
-  - `bombardHitFlashColor`
-- 想换血条样式：
-  改 `Enemy` 组件里的：
-  - `healthBarFillSpriteOverride`
-  - `healthBarBackgroundSpriteOverride`
-  - `healthBarFillColor`
-  - `healthBarBackgroundColor`
-- 想调身体缩放反馈和血条位置互不影响：
-  现在身体缩放走 `VisualScaleRoot`
-  血条走 `HealthBarRoot`
-  这两层已经拆开了
-
-## 三、替换部署卡和 HUD 样式
-
-### 1. 四张部署卡
-在 `SampleScene` 的右侧部署区里，关键对象是：
-
-- `RelayTowerButton`
-- `DefenseTowerButton`
-- `SlowFieldTowerButton`
-- `BombardTowerButton`
-
-每张卡上都有 `TowerShopCard`。
-
-现在卡片已经有这些显式视觉入口：
-
+`TowerShopCard` 当前已显式持有：
 - `backgroundImageReference`
 - `iconImageReference`
+- `labelTextReference`
 - `accentGraphicReferences`
 
-你可以怎么改：
+### HUD
+HUD 当前主要入口：
+- `TowerDefenseHudTheme.asset`
+- `TowerDefenseHudCopy.asset`
 
-- 想换卡片底图：
-  改按钮本体 `Image`
-- 想换卡片主图标：
-  改图标子物体 `Image`
-- 想换卡片细节装饰：
-  改 `accentGraphicReferences` 对应的那些小图形
+如果你要继续把 HUD 拆成更多显式场景文本块：
+- 选中 `TowerDefenseGame`
+- 用 `TowerDefenseGameEditor` 的 `Materialize HUD Split Texts`
 
-### 2. 四张卡片的统一文案和配色
-这些现在主要从 `SampleScene` 里的 `GameController` 读取。
+## 四、地图与可读性表现入口
+### 地图骨架
+地图内容后续优先由 Scene 视图维护。  
+所以地板、路径、建筑、阴影、装饰这些内容，优先改场景对象本身，而不是先改脚本。
 
-看 `TowerDefenseGame` 组件里的：
+### 可建造区形状
+当前 `BuildZone` 已支持两种工作流：
+- 简单地图：继续使用根对象上的默认 Collider
+- 不规则地图：在 `ZoneShapes` 根节点下摆多个 `Collider2D`
 
-- `Tower Presentation`
+推荐做法：
+1. 选中 `BuildZone`
+2. 用 `BuildZoneEditor` 创建或指定 `ZoneShapes`
+3. 在其下摆 `BoxCollider2D / PolygonCollider2D / CompositeCollider2D / CircleCollider2D`
+4. 点击 `Collect Zone Shape Colliders`
 
-这里每种塔都有一组配置：
+这样后续改地图形状时，你主要是在 Scene 里改碰撞体，而不是回玩法代码。
 
-- `displayName`
-- `cardRoleSummary`
-- `selectionHint`
-- `upgradeFocusSummary`
-- `accentColor`
-- `cardIconSprite`
-- `cardIconTint`
-- `cardBackgroundTint`
-- `cardAccentTint`
-
-以后如果你想统一改卡片图标和卡片配色：
-优先改这里。
-
-### 3. HUD 主题
-同样在 `GameController` 的 `TowerDefenseGame` 组件里看：
-
-- `HUD Theme`
-
-这里现在已经承载了大部分 HUD 语义配色，比如：
-
-- 顶部资源卡颜色
-- 操作区说明颜色
-- 状态消息颜色
-- 正向/消耗/警告/危险提示颜色
-- 拖拽提示颜色
-
-以后如果你要统一改 HUD 风格：
-优先改这里，不要先改 `TowerDefenseHudPresenter.cs`。
-
-## 四、替换地图场景美术
-
-### 1. 路径和战场装饰
-地图里的路径、阴影、地板、场景建筑，现在大部分都已经是 Scene 里的对象。
-
-优先改这些场景对象的：
-
-- `SpriteRenderer`
-- `Image`
-- 排序层级
-- 材质
-- 缩放
-
-而不是先去改脚本。
-
-### 2. 路径/出怪口/防御点的可读性标记
-这三类对象现在都有程序化占位表现：
-
+### 路径 / 出怪口 / 防御点可读性
+当前这些脚本仍支持程序化占位表现，但已经开始支持显式作者接管：
 - `EnemyPath`
 - `EnemySpawnGate`
 - `DefensePointFlag`
 
-你可以先这样理解：
-
-- 如果你还没替换正式美术
-  这些脚本生成的线框和圈环很有用
-- 如果你后面已经有自己的正式标记
-  可以直接在对应组件里把表现参数调弱，或者关掉
-
-重点字段大致是：
-
-- `showReadabilityOverlay`
-- `showReadabilityMarker`
-- `autoCreateReadabilityRoot`
+常见入口：
 - `readabilityRootReference`
 - `readabilityMaterialOverride`
-- 各种颜色、宽度、半径、排序层级
+- `autoCreateReadabilityRoot`
+- `proceduralReadabilityOverlay`
+- `proceduralReadabilityMarker`
 
-如果你后面想自己接管这一层的场景层级，最推荐的方式是：
+现在这条链已经支持两种模式：
+- 程序化占位开启
+  继续使用脚本生成的程序化占位表现
+- 程序化占位关闭
+  保留根节点，但由你自己在 `readabilityRootReference` 下接正式场景资源
 
-1. 先在对应对象下面自己建一个可读性根节点
-2. 再把这个根节点拖到：
-   - `readabilityRootReference`
-3. 如果你希望这些线框统一吃你自己的材质，再把材质拖到：
-   - `readabilityMaterialOverride`
+## 五、菜单与关卡页样式入口
+### 主菜单
+主菜单样式主要在：
+- `MainMenu.unity`
+- `MainMenuController`
 
-这样就不必完全依赖脚本自动创建隐藏根节点了。
+当前已经显式暴露：
+- 背景色
+- 强调色
+- 文字色
+- Sprite
+- 字体
+- 文案
 
-### 3. 放置提示表现
-跟放置有关的视觉入口主要在 `GameController` 的 `TowerDefenseGame` 组件里：
+### 关卡选择页
+关卡选择页主要在：
+- `LevelSelect.unity`
+- `LevelSelectController`
+- `LevelSelectCatalog.asset`
 
-- `placementRingSpriteReference`
-- `validPreviewColor`
-- `invalidPreviewColor`
-- `placementAreaOverlayFillColor`
-- `placementAreaOverlayEdgeColor`
-- `starterZoneMarkerFillColor`
-- `starterZoneMarkerEdgeColor`
+页面骨架已经物化到场景里，后续布局优先直接改 Scene。
 
-以后如果你要把当前占位放置提示换成自己的美术：
+## 六、什么情况才需要回脚本
+只有下面这些情况，才优先改代码：
+- 你要新增一种全新的玩法表现规则
+- 你要改变生成规则，而不是换资源
+- 你要新增一种新的敌人特殊机制模块
+- 你要改变塔或敌人的玩法逻辑本身
 
-- 优先先换 `placementRingSpriteReference`
-- 再调整颜色
-- 如果还不够，再继续改对应渲染器脚本
+如果只是下面这些情况，通常不需要先改玩法代码：
+- 换 Sprite
+- 换材质
+- 换颜色
+- 换字体
+- 调整 prefab 子层级
+- 调整 Scene 里对象位置和排序
 
-## 五、主菜单怎么换美术
-
-在 `MainMenu` 场景里，看 `MainMenuController` 组件。
-
-现在主菜单剩余视觉入口也已经尽量往 Inspector 收了。
-
-重点可改内容：
-
-- `backgroundColor`
-- `primaryAccent`
-- `secondaryAccent`
-- `frameCoreColor`
-- `frameInsetColor`
-- `titleColor`
-- `subtitleColor`
-- `descriptionColor`
-- `hintColor`
-- `startButtonPrimaryTextColor`
-- `startButtonSecondaryTextColor`
-- `footerLeftTextColor`
-- `footerRightTextColor`
-- `backgroundSprite`
-- `frameCoreSprite`
-- `frameInsetSprite`
-- `startButtonSprite`
-- `titleFontAsset`
-- `bodyFontAsset`
-- `accentFontAsset`
-
-文案也已经收进 Inspector：
-
-- `titleCopy`
-- `subtitleCopy`
-- `descriptionCopy`
-- `hintCopy`
-- `startPrimaryCopy`
-- `startSecondaryCopy`
-- `footerLeftCopy`
-- `footerRightCopy`
-
-所以以后你如果改主菜单样式，优先在 `MainMenuController` 的 Inspector 里改，不要先回脚本里改写死值。
-
-## 六、什么时候需要改代码
-只有下面这些情况，才建议你再回脚本层：
-
-- 你要新增一种全新的反馈类型
-- 你要改反馈生成规则，而不是只换资源
-- 你要把程序化占位表现彻底换成另一种实现方式
-- 你要改玩法逻辑本身
-
-如果只是下面这些情况，通常不需要改代码：
-
-- 换塔 Sprite
-- 换敌人 Sprite
-- 换卡片图标
-- 换 HUD 配色
-- 换主菜单配色和文案
-- 调整原型子节点位置
-- 调整场景对象排序和装饰
-- 替换运行时实体 Prefab 里的 Sprite、材质、颜色或子层级
-
-## 七、最稳妥的实际操作顺序
-以后你自己替换资源时，建议按这个顺序来：
-
-1. 先改 `Assets/Prefabs/TowerDefense/Runtime`
-   `RuntimePrototypes` 主要拿来对照层级与挂点；三种战斗塔现在已经拆成了各自独立 prefab，优先分别改它们自己的 prefab 和各自 `DefenseTower` 组件里的参数
-2. 再改 `GameController` 里的 `Tower Presentation` 和 `HUD Theme`
-3. 再改四张部署卡的图标和装饰
-4. 再改地图里的路径、出怪口、防御点装饰
-5. 最后改 `MainMenu`
-
-## 八、改完后怎么自检
-每次你替换完一批资源，建议至少做这几个检查：
-
-1. 进 `SampleScene` 看原型对象引用有没有丢
-2. 进 Play 看：
-   - 塔能不能正常放
-   - 敌人血条还在不在
-   - 三类塔反馈还在不在
-   - 继电器断电/满载颜色还正常不正常
-3. 看四张部署卡：
-   - 图标有没有变形
-   - 文案有没有挤压重叠
-4. 看主菜单：
-   - 相机背景色
-   - 按钮文字
-   - 底图和边框
-   是否仍然正常显示
-
-## 九、一个简单原则
-以后只要你在犹豫“该改 Scene / Inspector，还是该改脚本”，优先这样判断：
-
-- 能通过场景对象、显式引用、Inspector 参数解决的，优先不要改脚本
-- 只有当你要改“生成规则”或“玩法规则”时，才回脚本
-
-这就是当前这个项目现在最重要的美术替换原则。
+## 七、改完后的最小自检
+1. 打开对应 prefab，看显式引用有没有丢。
+2. 进 Unity Play：
+   - 塔能否正常放置
+   - 不规则建造区边界是否符合预期
+   - 敌人血条是否正常
+   - 三类塔反馈是否正常
+   - 特殊敌人机制是否正常
+3. 打开菜单和关卡页，看按钮、卡片、标题和文案是否仍正常显示。
