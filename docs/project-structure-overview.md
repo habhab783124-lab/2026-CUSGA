@@ -16,6 +16,10 @@ Updated: 2026-04-27
 - `StoryInterludePlaceholder.unity`
   剧情横板占位场景。
 
+## 配套文档
+- `docs/map-development-handbook.md`
+  面向用户自己做地图的详细编辑器手册。
+
 ## 当前主要脚本目录
 - `Assets/Scripts/TowerDefense/Core`
   总控、会话状态、输入、表现协调、剧情流程。
