@@ -15,46 +15,46 @@ MonoBehaviour:
   levels:
   - sceneName: SampleScene
     scenePath: Assets/Scenes/SampleScene.unity
-    displayName: LEVEL 01
-    subtitle: CURRENT TEST ROUTE
-    description: The current playable sample battlefield. Use this as the base mission while the later scenes are still being authored.
-    statusLabel: OPEN
+    displayName: 第一关
+    subtitle: 当前测试路线
+    description: 当前可游玩的样例战场。后续关卡还在制作中时，可以先把这里当作主测试关卡。
+    statusLabel: 可进入
     iconSprite: {fileID: 0}
     accentColor: {r: 1, g: 0.68, b: 0.36, a: 1}
     interactable: 1
   - sceneName: Level02
     scenePath: Assets/Scenes/Level02.unity
-    displayName: LEVEL 02
-    subtitle: SECOND FRONT
-    description: A new mission scene prepared for your next map. You can open it directly in the editor and start rebuilding terrain, routes, and decoration.
-    statusLabel: EDIT READY
+    displayName: 第二关
+    subtitle: 第二战线
+    description: 为下一张地图预留的新任务场景。你可以直接在编辑器里打开它，开始重做地形、路线和装饰。
+    statusLabel: 可编辑
     iconSprite: {fileID: 0}
     accentColor: {r: 0.34, g: 0.88, b: 0.96, a: 1}
     interactable: 1
   - sceneName: Level03
     scenePath: Assets/Scenes/Level03.unity
-    displayName: LEVEL 03
-    subtitle: OUTER GRID
-    description: Reserved for the third mission layout. The gameplay skeleton is copied over so you can focus on map authoring first.
-    statusLabel: EDIT READY
+    displayName: 第三关
+    subtitle: 外围电网
+    description: 为第三张任务地图预留的场景。玩法骨架已经复制好，你可以优先专注于地图制作。
+    statusLabel: 可编辑
     iconSprite: {fileID: 0}
     accentColor: {r: 0.47, g: 0.96, b: 0.74, a: 1}
     interactable: 1
   - sceneName: Level04
     scenePath: Assets/Scenes/Level04.unity
-    displayName: LEVEL 04
-    subtitle: RELAY BREAK
-    description: Reserved for the fourth mission layout. Treat this as another fully editable gameplay scene slot.
-    statusLabel: EDIT READY
+    displayName: 第四关
+    subtitle: 继电断层
+    description: 为第四张任务地图预留的场景。可以把它当作另一个完整可编辑的玩法场景槽位。
+    statusLabel: 可编辑
     iconSprite: {fileID: 0}
     accentColor: {r: 1, g: 0.78, b: 0.43, a: 1}
     interactable: 1
   - sceneName: Level05
     scenePath: Assets/Scenes/Level05.unity
-    displayName: LEVEL 05
-    subtitle: FINAL CIRCUIT
-    description: Reserved for the fifth mission layout. Keep this one for your later, more advanced battlefield ideas.
-    statusLabel: EDIT READY
+    displayName: 第五关
+    subtitle: 最终回路
+    description: 为第五张任务地图预留的场景。适合留给后续更复杂、更进阶的战场构想。
+    statusLabel: 可编辑
     iconSprite: {fileID: 0}
     accentColor: {r: 1, g: 0.52, b: 0.41, a: 1}
     interactable: 1

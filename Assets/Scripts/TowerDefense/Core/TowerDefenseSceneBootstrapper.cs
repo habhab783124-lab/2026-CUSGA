@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -53,25 +53,25 @@ public readonly struct TowerDefenseHudSceneReferences
         DragPreviewLabel = dragPreviewLabel;
     }
 
-    public TMP_Text ScrapText { get; }
-    public TMP_Text BaseHealthText { get; }
-    public TMP_Text WaveText { get; }
-    public TMP_Text SelectionText { get; }
-    public TMP_Text OperationText { get; }
-    public TMP_Text LiveStatusText { get; }
-    public TMP_Text PowerGridText { get; }
-    public TMP_Text LatestEventText { get; }
-    public TMP_Text RecentLogText { get; }
-    public Button RelayTowerButton { get; }
-    public Button DefenseTowerButton { get; }
-    public Button SlowFieldTowerButton { get; }
-    public Button BombardTowerButton { get; }
-    public Button ClearSelectionButton { get; }
-    public GameObject GameOverPanel { get; }
-    public TMP_Text GameOverTitle { get; }
-    public TMP_Text GameOverHint { get; }
-    public GameObject DragPreviewPanel { get; }
-    public TMP_Text DragPreviewLabel { get; }
+    public TMP_Text ScrapText { get; } // 中文：废料文本
+    public TMP_Text BaseHealthText { get; } // 中文：基础生命文本
+    public TMP_Text WaveText { get; } // 中文：波次文本
+    public TMP_Text SelectionText { get; } // 中文：Selection文本
+    public TMP_Text OperationText { get; } // 中文：操作文本
+    public TMP_Text LiveStatusText { get; } // 中文：实时状态文本
+    public TMP_Text PowerGridText { get; } // 中文：供电电网文本
+    public TMP_Text LatestEventText { get; } // 中文：最新事件文本
+    public TMP_Text RecentLogText { get; } // 中文：近期日志文本
+    public Button RelayTowerButton { get; } // 中文：继电器塔按钮
+    public Button DefenseTowerButton { get; } // 中文：防御塔按钮
+    public Button SlowFieldTowerButton { get; } // 中文：减速区域塔按钮
+    public Button BombardTowerButton { get; } // 中文：炸弹塔按钮
+    public Button ClearSelectionButton { get; } // 中文：清除Selection按钮
+    public GameObject GameOverPanel { get; } // 中文：游戏结束面板
+    public TMP_Text GameOverTitle { get; } // 中文：游戏结束标题
+    public TMP_Text GameOverHint { get; } // 中文：游戏结束提示
+    public GameObject DragPreviewPanel { get; } // 中文：拖拽预览面板
+    public TMP_Text DragPreviewLabel { get; } // 中文：拖拽预览标签
 }
 
 /// <summary>
@@ -102,14 +102,14 @@ public readonly struct TowerDefenseSceneBootstrapResult
         PlacementPreviewRoot = placementPreviewRoot;
     }
 
-    public Camera MainCamera { get; }
-    public GameObject RelayTowerPrototype { get; }
-    public GameObject SingleTargetTowerPrototype { get; }
-    public GameObject SlowFieldTowerPrototype { get; }
-    public GameObject BombardTowerPrototype { get; }
-    public BuildZone BuildZone { get; }
-    public Transform PlacedTowerRoot { get; }
-    public Transform PlacementPreviewRoot { get; }
+    public Camera MainCamera { get; } // 中文：主相机
+    public GameObject RelayTowerPrototype { get; } // 中文：继电器塔原型
+    public GameObject SingleTargetTowerPrototype { get; } // 中文：单体目标塔原型
+    public GameObject SlowFieldTowerPrototype { get; } // 中文：减速区域塔原型
+    public GameObject BombardTowerPrototype { get; } // 中文：炸弹塔原型
+    public BuildZone BuildZone { get; } // 中文：建造区域
+    public Transform PlacedTowerRoot { get; } // 中文：已放置塔根节点
+    public Transform PlacementPreviewRoot { get; } // 中文：放置预览根节点
 }
 
 /// <summary>

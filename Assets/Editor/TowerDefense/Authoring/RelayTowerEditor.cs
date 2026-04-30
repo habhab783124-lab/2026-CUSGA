@@ -19,13 +19,13 @@ namespace TowerDefense.Editor
 
             RelayTower relayTower = (RelayTower)target;
             EditorGUILayout.HelpBox(
-                $"Supply Range: {relayTower.SupplyRange:0.0}\nSupply Capacity: {relayTower.SupplyCapacity}\nVisual Root: {GetVisualRootName()}",
+                $"供电范围：{relayTower.SupplyRange:0.0}\n供电容量：{relayTower.SupplyCapacity}\n视觉根节点：{GetVisualRootName()}",
                 MessageType.Info);
 
             if (Application.isPlaying)
             {
                 EditorGUILayout.HelpBox(
-                    $"Relay #{relayTower.RelayNumber}\nCurrent Load: {relayTower.CurrentAssignedLoad}\nRemaining Capacity: {relayTower.RemainingCapacity}",
+                    $"继电器 #{relayTower.RelayNumber}\n当前负载：{relayTower.CurrentAssignedLoad}\n剩余容量：{relayTower.RemainingCapacity}",
                     MessageType.None);
             }
 
@@ -38,7 +38,7 @@ namespace TowerDefense.Editor
             SerializedProperty property = serializedObject.FindProperty("visualRootReference");
             if (property == null || property.objectReferenceValue == null)
             {
-                return "(Root Object)";
+                return "（根对象）";
             }
 
             return property.objectReferenceValue.name;

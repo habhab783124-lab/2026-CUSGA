@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -29,28 +29,28 @@ public sealed class TowerPlacementSupportCoordinator
             Radius = radius;
         }
 
-        public Vector2 Position { get; }
-        public float Radius { get; }
+        public Vector2 Position { get; } // 中文：位置
+        public float Radius { get; } // 中文：半径
     }
 
     public delegate bool PlacementValidator(Vector3 worldPosition, TowerType towerType, out string invalidReason);
 
-    private readonly Vector2 _initialPlacementSquareCenter;
-    private readonly float _initialPlacementSquareSize;
-    private readonly Color _starterZoneMarkerFillColor;
-    private readonly Color _starterZoneMarkerEdgeColor;
-    private readonly Func<TowerCatalog> _towerCatalogQuery;
-    private readonly Func<TowerPlacementRules> _placementRulesQuery;
-    private readonly Func<TowerPlacementVisualController> _placementVisualControllerQuery;
-    private readonly Func<Transform> _placedTowerRootQuery;
-    private readonly Func<BuildZone> _buildZoneQuery;
-    private readonly Func<GameObject> _relayTowerPrototypeQuery;
-    private readonly Func<GameObject> _singleTargetTowerPrototypeQuery;
-    private readonly Func<GameObject> _slowFieldTowerPrototypeQuery;
-    private readonly Func<GameObject> _bombardTowerPrototypeQuery;
-    private readonly Func<TowerPowerGridCoordinator> _powerGridCoordinatorQuery;
-    private readonly Func<bool> _isGameOverQuery;
-    private readonly Action<string> _logPlacementDiagnostic;
+    private readonly Vector2 _initialPlacementSquareCenter; // 中文：initial放置方格中心
+    private readonly float _initialPlacementSquareSize; // 中文：initial放置方格大小
+    private readonly Color _starterZoneMarkerFillColor; // 中文：起始区域标记Fill颜色
+    private readonly Color _starterZoneMarkerEdgeColor; // 中文：起始区域标记Edge颜色
+    private readonly Func<TowerCatalog> _towerCatalogQuery; // 中文：塔目录查询
+    private readonly Func<TowerPlacementRules> _placementRulesQuery; // 中文：放置Rules查询
+    private readonly Func<TowerPlacementVisualController> _placementVisualControllerQuery; // 中文：放置视觉控制器查询
+    private readonly Func<Transform> _placedTowerRootQuery; // 中文：已放置塔根节点查询
+    private readonly Func<BuildZone> _buildZoneQuery; // 中文：建造区域查询
+    private readonly Func<GameObject> _relayTowerPrototypeQuery; // 中文：继电器塔原型查询
+    private readonly Func<GameObject> _singleTargetTowerPrototypeQuery; // 中文：单体目标塔原型查询
+    private readonly Func<GameObject> _slowFieldTowerPrototypeQuery; // 中文：减速区域塔原型查询
+    private readonly Func<GameObject> _bombardTowerPrototypeQuery; // 中文：炸弹塔原型查询
+    private readonly Func<TowerPowerGridCoordinator> _powerGridCoordinatorQuery; // 中文：供电电网协调器查询
+    private readonly Func<bool> _isGameOverQuery; // 中文：是否游戏结束查询
+    private readonly Action<string> _logPlacementDiagnostic; // 中文：日志放置诊断
 
     public TowerPlacementSupportCoordinator(
         Vector2 initialPlacementSquareCenter,
@@ -121,13 +121,13 @@ public sealed class TowerPlacementSupportCoordinator
         {
             if (powerGridCoordinator == null)
             {
-                invalidReason = "Power grid is not initialized.";
+                invalidReason = "供电系统尚未初始化。";
                 return false;
             }
 
             if (!powerGridCoordinator.IsWithinAnyRelayCoverage(worldPosition))
             {
-                invalidReason = "Defense towers must be placed inside relay coverage.";
+                invalidReason = "战斗塔必须放在继电器覆盖范围内。";
                 return false;
             }
         }
@@ -135,7 +135,7 @@ public sealed class TowerPlacementSupportCoordinator
         TowerPlacementRules placementRules = _placementRulesQuery != null ? _placementRulesQuery() : null;
         if (placementRules == null)
         {
-            invalidReason = "Placement rules are not initialized.";
+            invalidReason = "放置规则尚未初始化。";
             return false;
         }
 
@@ -186,7 +186,7 @@ public sealed class TowerPlacementSupportCoordinator
     public string GetTowerDisplayName(TowerType towerType)
     {
         TowerDefinition definition = _towerCatalogQuery != null ? _towerCatalogQuery()?.GetDefinition(towerType) : null;
-        return definition != null ? definition.DisplayName : "None";
+        return definition != null ? definition.DisplayName : "未选择";
     }
 
     /// <summary>

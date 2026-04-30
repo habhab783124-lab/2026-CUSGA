@@ -12,30 +12,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 031e38bf5acb46259b8c5931f3fe34b8, type: 3}
   m_Name: TowerDefenseHudCopy
   m_EditorClassIdentifier: 
-  scrapMetricLabel: SCRAP STOCK
-  baseMetricLabel: BASE CORE
-  waveMetricLabel: WAVE CLOCK
-  deployTraceTitle: DEPLOY TRACE
-  tacticalReadyTitle: TACTICAL READY
-  structureLinkTitle: STRUCTURE LINK
-  operationLinkTitle: OPERATION LINK
-  idleOperationSummary: Click or drag a tower card to project legal sectors
-  idleOperationHotkeys: 1 Relay / 2 Single / 3 Slow / 4 Bomb / Esc Cancel
-  dragGridLabel: GRID
-  dragLegalHint: Cyan sectors show exact legal drop zones
-  dragValidStateLabel: DROP POINT CONFIRMED
-  dragSelectedLegalHint: Cyan sectors = exact legal zone
-  liveStatusTitle: LIVE STATUS
-  powerGridTitle: POWER GRID
-  latestEventTitle: LATEST EVENT
-  recentLogTitle: RECENT LOG
-  relayCountLabel: Relays
-  onlineTowerCountLabel: Towers
-  onlineTowerSuffix: online
-  loadLabel: Load
-  freeDeployLine: FREE deploy. Scrap remains unchanged.
-  scrapLeftSuffix: SCRAP left after deploy.
-  needMoreScrapPrefix: Need
-  needMoreScrapSuffix: more SCRAP to deploy.
-  cancelDeployPrimary: CANCEL DEPLOY
-  cancelDeploySecondary: Esc / RMB
+  scrapMetricLabel: 废料储备
+  baseMetricLabel: 基地核心
+  waveMetricLabel: 波次进度
+  deployTraceTitle: 部署追踪
+  tacticalReadyTitle: 战术待命
+  structureLinkTitle: 建筑链接
+  operationLinkTitle: 战局记录
+  idleOperationSummary: 点击或拖拽塔卡，预览当前合法建造区域。
+  idleOperationHotkeys: 1 继电器 / 2 单体塔 / 3 减速塔 / 4 炸弹塔 / Esc 取消
+  dragGridLabel: 网络
+  dragLegalHint: 青色区域代表当前准确的合法落点
+  dragValidStateLabel: 落点确认
+  dragSelectedLegalHint: 青色区域 = 当前合法范围
+  liveStatusTitle: 实时状态
+  powerGridTitle: 供电网络
+  latestEventTitle: 最新事件
+  recentLogTitle: 近期记录
+  relayCountLabel: 继电器
+  onlineTowerCountLabel: 战斗塔
+  onlineTowerSuffix: 在线
+  loadLabel: 负载
+  freeDeployLine: 免费部署，不消耗废料。
+  scrapLeftSuffix: 部署后剩余废料。
+  needMoreScrapPrefix: 还需要
+  needMoreScrapSuffix: 点废料才能部署。
+  cancelDeployPrimary: 取消部署
+  cancelDeploySecondary: Esc / 右键

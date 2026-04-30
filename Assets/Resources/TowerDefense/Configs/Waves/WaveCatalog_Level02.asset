@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: WaveCatalog_Level02
   m_EditorClassIdentifier: 
   waves:
-  - displayName: Wave 01
+  - displayName: 第 01 波
     designerNote: Level 2 opening wave. Faster lane pressure with wolves and small scavengers.
     spawnGroups:
     - enemyType: 2
@@ -22,7 +22,7 @@ MonoBehaviour:
     - enemyType: 1
       enemyCount: 4
       spawnInterval: 0.8
-  - displayName: Wave 02
+  - displayName: 第 02 波
     designerNote: Level 2 support wave. Add banner shielding and mechanic repair pressure.
     spawnGroups:
     - enemyType: 3
@@ -34,7 +34,7 @@ MonoBehaviour:
     - enemyType: 1
       enemyCount: 5
       spawnInterval: 0.8
-  - displayName: Wave 03
+  - displayName: 第 03 波
     designerNote: Level 2 heavy push. Heavy armored machines lead while stealth stalkers slip through.
     spawnGroups:
     - enemyType: 5

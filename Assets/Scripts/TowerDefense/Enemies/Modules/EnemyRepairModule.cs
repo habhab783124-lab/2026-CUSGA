@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// `EnemyRepairModule` 负责让“机械师”这类支援敌人周期性修理最近的可修理单位。
@@ -11,23 +11,23 @@ using UnityEngine;
 [RequireComponent(typeof(Enemy))]
 public sealed class EnemyRepairModule : EnemyMechanicModule
 {
-    [Header("Authoring Source")]
+    [Header("参数来源")]
     [Tooltip("关闭时优先使用 EnemyCatalogAsset 里的修理参数；开启后改用当前 prefab 上这组本地参数。")]
-    [SerializeField] private bool useLocalOverrides;
+    [SerializeField, InspectorName("启用本地覆盖")] private bool useLocalOverrides; // 中文：使用本地覆盖
 
-    [Header("Local Overrides")]
+    [Header("本地覆盖")]
     [Tooltip("当启用本地覆盖后，这个开关决定该 prefab 是否真的启用修理支援。")]
-    [SerializeField] private bool localRepairEnabled = true;
+    [SerializeField, InspectorName("启用修理支援")] private bool localRepairEnabled = true; // 中文：本地修理Enabled
     [Tooltip("每次修理恢复的生命值。")]
-    [SerializeField] [Min(0)] private int localRepairAmount = 1;
+    [SerializeField, Min(0), InspectorName("单次修理量")] private int localRepairAmount = 1; // 中文：本地修理数量
     [Tooltip("可修理友军的搜索半径。")]
-    [SerializeField] [Min(0.1f)] private float localRepairRadius = 2.1f;
+    [SerializeField, Min(0.1f), InspectorName("搜索半径")] private float localRepairRadius = 2.1f; // 中文：本地修理半径
     [Tooltip("每次修理之间的冷却。")]
-    [SerializeField] [Min(0.1f)] private float localRepairCooldown = 2.5f;
+    [SerializeField, Min(0.1f), InspectorName("修理冷却")] private float localRepairCooldown = 2.5f; // 中文：本地修理冷却
 
-    private float _repairTimer;
+    private float _repairTimer; // 中文：修理计时器
 
-    private bool UsesRepairSupport =>
+    private bool UsesRepairSupport => // 中文：Uses修理支持
         useLocalOverrides
             ? localRepairEnabled && ResolveRepairAmount() > 0
             : Definition != null && Definition.RepairAmount > 0;

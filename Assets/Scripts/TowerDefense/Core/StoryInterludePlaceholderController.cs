@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// `StoryInterludePlaceholderController` 是当前阶段用于占位剧情横板段的极简控制器。
@@ -15,19 +15,19 @@ using UnityEngine;
 public sealed class StoryInterludePlaceholderController : MonoBehaviour
 {
     [Header("Placeholder Copy")]
-    [SerializeField] private string fallbackTitle = "Story Interlude Placeholder";
-    [SerializeField] [TextArea(3, 6)] private string fallbackBody = "The future 2D side-scrolling story scene will live here. For now this scene only reserves the campaign-flow slot between tower-defense encounters.";
-    [SerializeField] private string fallbackContinuePrompt = "Press Enter / Space to continue to the next combat segment.";
+    [SerializeField] private string fallbackTitle = "剧情过场占位"; // 中文：fallback标题
+    [SerializeField] [TextArea(3, 6)] private string fallbackBody = "未来的 2D 横板剧情内容会放在这里。当前这个场景只负责先占住战役流程里“剧情段”的位置，让塔防关卡和剧情段之间能够正常切换。"; // 中文：fallback主体
+    [SerializeField] private string fallbackContinuePrompt = "按 Enter / Space 继续进入下一段战斗。"; // 中文：fallback继续提示
 
     [Header("Input")]
-    [SerializeField] private KeyCode primaryContinueKey = KeyCode.Return;
-    [SerializeField] private KeyCode secondaryContinueKey = KeyCode.Space;
-    [SerializeField] private bool allowLeftMouseClickContinue = true;
+    [SerializeField] private KeyCode primaryContinueKey = KeyCode.Return; // 中文：主继续Key
+    [SerializeField] private KeyCode secondaryContinueKey = KeyCode.Space; // 中文：副继续Key
+    [SerializeField] private bool allowLeftMouseClickContinue = true; // 中文：允许剩余MouseClick继续
 
     [Header("Scene Look")]
-    [SerializeField] private Camera sceneCameraReference;
-    [SerializeField] private Color backgroundColor = new Color(0.03f, 0.05f, 0.08f, 1f);
-    [SerializeField] private bool drawRuntimeOverlay = true;
+    [SerializeField] private Camera sceneCameraReference; // 中文：场景相机引用
+    [SerializeField] private Color backgroundColor = new Color(0.03f, 0.05f, 0.08f, 1f); // 中文：背景颜色
+    [SerializeField] private bool drawRuntimeOverlay = true; // 中文：draw运行时覆盖层
 
     private void OnEnable()
     {

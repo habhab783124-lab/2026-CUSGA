@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -16,10 +16,15 @@ using UnityEditor;
 /// </summary>
 public enum TowerType
 {
+    [InspectorName("未选择")]
     None,
+    [InspectorName("继电器")]
     Relay,
+    [InspectorName("单体塔")]
     SingleTarget,
+    [InspectorName("减速塔")]
     SlowField,
+    [InspectorName("炸弹塔")]
     Bombard
 }
 
@@ -32,10 +37,10 @@ public enum TowerType
 public class TowerDefenseGame : MonoBehaviour
 {
 #if UNITY_EDITOR
-    private const string DefaultTowerPresentationCatalogAssetPath = "Assets/Resources/TowerDefense/Configs/TowerPresentationCatalog.asset";
-    private const string DefaultHudThemeAssetPath = "Assets/Resources/TowerDefense/Configs/TowerDefenseHudTheme.asset";
-    private const string DefaultHudCopyAssetPath = "Assets/Resources/TowerDefense/Configs/TowerDefenseHudCopy.asset";
-    private const string DefaultPlacementVisualThemeAssetPath = "Assets/Resources/TowerDefense/Configs/TowerPlacementVisualTheme.asset";
+    private const string DefaultTowerPresentationCatalogAssetPath = "Assets/Resources/TowerDefense/Configs/TowerPresentationCatalog.asset"; // 中文：默认塔展示目录资产路径
+    private const string DefaultHudThemeAssetPath = "Assets/Resources/TowerDefense/Configs/TowerDefenseHudTheme.asset"; // 中文：默认HUD主题资产路径
+    private const string DefaultHudCopyAssetPath = "Assets/Resources/TowerDefense/Configs/TowerDefenseHudCopy.asset"; // 中文：默认HUD文案资产路径
+    private const string DefaultPlacementVisualThemeAssetPath = "Assets/Resources/TowerDefense/Configs/TowerPlacementVisualTheme.asset"; // 中文：默认放置视觉主题资产路径
 #endif
 
     /// <summary>
@@ -47,25 +52,34 @@ public class TowerDefenseGame : MonoBehaviour
     [Serializable]
     private sealed class TowerPresentationAuthoring
     {
-        public string displayName = "Tower";
-        public string cardRoleSummary = "Role Summary";
-        public string selectionHint = "Selection hint.";
-        public string upgradeFocusSummary = "Upgrade summary.";
-        public Color accentColor = Color.white;
-        public Sprite cardIconSprite = null;
-        public Color cardIconTint = Color.white;
-        public Color cardBackgroundTint = new Color(0.08f, 0.11f, 0.16f, 0.96f);
-        public Color cardAccentTint = Color.white;
+        [InspectorName("显示名称")]
+        public string displayName = "建筑"; // 中文：显示名称
+        [InspectorName("卡片职责摘要")]
+        public string cardRoleSummary = "职责摘要"; // 中文：卡片RoleSummary
+        [InspectorName("选中提示")]
+        public string selectionHint = "选择提示。"; // 中文：selection提示
+        [InspectorName("升级方向摘要")]
+        public string upgradeFocusSummary = "升级方向摘要。"; // 中文：升级FocusSummary
+        [InspectorName("强调色")]
+        public Color accentColor = Color.white; // 中文：accent颜色
+        [InspectorName("卡片图标")]
+        public Sprite cardIconSprite = null; // 中文：卡片图标精灵
+        [InspectorName("图标着色")]
+        public Color cardIconTint = Color.white; // 中文：卡片图标Tint
+        [InspectorName("卡片底色")]
+        public Color cardBackgroundTint = new Color(0.08f, 0.11f, 0.16f, 0.96f); // 中文：卡片背景Tint
+        [InspectorName("卡片强调色")]
+        public Color cardAccentTint = Color.white; // 中文：卡片AccentTint
 
-        public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? "Tower" : displayName;
-        public string CardRoleSummary => string.IsNullOrWhiteSpace(cardRoleSummary) ? DisplayName : cardRoleSummary;
-        public string SelectionHint => string.IsNullOrWhiteSpace(selectionHint) ? CardRoleSummary : selectionHint;
-        public string UpgradeFocusSummary => string.IsNullOrWhiteSpace(upgradeFocusSummary) ? "Upgrade improves this structure." : upgradeFocusSummary;
-        public Color AccentColor => accentColor;
-        public Sprite CardIconSprite => cardIconSprite;
-        public Color CardIconTint => cardIconTint;
-        public Color CardBackgroundTint => cardBackgroundTint;
-        public Color CardAccentTint => cardAccentTint;
+        public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? "建筑" : displayName; // 中文：显示名称
+        public string CardRoleSummary => string.IsNullOrWhiteSpace(cardRoleSummary) ? DisplayName : cardRoleSummary; // 中文：卡片RoleSummary
+        public string SelectionHint => string.IsNullOrWhiteSpace(selectionHint) ? CardRoleSummary : selectionHint; // 中文：Selection提示
+        public string UpgradeFocusSummary => string.IsNullOrWhiteSpace(upgradeFocusSummary) ? "升级会强化这座建筑。" : upgradeFocusSummary; // 中文：升级FocusSummary
+        public Color AccentColor => accentColor; // 中文：Accent颜色
+        public Sprite CardIconSprite => cardIconSprite; // 中文：卡片图标精灵
+        public Color CardIconTint => cardIconTint; // 中文：卡片图标Tint
+        public Color CardBackgroundTint => cardBackgroundTint; // 中文：卡片背景Tint
+        public Color CardAccentTint => cardAccentTint; // 中文：卡片AccentTint
     }
 
     /// <summary>
@@ -78,25 +92,25 @@ public class TowerDefenseGame : MonoBehaviour
     [Serializable]
     private sealed class HudThemeAuthoring
     {
-        [SerializeField] private Color metricLabelColor = new Color(0.56f, 0.66f, 0.75f, 1f);
-        [SerializeField] private Color scrapValueColor = new Color(1f, 0.71f, 0.4f, 1f);
-        [SerializeField] private Color baseValueColor = new Color(0.45f, 0.91f, 1f, 1f);
-        [SerializeField] private Color waveValueColor = new Color(1f, 0.85f, 0.47f, 1f);
-        [SerializeField] private Color cardTextColor = new Color(0.96f, 0.98f, 1f, 1f);
-        [SerializeField] private Color secondaryInfoColor = new Color(0.54f, 0.65f, 0.75f, 1f);
-        [SerializeField] private Color statusTextColor = new Color(0.84f, 0.9f, 0.94f, 1f);
-        [SerializeField] private Color neutralNoticeColor = new Color(0.81f, 0.88f, 0.92f, 1f);
-        [SerializeField] private Color positiveNoticeColor = new Color(0.49f, 0.95f, 0.69f, 1f);
-        [SerializeField] private Color spendingNoticeColor = new Color(1f, 0.85f, 0.47f, 1f);
-        [SerializeField] private Color warningNoticeColor = new Color(1f, 0.72f, 0.44f, 1f);
-        [SerializeField] private Color dangerNoticeColor = new Color(1f, 0.55f, 0.5f, 1f);
-        [SerializeField] private Color dragPreviewInfoColor = new Color(0.53f, 0.65f, 0.74f, 1f);
-        [SerializeField] private Color dragPreviewValidColor = new Color(0.47f, 0.95f, 0.85f, 1f);
-        [SerializeField] private Color dragPreviewInvalidColor = new Color(1f, 0.45f, 0.51f, 1f);
-        [SerializeField] private Vector4 cardLabelMargin = new Vector4(108f, 18f, 24f, 18f);
-        [SerializeField] private float cardLabelCharacterSpacing = 1.2f;
-        [SerializeField] private float cardLabelLineSpacing = -10f;
-        [SerializeField] private Vector2 dragPreviewPanelOffset = new Vector2(142f, -92f);
+        [SerializeField, InspectorName("指标标题颜色")] private Color metricLabelColor = new Color(0.56f, 0.66f, 0.75f, 1f); // 中文：指标标签颜色
+        [SerializeField, InspectorName("废料数值颜色")] private Color scrapValueColor = new Color(1f, 0.71f, 0.4f, 1f); // 中文：废料Value颜色
+        [SerializeField, InspectorName("基地数值颜色")] private Color baseValueColor = new Color(0.45f, 0.91f, 1f, 1f); // 中文：基础Value颜色
+        [SerializeField, InspectorName("波次数值颜色")] private Color waveValueColor = new Color(1f, 0.85f, 0.47f, 1f); // 中文：波次Value颜色
+        [SerializeField, InspectorName("卡片文本颜色")] private Color cardTextColor = new Color(0.96f, 0.98f, 1f, 1f); // 中文：卡片文本颜色
+        [SerializeField, InspectorName("次级信息颜色")] private Color secondaryInfoColor = new Color(0.54f, 0.65f, 0.75f, 1f); // 中文：副Info颜色
+        [SerializeField, InspectorName("状态文本颜色")] private Color statusTextColor = new Color(0.84f, 0.9f, 0.94f, 1f); // 中文：状态文本颜色
+        [SerializeField, InspectorName("中性提示颜色")] private Color neutralNoticeColor = new Color(0.81f, 0.88f, 0.92f, 1f); // 中文：中性提示颜色
+        [SerializeField, InspectorName("正向提示颜色")] private Color positiveNoticeColor = new Color(0.49f, 0.95f, 0.69f, 1f); // 中文：正向提示颜色
+        [SerializeField, InspectorName("消耗提示颜色")] private Color spendingNoticeColor = new Color(1f, 0.85f, 0.47f, 1f); // 中文：消耗提示颜色
+        [SerializeField, InspectorName("警告提示颜色")] private Color warningNoticeColor = new Color(1f, 0.72f, 0.44f, 1f); // 中文：警告提示颜色
+        [SerializeField, InspectorName("危险提示颜色")] private Color dangerNoticeColor = new Color(1f, 0.55f, 0.5f, 1f); // 中文：危险提示颜色
+        [SerializeField, InspectorName("拖拽信息颜色")] private Color dragPreviewInfoColor = new Color(0.53f, 0.65f, 0.74f, 1f); // 中文：拖拽预览Info颜色
+        [SerializeField, InspectorName("拖拽合法颜色")] private Color dragPreviewValidColor = new Color(0.47f, 0.95f, 0.85f, 1f); // 中文：拖拽预览有效颜色
+        [SerializeField, InspectorName("拖拽非法颜色")] private Color dragPreviewInvalidColor = new Color(1f, 0.45f, 0.51f, 1f); // 中文：拖拽预览无效颜色
+        [SerializeField, InspectorName("卡片标签边距")] private Vector4 cardLabelMargin = new Vector4(108f, 18f, 24f, 18f); // 中文：卡片标签Margin
+        [SerializeField, InspectorName("卡片字距")] private float cardLabelCharacterSpacing = 1.2f; // 中文：卡片标签Character间距
+        [SerializeField, InspectorName("卡片行距")] private float cardLabelLineSpacing = -10f; // 中文：卡片标签线间距
+        [SerializeField, InspectorName("拖拽面板偏移")] private Vector2 dragPreviewPanelOffset = new Vector2(142f, -92f); // 中文：拖拽预览面板偏移
 
         public TowerDefenseHudTheme ToRuntimeTheme()
         {
@@ -126,232 +140,232 @@ public class TowerDefenseGame : MonoBehaviour
     /// <summary>
     /// 当前场景中的总控单例。部署卡、旧版 BuildPad 兼容桥和部分运行时对象会通过它拿到统一入口。
     /// </summary>
-    public static TowerDefenseGame Instance { get; private set; }
+    public static TowerDefenseGame Instance { get; private set; } // 中文：实例
 
-    [Header("Core Rules")]
+    [Header("核心规则")]
     [FormerlySerializedAs("startingEnergy")]
-    [SerializeField] private int startingScrap = 80;
-    [SerializeField] private int startingBaseHealth = 10;
-    [SerializeField] private int relayTowerCost = 0;
-    [SerializeField] private int singleTargetTowerCost = 38;
-    [SerializeField] private int slowFieldTowerCost = 50;
-    [SerializeField] private int bombardTowerCost = 62;
+    [SerializeField, InspectorName("初始废料")] private int startingScrap = 80; // 中文：starting废料
+    [SerializeField, InspectorName("初始基地生命")] private int startingBaseHealth = 10; // 中文：starting基础生命
+    [SerializeField, InspectorName("继电器造价")] private int relayTowerCost = 0; // 中文：继电器塔费用
+    [SerializeField, InspectorName("单体塔造价")] private int singleTargetTowerCost = 38; // 中文：单体目标塔费用
+    [SerializeField, InspectorName("减速塔造价")] private int slowFieldTowerCost = 50; // 中文：减速区域塔费用
+    [SerializeField, InspectorName("炸弹塔造价")] private int bombardTowerCost = 62; // 中文：炸弹塔费用
 
-    [Header("Placement Rules")]
-    [SerializeField] private float relayPlacementRadius = 0.52f;
-    [SerializeField] private float defensePlacementRadius = 0.58f;
+    [Header("放置规则")]
+    [SerializeField, InspectorName("继电器放置半径")] private float relayPlacementRadius = 0.52f; // 中文：继电器放置半径
+    [SerializeField, InspectorName("战斗塔放置半径")] private float defensePlacementRadius = 0.58f; // 中文：防御放置半径
 
-    [Header("Placement Expansion")]
-    [SerializeField] private float relayExpansionSquareSize = 4.5f;
-    [SerializeField] private float defenseExpansionSquareSize = 4.5f;
-    [SerializeField] private Vector2 initialPlacementSquareCenter = new Vector2(-6.5f, -2.25f);
-    [SerializeField] private float initialPlacementSquareSize = 3f;
+    [Header("放置扩张")]
+    [SerializeField, InspectorName("继电器扩张方格边长")] private float relayExpansionSquareSize = 4.5f; // 中文：继电器Expansion方格大小
+    [SerializeField, InspectorName("战斗塔扩张方格边长")] private float defenseExpansionSquareSize = 4.5f; // 中文：防御Expansion方格大小
+    [SerializeField, InspectorName("首塔起始区中心")] private Vector2 initialPlacementSquareCenter = new Vector2(-6.5f, -2.25f); // 中文：initial放置方格中心
+    [SerializeField, InspectorName("首塔起始区边长")] private float initialPlacementSquareSize = 3f; // 中文：initial放置方格大小
 
-    [Header("Placement Preview")]
-    [SerializeField] private Color validPreviewColor = new Color(0.26f, 0.95f, 0.78f, 0.72f);
-    [SerializeField] private Color invalidPreviewColor = new Color(1f, 0.32f, 0.38f, 0.72f);
-    [SerializeField] private Sprite placementRingSpriteReference;
-    [SerializeField] private string placementRingResourcePath = "UI/placement-ring";
+    [Header("放置预览")]
+    [SerializeField, InspectorName("合法预览颜色")] private Color validPreviewColor = new Color(0.26f, 0.95f, 0.78f, 0.72f); // 中文：有效预览颜色
+    [SerializeField, InspectorName("非法预览颜色")] private Color invalidPreviewColor = new Color(1f, 0.32f, 0.38f, 0.72f); // 中文：无效预览颜色
+    [SerializeField, InspectorName("放置圆环精灵")] private Sprite placementRingSpriteReference; // 中文：放置圆环精灵引用
+    [SerializeField, InspectorName("放置圆环资源路径")] private string placementRingResourcePath = "UI/placement-ring"; // 中文：放置圆环Resource路径
 
-    [Header("Placement Overlay")]
-    [SerializeField] private float placementAreaOverlayPixelsPerUnit = 20f;
-    [SerializeField] private Color placementAreaOverlayFillColor = new Color(0.18f, 0.82f, 0.86f, 0.16f);
-    [SerializeField] private Color placementAreaOverlayEdgeColor = new Color(0.72f, 1f, 0.97f, 0.52f);
-    [SerializeField] private int placementAreaOverlaySortingOrder = 12;
+    [Header("放置覆盖层")]
+    [SerializeField, InspectorName("覆盖层像素密度")] private float placementAreaOverlayPixelsPerUnit = 20f; // 中文：放置Area覆盖层PixelsPerUnit
+    [SerializeField, InspectorName("覆盖层填充色")] private Color placementAreaOverlayFillColor = new Color(0.18f, 0.82f, 0.86f, 0.16f); // 中文：放置Area覆盖层Fill颜色
+    [SerializeField, InspectorName("覆盖层描边色")] private Color placementAreaOverlayEdgeColor = new Color(0.72f, 1f, 0.97f, 0.52f); // 中文：放置Area覆盖层Edge颜色
+    [SerializeField, InspectorName("覆盖层排序值")] private int placementAreaOverlaySortingOrder = 12; // 中文：放置Area覆盖层Sorting顺序
 
-    [Header("Starter Zone Marker")]
-    [SerializeField] private Color starterZoneMarkerFillColor = new Color(0.22f, 0.82f, 0.88f, 0.22f);
-    [SerializeField] private Color starterZoneMarkerEdgeColor = new Color(0.9f, 1f, 0.98f, 1f);
-    [SerializeField] private int starterZoneMarkerSortingOrder = 10;
+    [Header("首塔起始区标记")]
+    [SerializeField, InspectorName("起始区填充色")] private Color starterZoneMarkerFillColor = new Color(0.22f, 0.82f, 0.88f, 0.22f); // 中文：起始区域标记Fill颜色
+    [SerializeField, InspectorName("起始区描边色")] private Color starterZoneMarkerEdgeColor = new Color(0.9f, 1f, 0.98f, 1f); // 中文：起始区域标记Edge颜色
+    [SerializeField, InspectorName("起始区排序值")] private int starterZoneMarkerSortingOrder = 10; // 中文：起始区域标记Sorting顺序
 
-    [Header("Shared Presentation Assets")]
+    [Header("共享表现资产")]
     [Tooltip("推荐使用的共用塔展示配置资产。多个关卡可以共用这一份，而不是在每个场景里重复维护塔卡文案和配色。")]
-    [SerializeField] private TowerPresentationCatalogAsset towerPresentationCatalogAsset;
+    [SerializeField, InspectorName("塔展示目录资产")] private TowerPresentationCatalogAsset towerPresentationCatalogAsset; // 中文：塔展示目录资产
     [Tooltip("推荐使用的共用 HUD 主题资产。多个关卡如果想保持统一 HUD 风格，应优先共用这一份资产。")]
-    [SerializeField] private TowerDefenseHudThemeAsset hudThemeAsset;
+    [SerializeField, InspectorName("HUD 主题资产")] private TowerDefenseHudThemeAsset hudThemeAsset; // 中文：HUD主题资产
     [Tooltip("推荐使用的共用 HUD 文案资产。操作区标题、拖拽提示固定文案等应优先统一收在这里。")]
-    [SerializeField] private TowerDefenseHudCopyAsset hudCopyAsset;
+    [SerializeField, InspectorName("HUD 文案资产")] private TowerDefenseHudCopyAsset hudCopyAsset; // 中文：HUD文案资产
     [Tooltip("推荐使用的共用放置可视化主题资产。预览颜色、覆盖层和首塔标记风格应优先统一维护在这里。")]
-    [SerializeField] private TowerPlacementVisualThemeAsset placementVisualThemeAsset;
+    [SerializeField, InspectorName("放置可视化主题资产")] private TowerPlacementVisualThemeAsset placementVisualThemeAsset; // 中文：放置视觉主题资产
 
-    [Header("Tower Presentation (Fallback)")]
-    [SerializeField] private TowerPresentationAuthoring relayPresentation = new TowerPresentationAuthoring
+    [Header("塔展示回退配置")]
+    [SerializeField, InspectorName("继电器展示配置")] private TowerPresentationAuthoring relayPresentation = new TowerPresentationAuthoring // 中文：继电器展示
     {
-        displayName = "Relay Generator",
-        cardRoleSummary = "Relay Node / Supply Grid",
-        selectionHint = "Anchor the power grid first, then expand tower coverage from there.",
-        upgradeFocusSummary = "Upgrades add more supply capacity without changing relay coverage radius.",
+        displayName = "继电器",
+        cardRoleSummary = "供电节点 / 网络扩张",
+        selectionHint = "先铺设继电器，再把战斗塔接入供电范围。",
+        upgradeFocusSummary = "升级会提升供电容量，但不会扩大覆盖范围。",
         accentColor = new Color(1f, 0.55f, 0.22f, 1f),
         cardIconTint = new Color(1f, 0.66f, 0.3f, 1f),
         cardBackgroundTint = new Color(0.14f, 0.1f, 0.08f, 0.96f),
         cardAccentTint = new Color(1f, 0.55f, 0.22f, 1f)
     };
-    [SerializeField] private TowerPresentationAuthoring singleTargetPresentation = new TowerPresentationAuthoring
+    [SerializeField, InspectorName("单体塔展示配置")] private TowerPresentationAuthoring singleTargetPresentation = new TowerPresentationAuthoring // 中文：单体目标展示
     {
-        displayName = "Defense Turret",
-        cardRoleSummary = "Focus Fire / Frontline",
-        selectionHint = "Reliable direct damage for finishing one target at a time.",
-        upgradeFocusSummary = "Upgrades push faster fire, longer reach, and steadier single-target DPS.",
+        displayName = "单体塔",
+        cardRoleSummary = "点杀 / 前线",
+        selectionHint = "稳定的单体直伤，适合补掉关键目标。",
+        upgradeFocusSummary = "升级会强化射速、射程和单体输出。",
         accentColor = new Color(0.28f, 0.78f, 1f, 1f),
         cardIconTint = new Color(0.55f, 0.88f, 1f, 1f),
         cardBackgroundTint = new Color(0.07f, 0.11f, 0.16f, 0.96f),
         cardAccentTint = new Color(0.28f, 0.78f, 1f, 1f)
     };
-    [SerializeField] private TowerPresentationAuthoring slowFieldPresentation = new TowerPresentationAuthoring
+    [SerializeField, InspectorName("减速塔展示配置")] private TowerPresentationAuthoring slowFieldPresentation = new TowerPresentationAuthoring // 中文：减速区域展示
     {
-        displayName = "Slow Field Tower",
-        cardRoleSummary = "Area Control / Slow",
-        selectionHint = "Controls lanes by slowing every enemy inside the field.",
-        upgradeFocusSummary = "Upgrades strengthen the slow, extend control time, and improve area denial.",
+        displayName = "减速塔",
+        cardRoleSummary = "范围控制 / 减速",
+        selectionHint = "减速范围内所有敌人，适合控线。",
+        upgradeFocusSummary = "升级会强化减速、延长控制时间并扩大压制力。",
         accentColor = new Color(0.36f, 0.95f, 0.84f, 1f),
         cardIconTint = new Color(0.66f, 1f, 0.91f, 1f),
         cardBackgroundTint = new Color(0.07f, 0.14f, 0.14f, 0.96f),
         cardAccentTint = new Color(0.36f, 0.95f, 0.84f, 1f)
     };
-    [SerializeField] private TowerPresentationAuthoring bombardPresentation = new TowerPresentationAuthoring
+    [SerializeField, InspectorName("炸弹塔展示配置")] private TowerPresentationAuthoring bombardPresentation = new TowerPresentationAuthoring // 中文：炸弹展示
     {
-        displayName = "Bombard Tower",
-        cardRoleSummary = "Burst Splash / Delayed",
-        selectionHint = "Delayed splash damage that punishes clustered enemies at range.",
-        upgradeFocusSummary = "Upgrades widen the blast, shorten bomb travel, and raise burst damage.",
+        displayName = "炸弹塔",
+        cardRoleSummary = "爆发溅射 / 延迟",
+        selectionHint = "延迟爆炸，适合打击密集敌群。",
+        upgradeFocusSummary = "升级会扩大爆炸范围、缩短飞行时间并提高爆发伤害。",
         accentColor = new Color(1f, 0.62f, 0.26f, 1f),
         cardIconTint = new Color(1f, 0.78f, 0.46f, 1f),
         cardBackgroundTint = new Color(0.16f, 0.1f, 0.08f, 0.96f),
         cardAccentTint = new Color(1f, 0.62f, 0.26f, 1f)
     };
 
-    [Header("HUD Theme (Fallback)")]
-    [SerializeField] private HudThemeAuthoring hudTheme = new HudThemeAuthoring();
+    [Header("HUD 主题回退配置")]
+    [SerializeField, InspectorName("HUD 主题配置")] private HudThemeAuthoring hudTheme = new HudThemeAuthoring(); // 中文：HUD主题
 
-    [Header("Scene References (Preferred)")]
+    [Header("场景引用（推荐）")]
 
     /// <summary>
     /// 这一组是玩法主链路优先使用的显式场景引用。
     /// 包括主相机、塔原型、运行时根节点和 `BuildZone`。如果这些引用已经在 Inspector 里配好，
     /// 运行时就不应该再依赖对象名查找；名字字段只保留给过渡期兜底或运行时容器命名。
     /// </summary>
-    [SerializeField] private Camera mainCameraReference;
-    [SerializeField] private GameObject relayTowerPrototypeReference;
+    [SerializeField, InspectorName("主相机")] private Camera mainCameraReference; // 中文：主相机引用
+    [SerializeField, InspectorName("继电器原型 Prefab")] private GameObject relayTowerPrototypeReference; // 中文：继电器塔原型引用
     [FormerlySerializedAs("defenseTowerPrototypeReference")]
-    [SerializeField] private GameObject singleTargetTowerPrototypeReference;
-    [SerializeField] private GameObject slowFieldTowerPrototypeReference;
-    [SerializeField] private GameObject bombardTowerPrototypeReference;
-    [SerializeField] private Transform placedTowerRootReference;
-    [SerializeField] private Transform placementPreviewRootReference;
-    [SerializeField] private BuildZone buildZoneReference;
-    [SerializeField] private BattlefieldMapDefinition battlefieldMapReference;
+    [SerializeField, InspectorName("单体塔原型 Prefab")] private GameObject singleTargetTowerPrototypeReference; // 中文：单体目标塔原型引用
+    [SerializeField, InspectorName("减速塔原型 Prefab")] private GameObject slowFieldTowerPrototypeReference; // 中文：减速区域塔原型引用
+    [SerializeField, InspectorName("炸弹塔原型 Prefab")] private GameObject bombardTowerPrototypeReference; // 中文：炸弹塔原型引用
+    [SerializeField, InspectorName("已放置塔根节点")] private Transform placedTowerRootReference; // 中文：已放置塔根节点引用
+    [SerializeField, InspectorName("放置预览根节点")] private Transform placementPreviewRootReference; // 中文：放置预览根节点引用
+    [SerializeField, InspectorName("建造区")] private BuildZone buildZoneReference; // 中文：建造区域引用
+    [SerializeField, InspectorName("战场地图定义")] private BattlefieldMapDefinition battlefieldMapReference; // 中文：战场地图引用
 
-    [Header("HUD References (Preferred)")]
+    [Header("HUD 引用（推荐）")]
 
     /// <summary>
     /// 这一组是玩法 HUD 的显式场景引用。
     /// 当前策略是优先直接拖 Inspector，引导项目逐步摆脱按名字查找 UI 对象的旧做法。
     /// </summary>
     [FormerlySerializedAs("energyTextReference")]
-    [SerializeField] private TMP_Text scrapTextReference;
-    [SerializeField] private TMP_Text baseHealthTextReference;
-    [SerializeField] private TMP_Text waveTextReference;
-    [SerializeField] private TMP_Text selectionTextReference;
-    [SerializeField] private TMP_Text operationTextReference;
-    [SerializeField] private TMP_Text liveStatusTextReference;
-    [SerializeField] private TMP_Text powerGridTextReference;
-    [SerializeField] private TMP_Text latestEventTextReference;
-    [SerializeField] private TMP_Text recentLogTextReference;
+    [SerializeField, InspectorName("废料文本")] private TMP_Text scrapTextReference; // 中文：废料文本引用
+    [SerializeField, InspectorName("基地生命文本")] private TMP_Text baseHealthTextReference; // 中文：基础生命文本引用
+    [SerializeField, InspectorName("波次文本")] private TMP_Text waveTextReference; // 中文：波次文本引用
+    [SerializeField, InspectorName("选中文本")] private TMP_Text selectionTextReference; // 中文：selection文本引用
+    [SerializeField, InspectorName("操作文本")] private TMP_Text operationTextReference; // 中文：操作文本引用
+    [SerializeField, InspectorName("实时状态文本")] private TMP_Text liveStatusTextReference; // 中文：实时状态文本引用
+    [SerializeField, InspectorName("供电文本")] private TMP_Text powerGridTextReference; // 中文：供电电网文本引用
+    [SerializeField, InspectorName("最新事件文本")] private TMP_Text latestEventTextReference; // 中文：最新事件文本引用
+    [SerializeField, InspectorName("近期日志文本")] private TMP_Text recentLogTextReference; // 中文：近期日志文本引用
 
-    [SerializeField] private Button relayTowerButtonReference;
-    [SerializeField] private Button defenseTowerButtonReference;
-    [SerializeField] private Button slowFieldTowerButtonReference;
-    [SerializeField] private Button bombardTowerButtonReference;
-    [SerializeField] private Button clearSelectionButtonReference;
-    [SerializeField] private GameObject gameOverPanelReference;
-    [SerializeField] private TMP_Text gameOverTitleReference;
-    [SerializeField] private TMP_Text gameOverHintReference;
-    [SerializeField] private GameObject dragPreviewPanelReference;
-    [SerializeField] private TMP_Text dragPreviewLabelReference;
+    [SerializeField, InspectorName("继电器按钮")] private Button relayTowerButtonReference; // 中文：继电器塔按钮引用
+    [SerializeField, InspectorName("单体塔按钮")] private Button defenseTowerButtonReference; // 中文：防御塔按钮引用
+    [SerializeField, InspectorName("减速塔按钮")] private Button slowFieldTowerButtonReference; // 中文：减速区域塔按钮引用
+    [SerializeField, InspectorName("炸弹塔按钮")] private Button bombardTowerButtonReference; // 中文：炸弹塔按钮引用
+    [SerializeField, InspectorName("清除选择按钮")] private Button clearSelectionButtonReference; // 中文：清除Selection按钮引用
+    [SerializeField, InspectorName("结算面板")] private GameObject gameOverPanelReference; // 中文：游戏结束面板引用
+    [SerializeField, InspectorName("结算标题文本")] private TMP_Text gameOverTitleReference; // 中文：游戏结束标题引用
+    [SerializeField, InspectorName("结算提示文本")] private TMP_Text gameOverHintReference; // 中文：游戏结束提示引用
+    [SerializeField, InspectorName("拖拽预览面板")] private GameObject dragPreviewPanelReference; // 中文：拖拽预览面板引用
+    [SerializeField, InspectorName("拖拽预览文本")] private TMP_Text dragPreviewLabelReference; // 中文：拖拽预览标签引用
 
     /// <summary>
     /// `_sessionState` 负责保存这一局的资源、基地、波次和结算状态。
     /// 它是当前总控最核心的一份“局内运行状态源”。
     /// </summary>
-    private TowerDefenseSessionState _sessionState;
+    private TowerDefenseSessionState _sessionState; // 中文：会话状态
 
-    private GameObject _relayTowerPrototype;
-    private GameObject _singleTargetTowerPrototype;
-    private GameObject _slowFieldTowerPrototype;
-    private GameObject _bombardTowerPrototype;
-    private Camera _mainCamera;
-    private BuildZone _buildZone;
-    private BattlefieldMapDefinition _battlefieldMapDefinition;
-    private Transform _placedTowerRoot;
-    private Transform _placementPreviewRoot;
-    private TowerPlacementRules _placementRules;
-    private TowerPowerGridCoordinator _powerGridCoordinator;
+    private GameObject _relayTowerPrototype; // 中文：继电器塔原型
+    private GameObject _singleTargetTowerPrototype; // 中文：单体目标塔原型
+    private GameObject _slowFieldTowerPrototype; // 中文：减速区域塔原型
+    private GameObject _bombardTowerPrototype; // 中文：炸弹塔原型
+    private Camera _mainCamera; // 中文：主相机
+    private BuildZone _buildZone; // 中文：建造区域
+    private BattlefieldMapDefinition _battlefieldMapDefinition; // 中文：战场地图定义
+    private Transform _placedTowerRoot; // 中文：已放置塔根节点
+    private Transform _placementPreviewRoot; // 中文：放置预览根节点
+    private TowerPlacementRules _placementRules; // 中文：放置Rules
+    private TowerPowerGridCoordinator _powerGridCoordinator; // 中文：供电电网协调器
 
     /// <summary>
     /// `_placementVisualController` 负责放置阶段的可视化反馈。
     /// 它会统一管理预览塔、合法区域覆盖层和首塔起手区标记，让 `TowerDefenseGame` 只保留调度职责。
     /// </summary>
-    private TowerPlacementVisualController _placementVisualController;
+    private TowerPlacementVisualController _placementVisualController; // 中文：放置视觉控制器
 
     /// <summary>
     /// `_placementInteractionController` 负责“玩家怎样进入放置流程、怎样更新流程、怎样结束流程”。
     /// 这一轮把交互状态从总控里迁出去后，
     /// `TowerDefenseGame` 更明确地退回到“整局编排 + 真正建塔 + HUD 刷新入口”的职责边界。
     /// </summary>
-    private TowerPlacementInteractionController _placementInteractionController;
+    private TowerPlacementInteractionController _placementInteractionController; // 中文：放置交互控制器
 
     /// <summary>
     /// `_placementBuildExecutor` 负责真正建塔这一段执行链。
     /// 也就是：最终校验、实例化塔、兼容旧 BuildPad、补碰撞体、扣费和放置成功后的收尾刷新。
     /// 这样总控就不用再同时承担“整局状态管理”和“建塔流水线细节”两种职责。
     /// </summary>
-    private TowerPlacementBuildExecutor _placementBuildExecutor;
+    private TowerPlacementBuildExecutor _placementBuildExecutor; // 中文：放置建造执行器
 
     /// <summary>
     /// `_presentationCoordinator` 负责 HUD 广播与结算表现收尾。
     /// 它把 HUD 快照组装、状态消息转发、Game Over 面板显示和敌人血条隐藏这些表现层协调逻辑
     /// 从总控中继续收口出去。
     /// </summary>
-    private TowerDefensePresentationCoordinator _presentationCoordinator;
+    private TowerDefensePresentationCoordinator _presentationCoordinator; // 中文：展示协调器
 
     /// <summary>
     /// `_sceneBootstrapper` 负责把当前关卡里的显式引用、运行时根节点和兜底对象装配成可用状态。
     /// 这样总控就不必继续内联整段“场景怎么接线、根节点怎么补、BuildZone 怎么兜底”的启动代码。
     /// </summary>
-    private TowerDefenseSceneBootstrapper _sceneBootstrapper;
+    private TowerDefenseSceneBootstrapper _sceneBootstrapper; // 中文：场景引导器
 
     /// <summary>
     /// `_inputCoordinator` 负责输入轮询、快速点击放置、屏幕坐标换算和 UI 阻挡判断。
     /// 这样总控就不再自己持有这一组输入工具层细节。
     /// </summary>
-    private TowerDefenseInputCoordinator _inputCoordinator;
+    private TowerDefenseInputCoordinator _inputCoordinator; // 中文：输入协调器
 
     /// <summary>
     /// `_placementSupportCoordinator` 负责放置链里剩下的支持型能力，
     /// 例如：起手区标记、合法区预热、塔静态定义查询、规则桥接与起手区自检。
     /// 这是让总控在最后一轮尽量收敛成“装配层”的关键一步。
     /// </summary>
-    private TowerPlacementSupportCoordinator _placementSupportCoordinator;
-    private RelayTower _selectedRelayTower;
-    private DefenseTower _selectedDefenseTower;
+    private TowerPlacementSupportCoordinator _placementSupportCoordinator; // 中文：放置支持协调器
+    private RelayTower _selectedRelayTower; // 中文：选中继电器塔
+    private DefenseTower _selectedDefenseTower; // 中文：选中防御塔
 
     /// <summary>
     /// `_towerCatalog` 提供塔的静态定义，例如显示名、造价、占地半径和扩张方格边长。
     /// 总控通过它读配置，而不是把这些常量散落在很多 `switch` 里。
     /// </summary>
-    private TowerCatalog _towerCatalog;
+    private TowerCatalog _towerCatalog; // 中文：塔目录
 
     /// <summary>
     /// `_hudPresenter` 是 HUD 表现层适配器。
     /// 它只负责把当前状态刷到界面上，并同步拖拽提示、按钮可用性与结算面板。
     /// 这样做的目的，是把“状态计算”和“界面呈现”分开，减少总控脚本继续膨胀。
     /// </summary>
-    private TowerDefenseHudPresenter _hudPresenter;
+    private TowerDefenseHudPresenter _hudPresenter; // 中文：HUDPresenter
 
     /// <summary>
     /// 对外暴露只读的结算状态，方便 HUD、敌人和其他运行时对象判断当前是否已经 Game Over。
     /// </summary>
-    public bool IsGameOver => _sessionState != null && _sessionState.IsGameOver;
+    public bool IsGameOver => _sessionState != null && _sessionState.IsGameOver; // 中文：是否游戏结束
 
     /// <summary>
     /// `Awake()` 负责建立单例、锁定基础运行参数，并把场景引用与协作模块先装配起来。
@@ -487,7 +501,7 @@ public class TowerDefenseGame : MonoBehaviour
             return;
         }
 
-        ShowTransientHudNotice($"+{amount} SCRAP recovered.", tone: HudNoticeTone.Positive);
+        ShowTransientHudNotice($"+{amount} 废料回收。", tone: HudNoticeTone.Positive);
         RefreshHud();
     }
 
@@ -511,8 +525,8 @@ public class TowerDefenseGame : MonoBehaviour
         }
 
         RefreshHud();
-        SetStatusMessage($"An enemy slipped through. Base lost {actualDamage} HP.");
-        ShowTransientHudNotice($"-{actualDamage} CORE integrity.", duration: 3f, tone: HudNoticeTone.Danger);
+        SetStatusMessage($"有敌人突破了防线，基地损失 {actualDamage} 点生命。");
+        ShowTransientHudNotice($"基地完整度 -{actualDamage}", duration: 3f, tone: HudNoticeTone.Danger);
 
         if (baseDepleted)
         {
@@ -623,8 +637,8 @@ public class TowerDefenseGame : MonoBehaviour
             _sessionState.SetCurrentScrap(_sessionState.CurrentScrap - upgradeCost);
             _powerGridCoordinator.ApplyRelayUpgrade(_selectedRelayTower);
             SetStatusMessage(
-                $"Relay #{_selectedRelayTower.RelayNumber} upgraded to LV {_selectedRelayTower.CurrentLevel}. Capacity is now {_selectedRelayTower.SupplyCapacity}.");
-            ShowTransientHudNotice($"-{upgradeCost} SCRAP relay upgrade.", 2.2f, HudNoticeTone.Spending);
+                $"继电器 #{_selectedRelayTower.RelayNumber} 已升级到 LV {_selectedRelayTower.CurrentLevel}。当前容量 {_selectedRelayTower.SupplyCapacity}。");
+            ShowTransientHudNotice($"-{upgradeCost} 废料用于继电器升级。", 2.2f, HudNoticeTone.Spending);
             InvalidatePlacementAreaOverlayCache();
             RefreshHud();
             return true;
@@ -646,13 +660,13 @@ public class TowerDefenseGame : MonoBehaviour
             _sessionState.SetCurrentScrap(_sessionState.CurrentScrap - upgradeCost);
             _powerGridCoordinator.ApplyDefenseTowerUpgrade(_selectedDefenseTower);
             SetStatusMessage(
-                $"{GetTowerDisplayName(_selectedDefenseTower.BuildType)} #{_selectedDefenseTower.TowerNumber} upgraded to LV {_selectedDefenseTower.CurrentLevel}. Power demand is now {_selectedDefenseTower.PowerRequired}.");
-            ShowTransientHudNotice($"-{upgradeCost} SCRAP tower upgrade.", 2.2f, HudNoticeTone.Spending);
+                $"{GetTowerDisplayName(_selectedDefenseTower.BuildType)} #{_selectedDefenseTower.TowerNumber} 已升级到 LV {_selectedDefenseTower.CurrentLevel}。当前耗电 {_selectedDefenseTower.PowerRequired}。");
+            ShowTransientHudNotice($"-{upgradeCost} 废料用于塔升级。", 2.2f, HudNoticeTone.Spending);
             RefreshHud();
             return true;
         }
 
-        SetStatusMessage("Select a placed relay or defense tower first.");
+        SetStatusMessage("请先选中一个已放置的继电器或战斗塔。");
         return false;
     }
 
@@ -669,7 +683,7 @@ public class TowerDefenseGame : MonoBehaviour
             ClearPlacedStructureSelection();
             Destroy(relayTower.gameObject);
             InvalidatePlacementAreaOverlayCache();
-            SetStatusMessage($"Relay #{relayTower.RelayNumber} dismantled.");
+            SetStatusMessage($"继电器 #{relayTower.RelayNumber} 已拆除。");
             RefreshHud();
             return true;
         }
@@ -680,12 +694,12 @@ public class TowerDefenseGame : MonoBehaviour
             ClearPlacedStructureSelection();
             Destroy(defenseTower.gameObject);
             InvalidatePlacementAreaOverlayCache();
-            SetStatusMessage($"{GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber} dismantled.");
+            SetStatusMessage($"{GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber} 已拆除。");
             RefreshHud();
             return true;
         }
 
-        SetStatusMessage("Select a placed relay or defense tower first.");
+        SetStatusMessage("请先选中一个已放置的继电器或战斗塔。");
         return false;
     }
 
@@ -1004,13 +1018,13 @@ public class TowerDefenseGame : MonoBehaviour
             bool canUpgrade = _powerGridCoordinator != null &&
                               _sessionState != null &&
                               _powerGridCoordinator.CanUpgradeRelay(_selectedRelayTower, _sessionState.CurrentScrap, out upgradeCost, out invalidReason);
-            string detail = $"Relay #{_selectedRelayTower.RelayNumber} / LV {_selectedRelayTower.CurrentLevel} / Load {_selectedRelayTower.CurrentAssignedLoad}/{_selectedRelayTower.SupplyCapacity}";
-            detail += $"\nRange {_selectedRelayTower.SupplyRange:0.0} / Next cap {_selectedRelayTower.PreviewUpgradedSupplyCapacity()}";
+            string detail = $"继电器 #{_selectedRelayTower.RelayNumber} / LV {_selectedRelayTower.CurrentLevel} / 负载 {_selectedRelayTower.CurrentAssignedLoad}/{_selectedRelayTower.SupplyCapacity}";
+            detail += $"\n范围 {_selectedRelayTower.SupplyRange:0.0} / 升级后容量 {_selectedRelayTower.PreviewUpgradedSupplyCapacity()}";
             detail += canUpgrade
-                ? $"\nAfter upgrade: {_sessionState.CurrentScrap - upgradeCost} SCRAP left."
-                  + $"\nU Upgrade ({upgradeCost} SCRAP) / Delete Dismantle"
+                ? $"\n升级后剩余：{_sessionState.CurrentScrap - upgradeCost} 废料。"
+                  + $"\nU 升级（{upgradeCost} 废料） / Delete 拆除"
                 : $"\n{invalidReason}";
-            return new PlacedStructureHudState(true, "Relay Node", detail);
+            return new PlacedStructureHudState(true, "继电器节点", detail);
         }
 
         if (_selectedDefenseTower != null)
@@ -1018,17 +1032,17 @@ public class TowerDefenseGame : MonoBehaviour
             int upgradeCost = 0;
             string invalidReason = string.Empty;
             string powerState = _selectedDefenseTower.IsPowered
-                ? $"ONLINE / Relay #{(_selectedDefenseTower.AssignedRelay != null ? _selectedDefenseTower.AssignedRelay.RelayNumber : 0)}"
+                ? $"在线 / 继电器 #{(_selectedDefenseTower.AssignedRelay != null ? _selectedDefenseTower.AssignedRelay.RelayNumber : 0)}"
                 : _selectedDefenseTower.PowerStatusMessage;
             bool canUpgrade = _powerGridCoordinator != null &&
                               _sessionState != null &&
                               _powerGridCoordinator.CanUpgradeDefenseTower(_selectedDefenseTower, _sessionState.CurrentScrap, out upgradeCost, out invalidReason);
-            string detail = $"Turret #{_selectedDefenseTower.TowerNumber} / LV {_selectedDefenseTower.CurrentLevel} / {powerState}";
+            string detail = $"塔 #{_selectedDefenseTower.TowerNumber} / LV {_selectedDefenseTower.CurrentLevel} / {powerState}";
             detail += $"\n{_selectedDefenseTower.BuildCurrentCombatSummary()}";
             detail += $"\n{_selectedDefenseTower.BuildUpgradePreviewSummary()}";
             detail += canUpgrade
-                ? $"\nAfter upgrade: {_sessionState.CurrentScrap - upgradeCost} SCRAP left."
-                  + $"\nU Upgrade ({upgradeCost} SCRAP) / Delete Dismantle"
+                ? $"\n升级后剩余：{_sessionState.CurrentScrap - upgradeCost} 废料。"
+                  + $"\nU 升级（{upgradeCost} 废料） / Delete 拆除"
                 : $"\n{invalidReason}";
             return new PlacedStructureHudState(true, GetTowerDisplayName(_selectedDefenseTower.BuildType), detail);
         }
@@ -1047,7 +1061,7 @@ public class TowerDefenseGame : MonoBehaviour
         _placementInteractionController?.SetSelectionSilently(TowerType.None);
         _selectedRelayTower = relayTower;
         _selectedDefenseTower = null;
-        SetStatusMessage($"Selected relay #{relayTower.RelayNumber}. Press U to upgrade or Delete to dismantle.");
+        SetStatusMessage($"已选中继电器 #{relayTower.RelayNumber}。按 U 升级，按 Delete 拆除。");
         RefreshHud();
     }
 
@@ -1062,7 +1076,7 @@ public class TowerDefenseGame : MonoBehaviour
         _placementInteractionController?.SetSelectionSilently(TowerType.None);
         _selectedDefenseTower = defenseTower;
         _selectedRelayTower = null;
-        SetStatusMessage($"Selected {GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber}. Press U to upgrade or Delete to dismantle.");
+        SetStatusMessage($"已选中 {GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber}。按 U 升级，按 Delete 拆除。");
         RefreshHud();
     }
 
@@ -1110,20 +1124,20 @@ public class TowerDefenseGame : MonoBehaviour
             return _placementSupportCoordinator.ValidatePlacementPosition(worldPosition, towerType, out invalidReason);
         }
 
-        invalidReason = "Placement support is not initialized.";
+            invalidReason = "放置支持系统尚未初始化。";
         return false;
 #if false
         invalidReason = string.Empty;
 
         if (_buildZone == null)
         {
-            invalidReason = "No BuildZone is configured in this level.";
+            invalidReason = "当前关卡没有配置 BuildZone。";
             return false;
         }
 
         if (!_buildZone.ContainsPoint(worldPosition))
         {
-            invalidReason = "Outside the level's buildable area.";
+            invalidReason = "超出当前关卡的可建造区域。";
             return false;
         }
 
@@ -1160,7 +1174,7 @@ public class TowerDefenseGame : MonoBehaviour
             bool belongsToPlacedTower = placedTowerRoot != null && overlap.transform.IsChildOf(placedTowerRoot);
             if (belongsToPlacedTower && (overlap.GetComponentInParent<DefenseTower>() != null || overlap.GetComponentInParent<RelayTower>() != null))
             {
-                invalidReason = "Too close to another structure. Move it a little.";
+                invalidReason = "离其他建筑太近了，请稍微挪开一点。";
                 return false;
             }
         }

@@ -31,12 +31,12 @@ namespace TowerDefense.Editor
             DrawCampaignFlowSummary();
 
             string missing = string.Empty;
-            AppendMissing(ref missing, "sceneCamera", "Main Camera");
+            AppendMissing(ref missing, "sceneCamera", "主相机");
             AppendMissing(ref missing, "mainCanvas", "Canvas");
             AppendMissing(ref missing, "eventSystem", "EventSystem");
-            AppendMissing(ref missing, "menuRoot", "Menu Root");
-            AppendMissing(ref missing, "startButton", "Start Button");
-            AppendMissing(ref missing, "titleText", "Title Text");
+            AppendMissing(ref missing, "menuRoot", "菜单根节点");
+            AppendMissing(ref missing, "startButton", "开始按钮");
+            AppendMissing(ref missing, "titleText", "标题文本");
 
             if (string.IsNullOrWhiteSpace(missing))
             {
@@ -55,12 +55,12 @@ namespace TowerDefense.Editor
             bool useCampaignFlow = useCampaignFlowProperty != null && useCampaignFlowProperty.boolValue;
             string assetName = campaignFlowAssetProperty != null && campaignFlowAssetProperty.objectReferenceValue != null
                 ? campaignFlowAssetProperty.objectReferenceValue.name
-                : "None";
+                : "未设置";
 
             if (useCampaignFlow)
             {
-                EditorGUILayout.HelpBox($"当前主菜单启动时将优先进入剧情-塔防流程。\nCampaign Asset: {assetName}", MessageType.Info);
-                if (assetName == "None")
+                EditorGUILayout.HelpBox($"当前主菜单启动时将优先进入剧情-塔防流程。\nCampaign 资产：{assetName}", MessageType.Info);
+                if (assetName == "未设置")
                 {
                     EditorGUILayout.HelpBox("已经启用剧情流程模式，但还没有接 CampaignFlowAsset。当前按下 Start 时会回退到原始场景入口。", MessageType.Warning);
                 }
@@ -68,7 +68,7 @@ namespace TowerDefense.Editor
                 return;
             }
 
-            EditorGUILayout.HelpBox($"当前主菜单仍然走旧的直接场景入口。\nCampaign Asset: {assetName}", MessageType.None);
+            EditorGUILayout.HelpBox($"当前主菜单仍然走旧的直接场景入口。\nCampaign 资产：{assetName}", MessageType.None);
         }
 
         private void DrawAuthoringActions()
@@ -76,13 +76,13 @@ namespace TowerDefense.Editor
             MainMenuController controller = (MainMenuController)target;
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Materialize Scene UI"))
+            if (GUILayout.Button("物化场景 UI"))
             {
                 controller.EditorMaterializeDefaultSceneUi();
                 EditorUtility.SetDirty(controller);
             }
 
-            if (GUILayout.Button("Apply Authoring To Scene"))
+            if (GUILayout.Button("应用作者设置到场景"))
             {
                 controller.EditorApplyAuthoringToScene();
                 EditorUtility.SetDirty(controller);

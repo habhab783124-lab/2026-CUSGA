@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -20,17 +20,17 @@ using UnityEngine.UI;
 /// </summary>
 public sealed class TowerDefenseInputCoordinator
 {
-    private readonly Func<bool> _isGameOverQuery;
-    private readonly Func<bool> _tryQuickPlacementAtCurrentMouse;
-    private readonly Func<bool> _tryUpgradeSelectedStructure;
-    private readonly Func<bool> _tryDemolishSelectedStructure;
-    private readonly Action _selectRelayTower;
-    private readonly Action _selectSingleTargetTower;
-    private readonly Action _selectSlowFieldTower;
-    private readonly Action _selectBombardTower;
-    private readonly Action _clearSelection;
+    private readonly Func<bool> _isGameOverQuery; // 中文：是否游戏结束查询
+    private readonly Func<bool> _tryQuickPlacementAtCurrentMouse; // 中文：尝试Quick放置At当前Mouse
+    private readonly Func<bool> _tryUpgradeSelectedStructure; // 中文：尝试升级选中Structure
+    private readonly Func<bool> _tryDemolishSelectedStructure; // 中文：尝试Demolish选中Structure
+    private readonly Action _selectRelayTower; // 中文：select继电器塔
+    private readonly Action _selectSingleTargetTower; // 中文：select单体目标塔
+    private readonly Action _selectSlowFieldTower; // 中文：select减速区域塔
+    private readonly Action _selectBombardTower; // 中文：select炸弹塔
+    private readonly Action _clearSelection; // 中文：清除Selection
 
-    private Camera _mainCamera;
+    private Camera _mainCamera; // 中文：主相机
 
     public TowerDefenseInputCoordinator(
         Func<bool> isGameOverQuery,

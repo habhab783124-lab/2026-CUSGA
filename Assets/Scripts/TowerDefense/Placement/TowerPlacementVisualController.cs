@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 /// <summary>
@@ -18,26 +18,26 @@ using UnityEngine;
 /// </summary>
 public sealed class TowerPlacementVisualController : IDisposable
 {
-    private readonly Sprite _placementRingSprite;
-    private readonly string _placementRingResourcePath;
-    private readonly Color _validPreviewColor;
-    private readonly Color _invalidPreviewColor;
-    private readonly Func<TowerType, GameObject> _getPrototype;
-    private readonly Func<TowerType, string> _getTowerDisplayName;
-    private readonly Func<TowerType, float> _getPlacementRadius;
-    private readonly PlacementAreaOverlayRenderer _placementAreaOverlayRenderer;
-    private readonly StarterZoneMarkerRenderer _starterZoneMarkerRenderer;
+    private readonly Sprite _placementRingSprite; // 中文：放置圆环精灵
+    private readonly string _placementRingResourcePath; // 中文：放置圆环Resource路径
+    private readonly Color _validPreviewColor; // 中文：有效预览颜色
+    private readonly Color _invalidPreviewColor; // 中文：无效预览颜色
+    private readonly Func<TowerType, GameObject> _getPrototype; // 中文：获取原型
+    private readonly Func<TowerType, string> _getTowerDisplayName; // 中文：获取塔显示名称
+    private readonly Func<TowerType, float> _getPlacementRadius; // 中文：获取放置半径
+    private readonly PlacementAreaOverlayRenderer _placementAreaOverlayRenderer; // 中文：放置Area覆盖层Renderer
+    private readonly StarterZoneMarkerRenderer _starterZoneMarkerRenderer; // 中文：起始区域标记Renderer
 
-    private Transform _placementPreviewRoot;
+    private Transform _placementPreviewRoot; // 中文：放置预览根节点
 
-    private GameObject _placementPreviewInstance;
-    private TowerType _placementPreviewTowerType = TowerType.None;
-    private SpriteRenderer _placementPreviewSpriteRenderer;
-    private SpriteRenderer _placementPreviewRingRenderer;
+    private GameObject _placementPreviewInstance; // 中文：放置预览实例
+    private TowerType _placementPreviewTowerType = TowerType.None; // 中文：放置预览塔类型
+    private SpriteRenderer _placementPreviewSpriteRenderer; // 中文：放置预览精灵Renderer
+    private SpriteRenderer _placementPreviewRingRenderer; // 中文：放置预览圆环Renderer
 
-    private int _placementAreaOverlayRevision;
-    private int _placementAreaOverlayPreparedRevision = -1;
-    private TowerType _placementAreaOverlayPreparedTowerType = TowerType.None;
+    private int _placementAreaOverlayRevision; // 中文：放置Area覆盖层版本
+    private int _placementAreaOverlayPreparedRevision = -1; // 中文：放置Area覆盖层Prepared版本
+    private TowerType _placementAreaOverlayPreparedTowerType = TowerType.None; // 中文：放置Area覆盖层Prepared塔类型
 
     /// <summary>
     /// 构造时只注入“长期稳定的配置”和“总控提供的查询入口”。

@@ -36,13 +36,13 @@ namespace TowerDefense.Editor
             SerializedProperty continueCampaignProperty = serializedObject.FindProperty("continueCampaignAfterClear");
 
             string message =
-                $"Map: {DescribeObject(mapProperty)}\n" +
-                $"Wave Catalog: {DescribeObject(waveCatalogProperty)}\n" +
-                $"Enemy Catalog: {DescribeObject(enemyCatalogProperty)}\n" +
-                $"Enemy Prefab Fallback: {DescribeObject(enemyPrototypeProperty)}\n" +
-                $"Enemy Root: {DescribeObject(enemyRootProperty)}\n" +
-                $"Route Preview Lead: {(routePreviewProperty != null ? routePreviewProperty.floatValue.ToString("0.00") + "s" : "0s")}\n" +
-                $"Continue Campaign After Clear: {(continueCampaignProperty != null && continueCampaignProperty.boolValue ? "Yes" : "No")}";
+                $"地图：{DescribeObject(mapProperty)}\n" +
+                $"波次目录：{DescribeObject(waveCatalogProperty)}\n" +
+                $"敌人目录：{DescribeObject(enemyCatalogProperty)}\n" +
+                $"敌人后备 Prefab：{DescribeObject(enemyPrototypeProperty)}\n" +
+                $"敌人根节点：{DescribeObject(enemyRootProperty)}\n" +
+                $"路线预告提前：{(routePreviewProperty != null ? routePreviewProperty.floatValue.ToString("0.00") + " 秒" : "0 秒")}\n" +
+                $"通关后继续战役：{(continueCampaignProperty != null && continueCampaignProperty.boolValue ? "是" : "否")}";
 
             EditorGUILayout.HelpBox(message, MessageType.Info);
 
@@ -64,7 +64,7 @@ namespace TowerDefense.Editor
             else if (waveCatalogProperty.objectReferenceValue is WaveCatalogAsset waveCatalogAsset)
             {
                 EditorGUILayout.HelpBox(
-                    $"当前波次作者工作流已切到资产主链。\nAsset: {waveCatalogAsset.name}\nWave Count: {waveCatalogAsset.Waves.Length}",
+                    $"当前波次作者工作流已切到资产主链。\n资产：{waveCatalogAsset.name}\n波次数量：{waveCatalogAsset.Waves.Length}",
                     MessageType.None);
             }
 
@@ -80,7 +80,7 @@ namespace TowerDefense.Editor
         {
             if (property == null || property.objectReferenceValue == null)
             {
-                return "None";
+                return "未设置";
             }
 
             return property.objectReferenceValue.name;

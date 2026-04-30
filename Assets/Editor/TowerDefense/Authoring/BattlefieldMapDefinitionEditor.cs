@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -25,7 +25,7 @@ namespace TowerDefense.Editor
             DrawConfigurationWarnings(mapDefinition);
 
             EditorGUILayout.Space(4f);
-            if (GUILayout.Button("Collect Scene References"))
+            if (GUILayout.Button("收集场景引用"))
             {
                 bool changed = mapDefinition.CollectSceneReferences();
                 EditorUtility.SetDirty(mapDefinition);
@@ -37,7 +37,7 @@ namespace TowerDefense.Editor
                 serializedObject.Update();
             }
 
-            if (GUILayout.Button("Log Map Summary"))
+            if (GUILayout.Button("输出地图摘要"))
             {
                 Debug.Log($"[BattlefieldMapDefinition] {mapDefinition.BuildAuthoringSummary()}", mapDefinition);
                 mapDefinition.LogConfigurationWarnings(mapDefinition);
@@ -82,3 +82,4 @@ namespace TowerDefense.Editor
         }
     }
 }
+

@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using TMPro;
@@ -17,7 +17,7 @@ namespace TowerDefense.Editor
     [CustomEditor(typeof(TowerDefenseGame))]
     public sealed class TowerDefenseGameEditor : UnityEditor.Editor
     {
-        private static readonly string[] CoreRuleFields =
+        private static readonly string[] CoreRuleFields = // 中文：核心RuleFields
         {
             "startingScrap",
             "startingBaseHealth",
@@ -27,7 +27,7 @@ namespace TowerDefense.Editor
             "bombardTowerCost"
         };
 
-        private static readonly string[] PlacementRuleFields =
+        private static readonly string[] PlacementRuleFields = // 中文：放置RuleFields
         {
             "relayPlacementRadius",
             "defensePlacementRadius",
@@ -37,7 +37,7 @@ namespace TowerDefense.Editor
             "initialPlacementSquareSize"
         };
 
-        private static readonly string[] PlacementVisualFields =
+        private static readonly string[] PlacementVisualFields = // 中文：放置视觉Fields
         {
             "validPreviewColor",
             "invalidPreviewColor",
@@ -52,7 +52,7 @@ namespace TowerDefense.Editor
             "starterZoneMarkerSortingOrder"
         };
 
-        private static readonly string[] SharedPresentationAssetFields =
+        private static readonly string[] SharedPresentationAssetFields = // 中文：Shared展示资产Fields
         {
             "towerPresentationCatalogAsset",
             "hudThemeAsset",
@@ -60,7 +60,7 @@ namespace TowerDefense.Editor
             "placementVisualThemeAsset"
         };
 
-        private static readonly string[] SceneReferenceFields =
+        private static readonly string[] SceneReferenceFields = // 中文：场景引用Fields
         {
             "mainCameraReference",
             "relayTowerPrototypeReference",
@@ -73,7 +73,7 @@ namespace TowerDefense.Editor
             "battlefieldMapReference"
         };
 
-        private static readonly string[] HudReferenceFields =
+        private static readonly string[] HudReferenceFields = // 中文：HUD引用Fields
         {
             "scrapTextReference",
             "baseHealthTextReference",
@@ -103,14 +103,14 @@ namespace TowerDefense.Editor
             DrawSceneValidationSummary();
             DrawMapSummary();
             DrawHudStructureSummary();
-            DrawPropertySection("Shared Presentation Assets", SharedPresentationAssetFields);
+            DrawPropertySection("共享表现资产", SharedPresentationAssetFields);
             DrawAuthoringActions();
-            DrawPropertySection("Core Rules", CoreRuleFields);
-            DrawPropertySection("Placement Rules", PlacementRuleFields);
-            DrawPropertySection("Placement Visuals", PlacementVisualFields);
+            DrawPropertySection("核心规则", CoreRuleFields);
+            DrawPropertySection("放置规则", PlacementRuleFields);
+            DrawPropertySection("放置视觉", PlacementVisualFields);
             DrawFallbackPresentationSections();
-            DrawPropertySection("Scene References", SceneReferenceFields);
-            DrawPropertySection("HUD References", HudReferenceFields);
+            DrawPropertySection("场景引用", SceneReferenceFields);
+            DrawPropertySection("HUD 引用", HudReferenceFields);
 
             serializedObject.ApplyModifiedProperties();
         }
@@ -118,15 +118,15 @@ namespace TowerDefense.Editor
         private void DrawSceneValidationSummary()
         {
             string missing = string.Empty;
-            AppendMissingRef(ref missing, "mainCameraReference", "Main Camera");
-            AppendMissingRef(ref missing, "battlefieldMapReference", "BattlefieldMapDefinition");
-            AppendMissingRef(ref missing, "buildZoneReference", "BuildZone");
-            AppendMissingRef(ref missing, "placedTowerRootReference", "PlacedTowers Root");
-            AppendMissingRef(ref missing, "placementPreviewRootReference", "PlacementPreviewRoot");
-            AppendMissingRef(ref missing, "relayTowerPrototypeReference", "RelayTower Prefab");
-            AppendMissingRef(ref missing, "singleTargetTowerPrototypeReference", "SingleTargetTower Prefab");
-            AppendMissingRef(ref missing, "slowFieldTowerPrototypeReference", "SlowFieldTower Prefab");
-            AppendMissingRef(ref missing, "bombardTowerPrototypeReference", "BombardTower Prefab");
+            AppendMissingRef(ref missing, "mainCameraReference", "主相机");
+            AppendMissingRef(ref missing, "battlefieldMapReference", "战场地图定义");
+            AppendMissingRef(ref missing, "buildZoneReference", "建造区");
+            AppendMissingRef(ref missing, "placedTowerRootReference", "已放置塔根节点");
+            AppendMissingRef(ref missing, "placementPreviewRootReference", "放置预览根节点");
+            AppendMissingRef(ref missing, "relayTowerPrototypeReference", "继电器原型 Prefab");
+            AppendMissingRef(ref missing, "singleTargetTowerPrototypeReference", "单体塔原型 Prefab");
+            AppendMissingRef(ref missing, "slowFieldTowerPrototypeReference", "减速塔原型 Prefab");
+            AppendMissingRef(ref missing, "bombardTowerPrototypeReference", "炸弹塔原型 Prefab");
 
             if (string.IsNullOrWhiteSpace(missing))
             {
@@ -146,7 +146,7 @@ namespace TowerDefense.Editor
                 return;
             }
 
-            EditorGUILayout.HelpBox($"Map Summary\n{mapDefinition.BuildAuthoringSummary()}", MessageType.None);
+            EditorGUILayout.HelpBox($"地图摘要\n{mapDefinition.BuildAuthoringSummary()}", MessageType.None);
         }
 
         private void DrawHudStructureSummary()
@@ -181,26 +181,26 @@ namespace TowerDefense.Editor
 
             if (usingFallbackTowerPresentation)
             {
-                EditorGUILayout.HelpBox("当前没有接 Tower Presentation Catalog 资产，所以仍会回退到场景里的旧展示配置。", MessageType.Warning);
-                DrawSinglePropertySection("Tower Presentation Fallback", "relayPresentation", "singleTargetPresentation", "slowFieldPresentation", "bombardPresentation");
+                EditorGUILayout.HelpBox("当前没有接塔展示目录资产，所以仍会回退到场景里的旧展示配置。", MessageType.Warning);
+                DrawSinglePropertySection("塔展示回退配置", "relayPresentation", "singleTargetPresentation", "slowFieldPresentation", "bombardPresentation");
             }
 
             if (usingFallbackHudTheme)
             {
-                EditorGUILayout.HelpBox("当前没有接 HUD Theme 资产，所以仍会回退到场景里的旧 HUD 主题配置。", MessageType.Warning);
-                DrawSinglePropertySection("HUD Theme Fallback", "hudTheme");
+                EditorGUILayout.HelpBox("当前没有接 HUD 主题资产，所以仍会回退到场景里的旧 HUD 主题配置。", MessageType.Warning);
+                DrawSinglePropertySection("HUD 主题回退配置", "hudTheme");
             }
 
             if (usingFallbackHudCopy)
             {
-                EditorGUILayout.HelpBox("当前没有接 HUD Copy 资产，所以部分 HUD 固定文案仍会回退到代码内默认值。", MessageType.Warning);
+                EditorGUILayout.HelpBox("当前没有接 HUD 文案资产，所以部分 HUD 固定文案仍会回退到代码内默认值。", MessageType.Warning);
             }
 
             if (usingFallbackPlacementVisualTheme)
             {
-                EditorGUILayout.HelpBox("当前没有接 Placement Visual Theme 资产，所以放置可视化仍会回退到场景里的旧配色配置。", MessageType.Warning);
+                EditorGUILayout.HelpBox("当前没有接放置可视化主题资产，所以放置可视化仍会回退到场景里的旧配色配置。", MessageType.Warning);
                 DrawSinglePropertySection(
-                    "Placement Visual Fallback",
+                    "放置视觉回退配置",
                     "validPreviewColor",
                     "invalidPreviewColor",
                     "placementRingSpriteReference",
@@ -220,15 +220,15 @@ namespace TowerDefense.Editor
 
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Authoring Actions", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("作者操作", EditorStyles.boldLabel);
 
                 EditorGUILayout.BeginHorizontal();
-                if (GUILayout.Button("Assign Default Shared Assets"))
+                if (GUILayout.Button("补齐默认共享资产"))
                 {
                     AssignDefaultSharedAssets();
                 }
 
-                if (GUILayout.Button("Materialize HUD Split Texts"))
+                if (GUILayout.Button("生成 HUD 拆分文本"))
                 {
                     MaterializeHudSplitTexts(game);
                 }
@@ -269,14 +269,14 @@ namespace TowerDefense.Editor
             TMP_Text legacySelectionText = selectionProperty != null ? selectionProperty.objectReferenceValue as TMP_Text : null;
             if (legacySelectionText == null)
             {
-                EditorUtility.DisplayDialog("HUD Split Texts", "请先在 TowerDefenseGame 上接好 SelectionText 引用，再执行拆分。", "确定");
+                EditorUtility.DisplayDialog("生成 HUD 拆分文本", "请先在 TowerDefenseGame 上接好 SelectionText 引用，再执行拆分。", "确定");
                 return;
             }
 
             RectTransform parent = legacySelectionText.transform.parent as RectTransform;
             if (parent == null)
             {
-                EditorUtility.DisplayDialog("HUD Split Texts", "SelectionText 没有可用的父 RectTransform。", "确定");
+                EditorUtility.DisplayDialog("生成 HUD 拆分文本", "SelectionText 没有可用的父 RectTransform。", "确定");
                 return;
             }
 

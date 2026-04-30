@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// PlacementBlocker 是自由放置系统里的“禁建标记器”。
@@ -36,7 +36,7 @@ public class PlacementBlocker : MonoBehaviour
     /// 能让不同阻挡物在以后拥有不同的提示语，
     /// 比如“这里是敌人路径”或“这里是基地核心区”。
     /// </summary>
-    [SerializeField] private string blockerReason = "这里是敌人的行进区域，不能部署塔。";
+    [SerializeField] private string blockerReason = "这里是敌人的行进区域，不能部署塔。"; // 中文：阻挡原因
 
     [Header("Gizmo")]
 
@@ -46,7 +46,7 @@ public class PlacementBlocker : MonoBehaviour
     /// 它不会影响游戏运行时画面，
     /// 只是帮助你在编辑器里更快看清当前哪些对象承担禁建语义。
     /// </summary>
-    [SerializeField] private Color gizmoColor = new Color(1f, 0.45f, 0.2f, 0.85f);
+    [SerializeField] private Color gizmoColor = new Color(1f, 0.45f, 0.2f, 0.85f); // 中文：Gizmo颜色
 
     /// <summary>
     /// 对当前阻挡体 Collider2D 的缓存引用。
@@ -54,14 +54,14 @@ public class PlacementBlocker : MonoBehaviour
     /// PlacementBlocker 自己并不提供几何形状，
     /// 真正的阻挡范围来自它所在对象的 Collider2D。
     /// </summary>
-    private Collider2D _collider;
+    private Collider2D _collider; // 中文：碰撞体
 
     /// <summary>
     /// 对外暴露当前阻挡区的提示语。
     ///
     /// 这样总控在判定失败时，就能直接读取更贴近场景语义的失败原因。
     /// </summary>
-    public string BlockerReason => blockerReason;
+    public string BlockerReason => blockerReason; // 中文：阻挡原因
 
     /// <summary>
     /// 在运行时缓存碰撞体引用。

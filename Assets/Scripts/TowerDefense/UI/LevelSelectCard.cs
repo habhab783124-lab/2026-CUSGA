@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -17,14 +17,14 @@ using UnityEngine.UI;
 public sealed class LevelSelectCard : MonoBehaviour
 {
     [Header("Scene Refs")]
-    [SerializeField] private Button selectButton;
-    [SerializeField] private Image backgroundImage;
-    [SerializeField] private Image accentStripImage;
-    [SerializeField] private Image iconImage;
-    [SerializeField] private TextMeshProUGUI titleText;
-    [SerializeField] private TextMeshProUGUI subtitleText;
-    [SerializeField] private TextMeshProUGUI descriptionText;
-    [SerializeField] private TextMeshProUGUI statusText;
+    [SerializeField] private Button selectButton; // 中文：select按钮
+    [SerializeField] private Image backgroundImage; // 中文：背景Image
+    [SerializeField] private Image accentStripImage; // 中文：accentStripImage
+    [SerializeField] private Image iconImage; // 中文：图标Image
+    [SerializeField] private TextMeshProUGUI titleText; // 中文：标题文本
+    [SerializeField] private TextMeshProUGUI subtitleText; // 中文：副标题文本
+    [SerializeField] private TextMeshProUGUI descriptionText; // 中文：描述文本
+    [SerializeField] private TextMeshProUGUI statusText; // 中文：状态文本
 
     /// <summary>
     /// 作者工具在首次搭默认骨架时，会把生成出来的子引用直接塞回卡片组件。

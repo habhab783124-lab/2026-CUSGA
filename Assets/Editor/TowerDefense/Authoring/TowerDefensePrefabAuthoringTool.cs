@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -20,11 +20,11 @@ namespace TowerDefense.Editor
     /// </summary>
     public static class TowerDefensePrefabAuthoringTool
     {
-        private const float DefaultRelayPlacementRadius = 0.52f;
-        private const float DefaultCombatTowerPlacementRadius = 0.58f;
+        private const float DefaultRelayPlacementRadius = 0.52f; // 中文：默认继电器放置半径
+        private const float DefaultCombatTowerPlacementRadius = 0.58f; // 中文：默认Combat塔放置半径
 
-        private const string SampleScenePath = "Assets/Scenes/SampleScene.unity";
-        private static readonly string[] GameplayScenePaths =
+        private const string SampleScenePath = "Assets/Scenes/SampleScene.unity"; // 中文：Sample场景路径
+        private static readonly string[] GameplayScenePaths = // 中文：Gameplay场景路径
         {
             "Assets/Scenes/SampleScene.unity",
             "Assets/Scenes/Level02.unity",
@@ -33,12 +33,12 @@ namespace TowerDefense.Editor
             "Assets/Scenes/Level05.unity"
         };
 
-        private const string PrefabRootFolder = "Assets/Prefabs";
-        private const string TowerDefensePrefabFolder = "Assets/Prefabs/TowerDefense";
-        private const string RuntimePrefabFolder = "Assets/Prefabs/TowerDefense/Runtime";
-        private const string VfxPrefabFolder = "Assets/Prefabs/TowerDefense/Vfx";
+        private const string PrefabRootFolder = "Assets/Prefabs"; // 中文：预制体根节点文件夹
+        private const string TowerDefensePrefabFolder = "Assets/Prefabs/TowerDefense"; // 中文：塔防御预制体文件夹
+        private const string RuntimePrefabFolder = "Assets/Prefabs/TowerDefense/Runtime"; // 中文：运行时预制体文件夹
+        private const string VfxPrefabFolder = "Assets/Prefabs/TowerDefense/Vfx"; // 中文：Vfx预制体文件夹
 
-        [MenuItem("Tools/Tower Defense/Rebuild Typed Runtime Prefabs")]
+        [MenuItem("Tools/Tower Defense/重建分类运行时 Prefab")]
         public static void BatchCreateOrUpdateRuntimePrefabs()
         {
             EnsureFolder(PrefabRootFolder);
@@ -53,7 +53,7 @@ namespace TowerDefense.Editor
             Enemy enemyPrototype = FindDisabledPrototype<Enemy>("EnemyPrototype");
             if (relayPrototype == null || defensePrototype == null || enemyPrototype == null)
             {
-                throw new System.InvalidOperationException("TowerDefensePrefabAuthoringTool could not find the required scene prototypes.");
+                throw new System.InvalidOperationException("TowerDefensePrefabAuthoringTool 未找到所需的场景原型对象。");
             }
 
             string relayPrefabPath = $"{RuntimePrefabFolder}/RelayTowerPrototype.prefab";

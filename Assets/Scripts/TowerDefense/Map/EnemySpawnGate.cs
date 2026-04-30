@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// `EnemySpawnGate` 表示地图上的一个出怪口旗帜。
@@ -14,41 +14,41 @@ using UnityEngine;
 [ExecuteAlways]
 public sealed class EnemySpawnGate : MonoBehaviour
 {
-    private const string ReadabilityRootName = "__SpawnGateReadability";
+    private const string ReadabilityRootName = "__SpawnGateReadability"; // 中文：可读性根节点名称
 
     [Header("Identity")]
-    [SerializeField] private string gateId = "Gate01";
-    [SerializeField] private string displayName = "Spawn Gate";
+    [SerializeField] private string gateId = "Gate01"; // 中文：出怪口标识
+    [SerializeField] private string displayName = "Spawn Gate"; // 中文：显示名称
 
     [Header("Route")]
-    [SerializeField] private EnemyPath enemyPathReference;
-    [SerializeField] private DefensePointFlag targetDefensePointReference;
+    [SerializeField] private EnemyPath enemyPathReference; // 中文：敌人路径引用
+    [SerializeField] private DefensePointFlag targetDefensePointReference; // 中文：目标防御点引用
 
     [Header("Readability Visual")]
-    [SerializeField] private bool showReadabilityMarker = true;
-    [SerializeField] private bool proceduralReadabilityMarker = true;
-    [SerializeField] private bool autoCreateReadabilityRoot = true;
-    [SerializeField] private Transform readabilityRootReference;
-    [SerializeField] private Material readabilityMaterialOverride;
-    [SerializeField] private Color readabilityColor = new Color(1f, 0.46f, 0.18f, 0.96f);
-    [SerializeField] private Color secondaryReadabilityColor = new Color(1f, 0.9f, 0.72f, 0.92f);
-    [SerializeField] private float outerRingRadius = 0.58f;
-    [SerializeField] private float innerRingRadius = 0.34f;
-    [SerializeField] private float leadLength = 0.82f;
-    [SerializeField] private float chevronSize = 0.34f;
-    [SerializeField] private int readabilitySortingOrder = 5;
+    [SerializeField] private bool showReadabilityMarker = true; // 中文：显示可读性标记
+    [SerializeField] private bool proceduralReadabilityMarker = true; // 中文：程序化可读性标记
+    [SerializeField] private bool autoCreateReadabilityRoot = true; // 中文：自动创建可读性根节点
+    [SerializeField] private Transform readabilityRootReference; // 中文：可读性根节点引用
+    [SerializeField] private Material readabilityMaterialOverride; // 中文：可读性材质覆盖
+    [SerializeField] private Color readabilityColor = new Color(1f, 0.46f, 0.18f, 0.96f); // 中文：可读性颜色
+    [SerializeField] private Color secondaryReadabilityColor = new Color(1f, 0.9f, 0.72f, 0.92f); // 中文：副可读性颜色
+    [SerializeField] private float outerRingRadius = 0.58f; // 中文：outer圆环半径
+    [SerializeField] private float innerRingRadius = 0.34f; // 中文：inner圆环半径
+    [SerializeField] private float leadLength = 0.82f; // 中文：leadLength
+    [SerializeField] private float chevronSize = 0.34f; // 中文：chevron大小
+    [SerializeField] private int readabilitySortingOrder = 5; // 中文：可读性Sorting顺序
 
     [Header("Scene Gizmo")]
-    [SerializeField] private Color gizmoColor = new Color(1f, 0.4f, 0.22f, 1f);
-    [SerializeField] private float gizmoRadius = 0.28f;
+    [SerializeField] private Color gizmoColor = new Color(1f, 0.4f, 0.22f, 1f); // 中文：Gizmo颜色
+    [SerializeField] private float gizmoRadius = 0.28f; // 中文：Gizmo半径
 
-    private int _lastReadabilityHash;
+    private int _lastReadabilityHash; // 中文：last可读性Hash
 
-    public string GateId => string.IsNullOrWhiteSpace(gateId) ? name : gateId;
-    public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? GateId : displayName;
-    public bool IsConfigured => enemyPathReference != null;
-    public EnemyPath EnemyPath => enemyPathReference;
-    public DefensePointFlag TargetDefensePoint => targetDefensePointReference;
+    public string GateId => string.IsNullOrWhiteSpace(gateId) ? name : gateId; // 中文：出怪口标识
+    public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? GateId : displayName; // 中文：显示名称
+    public bool IsConfigured => enemyPathReference != null; // 中文：是否Configured
+    public EnemyPath EnemyPath => enemyPathReference; // 中文：敌人路径
+    public DefensePointFlag TargetDefensePoint => targetDefensePointReference; // 中文：目标防御点
 
     /// <summary>
     /// 返回敌人的出生位置。

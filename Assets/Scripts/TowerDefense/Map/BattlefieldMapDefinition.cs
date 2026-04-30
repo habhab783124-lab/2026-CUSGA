@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -13,37 +13,37 @@ using UnityEngine;
 /// </summary>
 public sealed class BattlefieldMapDefinition : MonoBehaviour
 {
-    private const string DefaultSpawnGateRootName = "SpawnGates";
-    private const string DefaultDefensePointRootName = "DefensePoints";
+    private const string DefaultSpawnGateRootName = "SpawnGates"; // 中文：默认出怪出怪口根节点名称
+    private const string DefaultDefensePointRootName = "DefensePoints"; // 中文：默认防御点根节点名称
 
-    [Header("Core References")]
+    [Header("核心引用")]
     [Tooltip("当前地图真正允许建造的空地区域。后续关卡应优先在 Scene 里显式拖入，而不是运行时再猜。")]
-    [SerializeField] private BuildZone buildZoneReference;
+    [SerializeField, InspectorName("建造区")] private BuildZone buildZoneReference; // 中文：建造区域引用
     [Tooltip("这张地图会使用到的所有出怪口。顺序会直接影响轮询刷怪顺序。")]
-    [SerializeField] private EnemySpawnGate[] spawnGates = new EnemySpawnGate[0];
+    [SerializeField, InspectorName("出怪口列表")] private EnemySpawnGate[] spawnGates = new EnemySpawnGate[0]; // 中文：出怪出怪口列表
     [Tooltip("这张地图当前会使用到的所有防御点。现在通常只用第一个，但后续地图允许扩展到多个。")]
-    [SerializeField] private DefensePointFlag[] defensePoints = new DefensePointFlag[0];
+    [SerializeField, InspectorName("防御点列表")] private DefensePointFlag[] defensePoints = new DefensePointFlag[0]; // 中文：防御点列表
 
-    [Header("Authoring Helpers")]
+    [Header("作者辅助")]
     [Tooltip("开启后，脚本会在编辑器里自动从场景层级重新收集 BuildZone / 出怪口 / 防御点引用，减少手工维护数组的成本。")]
-    [SerializeField] private bool autoCollectSceneReferences = true;
+    [SerializeField, InspectorName("自动收集场景引用")] private bool autoCollectSceneReferences = true; // 中文：自动收集场景引用
     [Tooltip("可选的出怪口根节点。指定后，只会在这棵子树下收集 EnemySpawnGate，并按层级顺序写回数组。")]
-    [SerializeField] private Transform spawnGateRootReference;
+    [SerializeField, InspectorName("出怪口根节点")] private Transform spawnGateRootReference; // 中文：出怪出怪口根节点引用
     [Tooltip("可选的防御点根节点。指定后，只会在这棵子树下收集 DefensePointFlag。")]
-    [SerializeField] private Transform defensePointRootReference;
+    [SerializeField, InspectorName("防御点根节点")] private Transform defensePointRootReference; // 中文：防御点根节点引用
     [Tooltip("自动收集时是否包含未激活对象。作者搭关时常会先隐藏一些出怪口或目标点，所以这里默认包含。")]
-    [SerializeField] private bool includeInactiveChildren = true;
+    [SerializeField, InspectorName("包含未激活对象")] private bool includeInactiveChildren = true; // 中文：包含未激活子对象
 
-    [Header("Gameplay Limits")]
+    [Header("玩法限制")]
     [Min(0)]
-    [SerializeField] private int relayLimit = 4;
+    [SerializeField, InspectorName("继电器上限")] private int relayLimit = 4; // 中文：继电器上限
 
-    public BuildZone BuildZone => buildZoneReference;
-    public int RelayLimit => Mathf.Max(0, relayLimit);
-    public int SpawnGateCount => CollectValidSpawnGates(null);
-    public int DefensePointCount => CollectValidDefensePoints(null);
-    public Transform SpawnGateRoot => spawnGateRootReference;
-    public Transform DefensePointRoot => defensePointRootReference;
+    public BuildZone BuildZone => buildZoneReference; // 中文：建造区域
+    public int RelayLimit => Mathf.Max(0, relayLimit); // 中文：继电器上限
+    public int SpawnGateCount => CollectValidSpawnGates(null); // 中文：出怪出怪口数量
+    public int DefensePointCount => CollectValidDefensePoints(null); // 中文：防御点数量
+    public Transform SpawnGateRoot => spawnGateRootReference; // 中文：出怪出怪口根节点
+    public Transform DefensePointRoot => defensePointRootReference; // 中文：防御点根节点
 
     /// <summary>
     /// 当前地图的可读摘要。
@@ -51,7 +51,7 @@ public sealed class BattlefieldMapDefinition : MonoBehaviour
     /// </summary>
     public string BuildDebugSummary()
     {
-        return $"BuildZone={(buildZoneReference != null ? buildZoneReference.name : "None")}, SpawnGates={SpawnGateCount}, DefensePoints={DefensePointCount}, RelayLimit={RelayLimit}";
+        return $"BuildZone={(buildZoneReference != null ? buildZoneReference.name : "未设置")}, SpawnGates={SpawnGateCount}, DefensePoints={DefensePointCount}, RelayLimit={RelayLimit}";
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ public sealed class BattlefieldMapDefinition : MonoBehaviour
     {
         string spawnGateRootName = spawnGateRootReference != null ? spawnGateRootReference.name : "(Map Root)";
         string defensePointRootName = defensePointRootReference != null ? defensePointRootReference.name : "(Map Root)";
-        string buildZoneName = buildZoneReference != null ? buildZoneReference.name : "None";
+        string buildZoneName = buildZoneReference != null ? buildZoneReference.name : "未设置";
 
         return $"BuildZone={buildZoneName} | SpawnGateRoot={spawnGateRootName} | DefensePointRoot={defensePointRootName} | SpawnGates={SpawnGateCount} | DefensePoints={DefensePointCount}";
     }

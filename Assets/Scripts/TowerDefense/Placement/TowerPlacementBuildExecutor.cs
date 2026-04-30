@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 /// <summary>
@@ -28,20 +28,20 @@ public sealed class TowerPlacementBuildExecutor
     /// </summary>
     public delegate bool PlacementValidator(Vector3 worldPosition, TowerType towerType, out string invalidReason);
 
-    private readonly Func<bool> _isGameOverQuery;
-    private readonly Func<int> _currentScrapQuery;
-    private readonly Action<int> _setCurrentScrap;
-    private readonly Func<TowerType, int> _getTowerCost;
-    private readonly Func<TowerType, string> _getTowerDisplayName;
-    private readonly Func<TowerType, GameObject> _getPrototype;
-    private readonly Func<Transform> _getPlacedTowerRoot;
-    private readonly Func<TowerType, float> _getPlacementRadius;
-    private readonly PlacementValidator _validatePlacementPosition;
-    private readonly Action<GameObject, TowerType> _registerPlacedStructure;
-    private readonly Action _invalidatePlacementAreaOverlayCache;
-    private readonly Action _refreshHud;
-    private readonly Action<string> _setStatusMessage;
-    private readonly Action<string> _logPlacementDiagnostic;
+    private readonly Func<bool> _isGameOverQuery; // 中文：是否游戏结束查询
+    private readonly Func<int> _currentScrapQuery; // 中文：当前废料查询
+    private readonly Action<int> _setCurrentScrap; // 中文：设置当前废料
+    private readonly Func<TowerType, int> _getTowerCost; // 中文：获取塔费用
+    private readonly Func<TowerType, string> _getTowerDisplayName; // 中文：获取塔显示名称
+    private readonly Func<TowerType, GameObject> _getPrototype; // 中文：获取原型
+    private readonly Func<Transform> _getPlacedTowerRoot; // 中文：获取已放置塔根节点
+    private readonly Func<TowerType, float> _getPlacementRadius; // 中文：获取放置半径
+    private readonly PlacementValidator _validatePlacementPosition; // 中文：validate放置位置
+    private readonly Action<GameObject, TowerType> _registerPlacedStructure; // 中文：register已放置Structure
+    private readonly Action _invalidatePlacementAreaOverlayCache; // 中文：invalidate放置Area覆盖层缓存
+    private readonly Action _refreshHud; // 中文：刷新HUD
+    private readonly Action<string> _setStatusMessage; // 中文：设置状态消息
+    private readonly Action<string> _logPlacementDiagnostic; // 中文：日志放置诊断
 
     /// <summary>
     /// 这里全部通过委托注入，而不是直接依赖 `TowerDefenseGame`。
@@ -110,7 +110,7 @@ public sealed class TowerPlacementBuildExecutor
         int cost = _getTowerCost != null ? _getTowerCost(towerType) : 0;
         if (currentScrap < cost)
         {
-            _setStatusMessage?.Invoke($"Not enough scrap. You currently have {currentScrap} SCRAP.");
+            _setStatusMessage?.Invoke($"废料不足。你当前只有 {currentScrap} 废料。");
             _logPlacementDiagnostic?.Invoke($"TryPlace rejected: insufficient scrap. tower={towerType} cost={cost} currentScrap={currentScrap}");
             return false;
         }
@@ -118,7 +118,7 @@ public sealed class TowerPlacementBuildExecutor
         GameObject prototype = _getPrototype != null ? _getPrototype(towerType) : null;
         if (prototype == null)
         {
-            _setStatusMessage?.Invoke("Tower prototype is missing. Check the scene setup.");
+            _setStatusMessage?.Invoke("缺少塔原型体，请检查场景配置。");
             _logPlacementDiagnostic?.Invoke($"TryPlace rejected: missing prototype. tower={towerType}");
             return false;
         }
@@ -134,7 +134,7 @@ public sealed class TowerPlacementBuildExecutor
         Transform placedTowerRoot = _getPlacedTowerRoot != null ? _getPlacedTowerRoot() : null;
         if (placedTowerRoot == null)
         {
-            _setStatusMessage?.Invoke("Placed tower root is missing. Check the runtime scene wiring.");
+            _setStatusMessage?.Invoke("缺少已放置塔根节点，请检查运行时场景接线。");
             _logPlacementDiagnostic?.Invoke($"TryPlace rejected: missing placed tower root. tower={towerType} world={worldPosition}");
             return false;
         }
@@ -168,8 +168,8 @@ public sealed class TowerPlacementBuildExecutor
         _registerPlacedStructure?.Invoke(tower, towerType);
         _setCurrentScrap?.Invoke(currentScrap - cost);
         _invalidatePlacementAreaOverlayCache?.Invoke();
-        _setStatusMessage?.Invoke($"Deployed {towerDisplayName} for {cost} SCRAP.");
-        TowerDefenseGame.Instance?.ShowTransientHudNotice($"-{cost} SCRAP spent.", 2.2f);
+        _setStatusMessage?.Invoke($"已部署 {towerDisplayName}，消耗 {cost} 废料。");
+        TowerDefenseGame.Instance?.ShowTransientHudNotice($"-{cost} 废料消耗。", 2.2f);
         _logPlacementDiagnostic?.Invoke($"TryPlace succeeded: tower={towerType} world={worldPosition} cost={cost} remainingScrap={currentScrap - cost}");
         _refreshHud?.Invoke();
         return true;
@@ -188,14 +188,14 @@ public sealed class TowerPlacementBuildExecutor
 
         if (tower == null)
         {
-            invalidReason = "Placed tower instance is null.";
+            invalidReason = "放置后的塔实例为空。";
             return false;
         }
 
         CircleCollider2D circleCollider = tower.GetComponent<CircleCollider2D>();
         if (circleCollider == null)
         {
-            invalidReason = "Tower prefab is missing CircleCollider2D. Please fix the prefab asset instead of relying on runtime patching.";
+            invalidReason = "塔 Prefab 缺少 CircleCollider2D。请直接修正 Prefab 资产，而不要依赖运行时补丁。";
             return false;
         }
 
@@ -205,7 +205,7 @@ public sealed class TowerPlacementBuildExecutor
         PlacedTower placedTower = tower.GetComponent<PlacedTower>();
         if (placedTower == null)
         {
-            invalidReason = "Tower prefab is missing PlacedTower component. Please fix the prefab asset instead of relying on runtime patching.";
+            invalidReason = "塔 Prefab 缺少 PlacedTower 组件。请直接修正 Prefab 资产，而不要依赖运行时补丁。";
             return false;
         }
 

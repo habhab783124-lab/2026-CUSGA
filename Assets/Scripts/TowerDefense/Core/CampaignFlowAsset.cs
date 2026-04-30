@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using UnityEngine;
 
@@ -21,7 +21,9 @@ using UnityEditor;
 /// </summary>
 public enum CampaignSegmentType
 {
+    [InspectorName("剧情过场")]
     StoryInterlude,
+    [InspectorName("塔防关卡")]
     TowerDefenseEncounter
 }
 
@@ -48,23 +50,23 @@ public sealed class CampaignFlowAsset : ScriptableObject
     public sealed class CampaignStep
     {
 #if UNITY_EDITOR
-        [Header("Scene Ref")]
-        [SerializeField] private SceneAsset sceneAsset;
+        [Header("场景引用")]
+        [SerializeField, InspectorName("场景资产")] private SceneAsset sceneAsset; // 中文：场景资产
 #endif
 
-        [SerializeField] private CampaignSegmentType segmentType = CampaignSegmentType.StoryInterlude;
-        [SerializeField] private string sceneName = "StoryInterludePlaceholder";
-        [SerializeField] private string scenePath = "Assets/Scenes/StoryInterludePlaceholder.unity";
-        [SerializeField] private string displayName = "Story Segment";
-        [SerializeField] [TextArea(2, 5)] private string designerNote = "Describe what this segment is meant to communicate.";
-        [SerializeField] private string continuePrompt = "Press Enter / Space to continue.";
+        [SerializeField, InspectorName("流程段类型")] private CampaignSegmentType segmentType = CampaignSegmentType.StoryInterlude; // 中文：segment类型
+        [SerializeField, InspectorName("场景名")] private string sceneName = "StoryInterludePlaceholder"; // 中文：场景名称
+        [SerializeField, InspectorName("场景路径")] private string scenePath = "Assets/Scenes/StoryInterludePlaceholder.unity"; // 中文：场景路径
+        [SerializeField, InspectorName("显示名称")] private string displayName = "剧情段"; // 中文：显示名称
+        [SerializeField, TextArea(2, 5), InspectorName("设计备注")] private string designerNote = "说明这一段流程想传达什么内容。"; // 中文：designer备注
+        [SerializeField, InspectorName("继续提示")] private string continuePrompt = "按 Enter / Space 继续。"; // 中文：继续提示
 
-        public CampaignSegmentType SegmentType => segmentType;
-        public string SceneName => sceneName;
-        public string ScenePath => scenePath;
-        public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? sceneName : displayName;
-        public string DesignerNote => designerNote ?? string.Empty;
-        public string ContinuePrompt => string.IsNullOrWhiteSpace(continuePrompt) ? "Press Enter / Space to continue." : continuePrompt;
+        public CampaignSegmentType SegmentType => segmentType; // 中文：Segment类型
+        public string SceneName => sceneName; // 中文：场景名称
+        public string ScenePath => scenePath; // 中文：场景路径
+        public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? sceneName : displayName; // 中文：显示名称
+        public string DesignerNote => designerNote ?? string.Empty; // 中文：Designer备注
+        public string ContinuePrompt => string.IsNullOrWhiteSpace(continuePrompt) ? "按 Enter / Space 继续。" : continuePrompt; // 中文：继续提示
 
 #if UNITY_EDITOR
         /// <summary>
@@ -94,17 +96,17 @@ public sealed class CampaignFlowAsset : ScriptableObject
 #endif
     }
 
-    [Header("Identity")]
-    [SerializeField] private string campaignId = "MainCampaign";
-    [SerializeField] private string completionSceneName = "MainMenu";
+    [Header("标识")]
+    [SerializeField, InspectorName("战役 ID")] private string campaignId = "MainCampaign"; // 中文：战役标识
+    [SerializeField, InspectorName("完成后返回场景")] private string completionSceneName = "MainMenu"; // 中文：完成场景名称
 
-    [Header("Segment Order")]
-    [SerializeField] private CampaignStep[] steps = Array.Empty<CampaignStep>();
+    [Header("流程顺序")]
+    [SerializeField, InspectorName("流程段列表")] private CampaignStep[] steps = Array.Empty<CampaignStep>(); // 中文：步骤列表
 
-    public string CampaignId => string.IsNullOrWhiteSpace(campaignId) ? name : campaignId;
-    public string CompletionSceneName => completionSceneName;
-    public int StepCount => steps != null ? steps.Length : 0;
-    public CampaignStep[] Steps => steps ?? Array.Empty<CampaignStep>();
+    public string CampaignId => string.IsNullOrWhiteSpace(campaignId) ? name : campaignId; // 中文：战役标识
+    public string CompletionSceneName => completionSceneName; // 中文：完成场景名称
+    public int StepCount => steps != null ? steps.Length : 0; // 中文：步骤数量
+    public CampaignStep[] Steps => steps ?? Array.Empty<CampaignStep>(); // 中文：步骤列表
 
     public bool TryGetStep(int stepIndex, out CampaignStep step)
     {

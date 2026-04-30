@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -14,9 +14,9 @@ namespace TowerDefense.Editor
     /// </summary>
     public static class LevelSelectSceneAuthoringTool
     {
-        private const string LevelSelectScenePath = "Assets/Scenes/LevelSelect.unity";
+        private const string LevelSelectScenePath = "Assets/Scenes/LevelSelect.unity"; // 中文：等级Select场景路径
 
-        [MenuItem("Tools/Tower Defense/Materialize Level Select Scene")]
+        [MenuItem("Tools/Tower Defense/物化关卡选择场景")]
         public static void BatchCreateOrUpdateLevelSelectScene()
         {
             EditorSceneManager.OpenScene(LevelSelectScenePath, OpenSceneMode.Single);
@@ -24,7 +24,7 @@ namespace TowerDefense.Editor
             LevelSelectController controller = UnityEngine.Object.FindFirstObjectByType<LevelSelectController>();
             if (controller == null)
             {
-                throw new InvalidOperationException("LevelSelect scene is missing LevelSelectController.");
+                throw new InvalidOperationException("LevelSelect 场景缺少 LevelSelectController。");
             }
 
             controller.EditorMaterializeSceneUi();
@@ -35,7 +35,7 @@ namespace TowerDefense.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log("LevelSelectSceneAuthoringTool: LevelSelect scene materialized successfully.");
+            Debug.Log("LevelSelectSceneAuthoringTool：关卡选择场景物化完成。");
         }
     }
 }

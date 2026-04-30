@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -31,9 +31,9 @@ public sealed class MainMenuController : MonoBehaviour
     /// 这里默认直接指向当前塔防主玩法场景 `SampleScene`。
     /// 如果你以后改了玩法场景名，要同步更新这里。
     /// </summary>
-    [SerializeField] private string gameplaySceneName = "LevelSelect";
-    [SerializeField] private bool useCampaignFlowOnStart = true;
-    [SerializeField] private CampaignFlowAsset campaignFlowAsset;
+    [SerializeField] private string gameplaySceneName = "LevelSelect"; // 中文：gameplay场景名称
+    [SerializeField] private bool useCampaignFlowOnStart = true; // 中文：使用战役流程On开始
+    [SerializeField] private CampaignFlowAsset campaignFlowAsset; // 中文：战役流程资产
 
     [Header("Visual Theme")]
 
@@ -43,109 +43,109 @@ public sealed class MainMenuController : MonoBehaviour
     /// 这只是默认值；
     /// 一旦主菜单 UI 已经生成，你完全可以直接在场景里改具体对象颜色。
     /// </summary>
-    [SerializeField] private Color backgroundColor = new Color(0.03f, 0.05f, 0.08f, 1f);
+    [SerializeField] private Color backgroundColor = new Color(0.03f, 0.05f, 0.08f, 1f); // 中文：背景颜色
 
     /// <summary>
     /// 暖色强调色，主要服务于开始按钮和重点提示。
     /// </summary>
-    [SerializeField] private Color primaryAccent = new Color(1f, 0.62f, 0.29f, 1f);
+    [SerializeField] private Color primaryAccent = new Color(1f, 0.62f, 0.29f, 1f); // 中文：主Accent
 
     /// <summary>
     /// 冷色强调色，主要服务于边框、标签和终端感装饰。
     /// </summary>
-    [SerializeField] private Color secondaryAccent = new Color(0.31f, 0.86f, 0.96f, 1f);
+    [SerializeField] private Color secondaryAccent = new Color(0.31f, 0.86f, 0.96f, 1f); // 中文：副Accent
 
     /// <summary>
     /// 外层框架底板色。
     /// </summary>
-    [SerializeField] private Color frameCoreColor = new Color(0.04f, 0.06f, 0.09f, 0.92f);
+    [SerializeField] private Color frameCoreColor = new Color(0.04f, 0.06f, 0.09f, 0.92f); // 中文：边框核心颜色
 
     /// <summary>
     /// 内层信息底板色。
     /// </summary>
-    [SerializeField] private Color frameInsetColor = new Color(0.03f, 0.05f, 0.08f, 0.96f);
+    [SerializeField] private Color frameInsetColor = new Color(0.03f, 0.05f, 0.08f, 0.96f); // 中文：边框Inset颜色
 
     /// <summary>
     /// 主标题颜色。
     /// </summary>
-    [SerializeField] private Color titleColor = Color.white;
+    [SerializeField] private Color titleColor = Color.white; // 中文：标题颜色
 
     /// <summary>
     /// 副标题颜色。
     /// </summary>
-    [SerializeField] private Color subtitleColor = new Color(0.78f, 0.86f, 0.94f, 1f);
+    [SerializeField] private Color subtitleColor = new Color(0.78f, 0.86f, 0.94f, 1f); // 中文：副标题颜色
 
     /// <summary>
     /// 正文说明颜色。
     /// </summary>
-    [SerializeField] private Color descriptionColor = new Color(0.82f, 0.88f, 0.95f, 1f);
+    [SerializeField] private Color descriptionColor = new Color(0.82f, 0.88f, 0.95f, 1f); // 中文：描述颜色
 
     /// <summary>
     /// 小提示颜色。
     /// </summary>
-    [SerializeField] private Color hintColor = new Color(1f, 0.82f, 0.6f, 1f);
+    [SerializeField] private Color hintColor = new Color(1f, 0.82f, 0.6f, 1f); // 中文：提示颜色
 
     /// <summary>
     /// 开始按钮主文字颜色。
     /// </summary>
-    [SerializeField] private Color startButtonPrimaryTextColor = Color.white;
+    [SerializeField] private Color startButtonPrimaryTextColor = Color.white; // 中文：开始按钮主文本颜色
 
     /// <summary>
     /// 开始按钮副文字颜色。
     /// </summary>
-    [SerializeField] private Color startButtonSecondaryTextColor = new Color(0.76f, 0.86f, 0.95f, 1f);
+    [SerializeField] private Color startButtonSecondaryTextColor = new Color(0.76f, 0.86f, 0.95f, 1f); // 中文：开始按钮副文本颜色
 
     /// <summary>
     /// 左下角页脚文字颜色。
     /// </summary>
-    [SerializeField] private Color footerLeftTextColor = new Color(0.31f, 0.86f, 0.96f, 0.95f);
+    [SerializeField] private Color footerLeftTextColor = new Color(0.31f, 0.86f, 0.96f, 0.95f); // 中文：页脚剩余文本颜色
 
     /// <summary>
     /// 右下角页脚文字颜色。
     /// </summary>
-    [SerializeField] private Color footerRightTextColor = new Color(1f, 0.62f, 0.29f, 0.95f);
+    [SerializeField] private Color footerRightTextColor = new Color(1f, 0.62f, 0.29f, 0.95f); // 中文：页脚Right文本颜色
 
     /// <summary>
     /// 按钮不可用时的颜色。
     /// </summary>
-    [SerializeField] private Color buttonDisabledColor = new Color(0.3f, 0.32f, 0.36f, 0.8f);
+    [SerializeField] private Color buttonDisabledColor = new Color(0.3f, 0.32f, 0.36f, 0.8f); // 中文：按钮Disabled颜色
 
     /// <summary>
     /// 可选的背景 Sprite。
     /// 如果你后续要用正式主菜单底图，可以直接从这里拖进来。
     /// </summary>
-    [SerializeField] private Sprite backgroundSprite;
+    [SerializeField] private Sprite backgroundSprite; // 中文：背景精灵
 
     /// <summary>
     /// 可选的外框 Sprite。
     /// </summary>
-    [SerializeField] private Sprite frameCoreSprite;
+    [SerializeField] private Sprite frameCoreSprite; // 中文：边框核心精灵
 
     /// <summary>
     /// 可选的内框 Sprite。
     /// </summary>
-    [SerializeField] private Sprite frameInsetSprite;
+    [SerializeField] private Sprite frameInsetSprite; // 中文：边框Inset精灵
 
     /// <summary>
     /// 可选的开始按钮 Sprite。
     /// </summary>
-    [SerializeField] private Sprite startButtonSprite;
+    [SerializeField] private Sprite startButtonSprite; // 中文：开始按钮精灵
 
     /// <summary>
     /// 主标题字体。
     /// 如果为空，会回退到项目默认 TMP 字体。
     /// </summary>
-    [SerializeField] private TMP_FontAsset titleFontAsset;
+    [SerializeField] private TMP_FontAsset titleFontAsset; // 中文：标题字体资产
 
     /// <summary>
     /// 正文与按钮文字默认字体。
     /// </summary>
-    [SerializeField] private TMP_FontAsset bodyFontAsset;
+    [SerializeField] private TMP_FontAsset bodyFontAsset; // 中文：主体字体资产
 
     /// <summary>
     /// 强调型标签字体，例如副标题和页脚。
     /// </summary>
-    [SerializeField] private TMP_FontAsset accentFontAsset;
+    [SerializeField] private TMP_FontAsset accentFontAsset; // 中文：accent字体资产
 
     [Header("Text Copy")]
 
@@ -153,44 +153,44 @@ public sealed class MainMenuController : MonoBehaviour
     /// 主标题文案。
     /// 以后如果你想把首页名字换成自己的游戏名，直接改这里就可以。
     /// </summary>
-    [SerializeField] private string titleCopy = "Power Grid Defense";
+    [SerializeField] private string titleCopy = "电网防线"; // 中文：标题文案
 
     /// <summary>
     /// 副标题文案。
     /// </summary>
-    [SerializeField] private string subtitleCopy = "Power Grid Defense / Prototype Access Terminal";
+    [SerializeField] private string subtitleCopy = "电网防线 / 原型入口终端"; // 中文：副标题文案
 
     /// <summary>
     /// 页面正文说明。
     /// </summary>
     [SerializeField]
     [TextArea(3, 8)]
-    private string descriptionCopy = "Enter the current tower-defense test mission here.\n\nUse generators and turrets to expand your defense network under limited energy.\n\nPress Start below to load the active gameplay scene.";
+    private string descriptionCopy = "从这里进入当前塔防原型的测试流程。\n\n利用继电器和战斗塔扩张你的部署网络，在有限废料与供电条件下守住防线。\n\n点击下方开始，进入当前的关卡选择页面。"; // 中文：描述文案
 
     /// <summary>
     /// 开始按钮上方提示。
     /// </summary>
-    [SerializeField] private string hintCopy = "START will open the mission selection page";
+    [SerializeField] private string hintCopy = "点击开始将进入关卡选择页面"; // 中文：提示文案
 
     /// <summary>
     /// 开始按钮主文字。
     /// </summary>
-    [SerializeField] private string startPrimaryCopy = "Start";
+    [SerializeField] private string startPrimaryCopy = "开始"; // 中文：开始主文案
 
     /// <summary>
     /// 开始按钮副文字。
     /// </summary>
-    [SerializeField] private string startSecondaryCopy = "OPEN LEVEL SELECT / MISSION TERMINAL";
+    [SerializeField] private string startSecondaryCopy = "进入关卡选择 / 任务终端"; // 中文：开始副文案
 
     /// <summary>
     /// 左侧页脚文案。
     /// </summary>
-    [SerializeField] private string footerLeftCopy = "ENTRY NODE / MAIN MENU";
+    [SerializeField] private string footerLeftCopy = "入口节点 / 主菜单"; // 中文：页脚剩余文案
 
     /// <summary>
     /// 右侧页脚文案。
     /// </summary>
-    [SerializeField] private string footerRightCopy = "Press Enter / Space or click Start";
+    [SerializeField] private string footerRightCopy = "按 Enter / Space 或点击开始"; // 中文：页脚Right文案
 
     [Header("Scene UI Refs")]
 
@@ -200,32 +200,32 @@ public sealed class MainMenuController : MonoBehaviour
     /// 如果场景里还没有相机，脚本会自动补一个；
     /// 补完后引用会记录到这里，方便你之后直接在 Inspector 里调。
     /// </summary>
-    [SerializeField] private Camera sceneCamera;
+    [SerializeField] private Camera sceneCamera; // 中文：场景相机
 
     /// <summary>
     /// 主菜单 Canvas 根。
     /// </summary>
-    [SerializeField] private Canvas mainCanvas;
+    [SerializeField] private Canvas mainCanvas; // 中文：主画布
 
     /// <summary>
     /// Canvas 缩放器。
     /// </summary>
-    [SerializeField] private CanvasScaler canvasScaler;
+    [SerializeField] private CanvasScaler canvasScaler; // 中文：画布Scaler
 
     /// <summary>
     /// UI 射线器。
     /// </summary>
-    [SerializeField] private GraphicRaycaster graphicRaycaster;
+    [SerializeField] private GraphicRaycaster graphicRaycaster; // 中文：graphicRaycaster
 
     /// <summary>
     /// 主菜单 EventSystem。
     /// </summary>
-    [SerializeField] private EventSystem eventSystem;
+    [SerializeField] private EventSystem eventSystem; // 中文：事件System
 
     /// <summary>
     /// 标准输入模块。
     /// </summary>
-    [SerializeField] private StandaloneInputModule standaloneInputModule;
+    [SerializeField] private StandaloneInputModule standaloneInputModule; // 中文：standalone输入模块
 
     /// <summary>
     /// 主菜单 UI 的总根节点。
@@ -234,42 +234,42 @@ public sealed class MainMenuController : MonoBehaviour
     /// 所以后面你如果要整体缩放、整体移动或重新分组，
     /// 这个根节点会是最好用的入口。
     /// </summary>
-    [SerializeField] private RectTransform menuRoot;
+    [SerializeField] private RectTransform menuRoot; // 中文：菜单根节点
 
     /// <summary>
     /// 全屏背景面板。
     /// </summary>
-    [SerializeField] private Image backgroundPanel;
+    [SerializeField] private Image backgroundPanel; // 中文：背景面板
 
     /// <summary>
     /// 外层框架面板。
     /// </summary>
-    [SerializeField] private Image frameCorePanel;
+    [SerializeField] private Image frameCorePanel; // 中文：边框核心面板
 
     /// <summary>
     /// 内层信息底板。
     /// </summary>
-    [SerializeField] private Image frameInsetPanel;
+    [SerializeField] private Image frameInsetPanel; // 中文：边框Inset面板
 
     /// <summary>
     /// 主标题文字。
     /// </summary>
-    [SerializeField] private TextMeshProUGUI titleText;
+    [SerializeField] private TextMeshProUGUI titleText; // 中文：标题文本
 
     /// <summary>
     /// 副标题文字。
     /// </summary>
-    [SerializeField] private TextMeshProUGUI subtitleText;
+    [SerializeField] private TextMeshProUGUI subtitleText; // 中文：副标题文本
 
     /// <summary>
     /// 页面说明正文。
     /// </summary>
-    [SerializeField] private TextMeshProUGUI descriptionText;
+    [SerializeField] private TextMeshProUGUI descriptionText; // 中文：描述文本
 
     /// <summary>
     /// 开始按钮上方的小提示。
     /// </summary>
-    [SerializeField] private TextMeshProUGUI hintText;
+    [SerializeField] private TextMeshProUGUI hintText; // 中文：提示文本
 
     /// <summary>
     /// 开始按钮本体。
@@ -277,32 +277,32 @@ public sealed class MainMenuController : MonoBehaviour
     /// 这个引用是最关键的 Inspector 引用之一，
     /// 因为真正触发切场景的就是它。
     /// </summary>
-    [SerializeField] private Button startButton;
+    [SerializeField] private Button startButton; // 中文：开始按钮
 
     /// <summary>
     /// 开始按钮底图。
     /// </summary>
-    [SerializeField] private Image startButtonImage;
+    [SerializeField] private Image startButtonImage; // 中文：开始按钮Image
 
     /// <summary>
     /// 开始按钮主文字。
     /// </summary>
-    [SerializeField] private TextMeshProUGUI startButtonPrimaryText;
+    [SerializeField] private TextMeshProUGUI startButtonPrimaryText; // 中文：开始按钮主文本
 
     /// <summary>
     /// 开始按钮副文字。
     /// </summary>
-    [SerializeField] private TextMeshProUGUI startButtonSecondaryText;
+    [SerializeField] private TextMeshProUGUI startButtonSecondaryText; // 中文：开始按钮副文本
 
     /// <summary>
     /// 底部左侧标签。
     /// </summary>
-    [SerializeField] private TextMeshProUGUI footerLeftText;
+    [SerializeField] private TextMeshProUGUI footerLeftText; // 中文：页脚剩余文本
 
     /// <summary>
     /// 底部右侧标签。
     /// </summary>
-    [SerializeField] private TextMeshProUGUI footerRightText;
+    [SerializeField] private TextMeshProUGUI footerRightText; // 中文：页脚Right文本
 
     /// <summary>
     /// 记录默认主菜单骨架是否已经搭建过。
@@ -313,23 +313,23 @@ public sealed class MainMenuController : MonoBehaviour
     ///
     /// 这样我们就兼顾了“自动搭出来”和“后续可手改”两件事。
     /// </summary>
-    [SerializeField] private bool hasBuiltSceneUi;
+    [SerializeField] private bool hasBuiltSceneUi; // 中文：是否有Built场景界面
 
-    private const string CanvasName = "MainMenuCanvas";
-    private const string EventSystemName = "MainMenuEventSystem";
-    private const string RootName = "MainMenuRoot";
-    private const string BackgroundName = "BackgroundPanel";
-    private const string FrameCoreName = "FrameCore";
-    private const string FrameInsetName = "FrameInset";
-    private const string TitleName = "TitleText";
-    private const string SubtitleName = "SubtitleText";
-    private const string DescriptionName = "DescriptionText";
-    private const string HintName = "HintText";
-    private const string StartButtonName = "StartGameButton";
-    private const string StartPrimaryName = "StartButtonPrimaryText";
-    private const string StartSecondaryName = "StartButtonSecondaryText";
-    private const string FooterLeftName = "FooterLeftText";
-    private const string FooterRightName = "FooterRightText";
+    private const string CanvasName = "MainMenuCanvas"; // 中文：画布名称
+    private const string EventSystemName = "MainMenuEventSystem"; // 中文：事件System名称
+    private const string RootName = "MainMenuRoot"; // 中文：根节点名称
+    private const string BackgroundName = "BackgroundPanel"; // 中文：背景名称
+    private const string FrameCoreName = "FrameCore"; // 中文：边框核心名称
+    private const string FrameInsetName = "FrameInset"; // 中文：边框Inset名称
+    private const string TitleName = "TitleText"; // 中文：标题名称
+    private const string SubtitleName = "SubtitleText"; // 中文：副标题名称
+    private const string DescriptionName = "DescriptionText"; // 中文：描述名称
+    private const string HintName = "HintText"; // 中文：提示名称
+    private const string StartButtonName = "StartGameButton"; // 中文：开始按钮名称
+    private const string StartPrimaryName = "StartButtonPrimaryText"; // 中文：开始主名称
+    private const string StartSecondaryName = "StartButtonSecondaryText"; // 中文：开始副名称
+    private const string FooterLeftName = "FooterLeftText"; // 中文：页脚剩余名称
+    private const string FooterRightName = "FooterRightText"; // 中文：页脚Right名称
 
     /// <summary>
     /// 运行时启用时，只负责绑定行为层监听。

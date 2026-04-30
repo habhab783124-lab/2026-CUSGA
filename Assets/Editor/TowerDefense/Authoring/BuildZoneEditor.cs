@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -15,7 +15,7 @@ namespace TowerDefense.Editor
     [CustomEditor(typeof(BuildZone))]
     public sealed class BuildZoneEditor : UnityEditor.Editor
     {
-        private SerializedProperty _zoneShapeRootReferenceProperty;
+        private SerializedProperty _zoneShapeRootReferenceProperty; // 中文：区域形状根节点引用Property
 
         private void OnEnable()
         {
@@ -30,12 +30,12 @@ namespace TowerDefense.Editor
             EditorGUILayout.HelpBox(buildZone.BuildAuthoringSummary(), MessageType.Info);
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Assign / Create ZoneShapes Root"))
+            if (GUILayout.Button("指定 / 创建 ZoneShapes 根节点"))
             {
                 AssignOrCreateZoneShapeRoot(buildZone);
             }
 
-            if (GUILayout.Button("Collect Zone Shape Colliders"))
+            if (GUILayout.Button("收集形状碰撞体"))
             {
                 bool changed = buildZone.CollectZoneShapeColliders();
                 EditorUtility.SetDirty(buildZone);
@@ -62,7 +62,7 @@ namespace TowerDefense.Editor
             if (existingRoot == null)
             {
                 GameObject rootObject = new GameObject("ZoneShapes");
-                Undo.RegisterCreatedObjectUndo(rootObject, "Create Build Zone Shape Root");
+                Undo.RegisterCreatedObjectUndo(rootObject, "创建 BuildZone 形状根节点");
                 existingRoot = rootObject.transform;
                 existingRoot.SetParent(buildZone.transform, false);
                 existingRoot.localPosition = Vector3.zero;

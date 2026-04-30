@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -13,8 +13,8 @@ namespace TowerDefense.Editor
     [CustomEditor(typeof(DefensePointFlag))]
     public sealed class DefensePointFlagEditor : UnityEditor.Editor
     {
-        private SerializedProperty _readabilityRootReferenceProperty;
-        private SerializedProperty _autoCreateReadabilityRootProperty;
+        private SerializedProperty _readabilityRootReferenceProperty; // 中文：可读性根节点引用Property
+        private SerializedProperty _autoCreateReadabilityRootProperty; // 中文：自动创建可读性根节点Property
 
         private void OnEnable()
         {
@@ -28,18 +28,18 @@ namespace TowerDefense.Editor
 
             DefensePointFlag defensePoint = (DefensePointFlag)target;
             bool proceduralMarker = serializedObject.FindProperty("proceduralReadabilityMarker")?.boolValue ?? true;
-            string readabilityMode = proceduralMarker ? "Procedural Marker" : "Authored Root Only";
+            string readabilityMode = proceduralMarker ? "程序化标记" : "仅使用作者根节点";
             EditorGUILayout.HelpBox(
-                $"Defense Point: {defensePoint.DisplayName}\nPoint ID: {defensePoint.PointId}\nReadability Mode: {readabilityMode}",
+                $"防御点：{defensePoint.DisplayName}\n点位 ID：{defensePoint.PointId}\n可读性模式：{readabilityMode}",
                 MessageType.Info);
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Assign / Create Readability Root"))
+            if (GUILayout.Button("指定 / 创建可读性根节点"))
             {
                 AssignOrCreateReadabilityRoot(defensePoint, "__DefensePointReadability");
             }
 
-            if (GUILayout.Button("Refresh Marker"))
+            if (GUILayout.Button("刷新标记"))
             {
                 defensePoint.EditorRefreshAuthoringState();
                 EditorUtility.SetDirty(defensePoint);
@@ -57,7 +57,7 @@ namespace TowerDefense.Editor
             if (existingRoot == null)
             {
                 GameObject rootObject = new GameObject(rootName);
-                Undo.RegisterCreatedObjectUndo(rootObject, "Create Defense Point Readability Root");
+                Undo.RegisterCreatedObjectUndo(rootObject, "创建防御点可读性根节点");
                 existingRoot = rootObject.transform;
                 existingRoot.SetParent(defensePoint.transform, false);
                 existingRoot.localPosition = Vector3.zero;

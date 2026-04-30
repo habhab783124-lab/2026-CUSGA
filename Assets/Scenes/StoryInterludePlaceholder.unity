@@ -165,9 +165,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7f6489f9c614500b83908dbd843f5e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fallbackTitle: Story Interlude Placeholder
-  fallbackBody: The future 2D side-scrolling story scene will live here. For now this scene only reserves the campaign-flow slot between tower-defense encounters.
-  fallbackContinuePrompt: Press Enter / Space to continue to the next combat segment.
+  fallbackTitle: 剧情过场占位
+  fallbackBody: 未来的 2D 横板剧情内容会放在这里。当前这个场景只负责先占住战役流程里“剧情段”的位置，让塔防关卡和剧情段之间能够正常切换。
+  fallbackContinuePrompt: 按 Enter / Space 继续进入下一段战斗。
   primaryContinueKey: 13
   secondaryContinueKey: 32
   allowLeftMouseClickContinue: 1

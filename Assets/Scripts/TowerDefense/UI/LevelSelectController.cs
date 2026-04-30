@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using TMPro;
 using UnityEngine;
@@ -33,34 +33,34 @@ public sealed class LevelSelectController : MonoBehaviour
     {
 #if UNITY_EDITOR
         [Header("Scene Ref")]
-        [SerializeField] private SceneAsset sceneAsset;
+        [SerializeField] private SceneAsset sceneAsset; // 中文：场景资产
 #endif
 
-        [SerializeField] private string sceneName = "SampleScene";
-        [SerializeField] private string scenePath = "Assets/Scenes/SampleScene.unity";
+        [SerializeField] private string sceneName = "SampleScene"; // 中文：场景名称
+        [SerializeField] private string scenePath = "Assets/Scenes/SampleScene.unity"; // 中文：场景路径
 
         [Header("Display Copy")]
-        [SerializeField] private string displayName = "LEVEL 01";
-        [SerializeField] private string subtitle = "CURRENT TEST ROUTE";
+        [SerializeField] private string displayName = "第一关"; // 中文：显示名称
+        [SerializeField] private string subtitle = "当前测试路线"; // 中文：副标题
         [SerializeField]
         [TextArea(2, 5)]
-        private string description = "The current playable sample mission.";
-        [SerializeField] private string statusLabel = "OPEN";
+        private string description = "当前可游玩的样例关卡。"; // 中文：描述
+        [SerializeField] private string statusLabel = "可进入"; // 中文：状态标签
 
         [Header("Card Style")]
-        [SerializeField] private Sprite iconSprite;
-        [SerializeField] private Color accentColor = new Color(1f, 0.68f, 0.36f, 1f);
-        [SerializeField] private bool interactable = true;
+        [SerializeField] private Sprite iconSprite; // 中文：图标精灵
+        [SerializeField] private Color accentColor = new Color(1f, 0.68f, 0.36f, 1f); // 中文：accent颜色
+        [SerializeField] private bool interactable = true; // 中文：可交互
 
-        public string SceneName => sceneName;
-        public string ScenePath => scenePath;
-        public string DisplayName => displayName;
-        public string Subtitle => subtitle;
-        public string Description => description;
-        public string StatusLabel => statusLabel;
-        public Sprite IconSprite => iconSprite;
-        public Color AccentColor => accentColor;
-        public bool Interactable => interactable;
+        public string SceneName => sceneName; // 中文：场景名称
+        public string ScenePath => scenePath; // 中文：场景路径
+        public string DisplayName => displayName; // 中文：显示名称
+        public string Subtitle => subtitle; // 中文：副标题
+        public string Description => description; // 中文：描述
+        public string StatusLabel => statusLabel; // 中文：状态标签
+        public Sprite IconSprite => iconSprite; // 中文：图标精灵
+        public Color AccentColor => accentColor; // 中文：Accent颜色
+        public bool Interactable => interactable; // 中文：可交互
 
         /// <summary>
         /// 通过构造函数写入默认关卡数据，
@@ -122,76 +122,76 @@ public sealed class LevelSelectController : MonoBehaviour
     }
 
     [Header("Scene Flow")]
-    [SerializeField] private string mainMenuSceneName = "MainMenu";
+    [SerializeField] private string mainMenuSceneName = "MainMenu"; // 中文：主菜单场景名称
     [Tooltip("推荐使用的关卡目录资产。关卡卡片数据应优先维护在这份独立资产中，而不是继续塞在控制器里。")]
-    [SerializeField] private LevelSelectCatalogAsset levelCatalogAsset;
-    [SerializeField] private LevelDefinition[] levels = Array.Empty<LevelDefinition>();
+    [SerializeField] private LevelSelectCatalogAsset levelCatalogAsset; // 中文：等级目录资产
+    [SerializeField] private LevelDefinition[] levels = Array.Empty<LevelDefinition>(); // 中文：等级列表
 
     [Header("Visual Theme")]
-    [SerializeField] private Color backgroundColor = new Color(0.03f, 0.05f, 0.08f, 1f);
-    [SerializeField] private Color frameCoreColor = new Color(0.05f, 0.08f, 0.11f, 0.95f);
-    [SerializeField] private Color frameInsetColor = new Color(0.04f, 0.06f, 0.09f, 0.98f);
-    [SerializeField] private Color titleColor = Color.white;
-    [SerializeField] private Color subtitleColor = new Color(0.78f, 0.86f, 0.94f, 1f);
-    [SerializeField] private Color descriptionColor = new Color(0.82f, 0.88f, 0.95f, 1f);
-    [SerializeField] private Color backButtonColor = new Color(0.18f, 0.72f, 0.94f, 1f);
-    [SerializeField] private Color backButtonPrimaryTextColor = Color.white;
-    [SerializeField] private Color backButtonSecondaryTextColor = new Color(0.85f, 0.95f, 1f, 1f);
+    [SerializeField] private Color backgroundColor = new Color(0.03f, 0.05f, 0.08f, 1f); // 中文：背景颜色
+    [SerializeField] private Color frameCoreColor = new Color(0.05f, 0.08f, 0.11f, 0.95f); // 中文：边框核心颜色
+    [SerializeField] private Color frameInsetColor = new Color(0.04f, 0.06f, 0.09f, 0.98f); // 中文：边框Inset颜色
+    [SerializeField] private Color titleColor = Color.white; // 中文：标题颜色
+    [SerializeField] private Color subtitleColor = new Color(0.78f, 0.86f, 0.94f, 1f); // 中文：副标题颜色
+    [SerializeField] private Color descriptionColor = new Color(0.82f, 0.88f, 0.95f, 1f); // 中文：描述颜色
+    [SerializeField] private Color backButtonColor = new Color(0.18f, 0.72f, 0.94f, 1f); // 中文：back按钮颜色
+    [SerializeField] private Color backButtonPrimaryTextColor = Color.white; // 中文：back按钮主文本颜色
+    [SerializeField] private Color backButtonSecondaryTextColor = new Color(0.85f, 0.95f, 1f, 1f); // 中文：back按钮副文本颜色
 
-    [SerializeField] private Sprite backgroundSprite;
-    [SerializeField] private Sprite frameCoreSprite;
-    [SerializeField] private Sprite frameInsetSprite;
-    [SerializeField] private Sprite backButtonSprite;
+    [SerializeField] private Sprite backgroundSprite; // 中文：背景精灵
+    [SerializeField] private Sprite frameCoreSprite; // 中文：边框核心精灵
+    [SerializeField] private Sprite frameInsetSprite; // 中文：边框Inset精灵
+    [SerializeField] private Sprite backButtonSprite; // 中文：back按钮精灵
 
-    [SerializeField] private TMP_FontAsset titleFontAsset;
-    [SerializeField] private TMP_FontAsset bodyFontAsset;
-    [SerializeField] private TMP_FontAsset accentFontAsset;
+    [SerializeField] private TMP_FontAsset titleFontAsset; // 中文：标题字体资产
+    [SerializeField] private TMP_FontAsset bodyFontAsset; // 中文：主体字体资产
+    [SerializeField] private TMP_FontAsset accentFontAsset; // 中文：accent字体资产
 
     [Header("Page Copy")]
-    [SerializeField] private string titleCopy = "MISSION SELECT";
-    [SerializeField] private string subtitleCopy = "Choose a battlefield scene to edit or play";
+    [SerializeField] private string titleCopy = "关卡选择"; // 中文：标题文案
+    [SerializeField] private string subtitleCopy = "选择要编辑或游玩的战场场景"; // 中文：副标题文案
     [SerializeField]
     [TextArea(2, 5)]
-    private string descriptionCopy = "The first mission is the current sample scene. The extra four scenes are prepared so you can continue building later maps directly in the Unity editor.";
-    [SerializeField] private string backPrimaryCopy = "Back";
-    [SerializeField] private string backSecondaryCopy = "RETURN TO MAIN MENU";
+    private string descriptionCopy = "第一关是当前主测试场景，后面的四个场景已经预留好，方便你直接在 Unity 里继续制作后续地图。"; // 中文：描述文案
+    [SerializeField] private string backPrimaryCopy = "返回"; // 中文：back主文案
+    [SerializeField] private string backSecondaryCopy = "回到主菜单"; // 中文：back副文案
 
     [Header("Scene UI Refs")]
-    [SerializeField] private Camera sceneCamera;
-    [SerializeField] private Canvas mainCanvas;
-    [SerializeField] private CanvasScaler canvasScaler;
-    [SerializeField] private GraphicRaycaster graphicRaycaster;
-    [SerializeField] private EventSystem eventSystem;
-    [SerializeField] private StandaloneInputModule standaloneInputModule;
+    [SerializeField] private Camera sceneCamera; // 中文：场景相机
+    [SerializeField] private Canvas mainCanvas; // 中文：主画布
+    [SerializeField] private CanvasScaler canvasScaler; // 中文：画布Scaler
+    [SerializeField] private GraphicRaycaster graphicRaycaster; // 中文：graphicRaycaster
+    [SerializeField] private EventSystem eventSystem; // 中文：事件System
+    [SerializeField] private StandaloneInputModule standaloneInputModule; // 中文：standalone输入模块
 
-    [SerializeField] private RectTransform pageRoot;
-    [SerializeField] private Image backgroundPanel;
-    [SerializeField] private Image frameCorePanel;
-    [SerializeField] private Image frameInsetPanel;
-    [SerializeField] private TextMeshProUGUI titleText;
-    [SerializeField] private TextMeshProUGUI subtitleText;
-    [SerializeField] private TextMeshProUGUI descriptionText;
-    [SerializeField] private Button backButton;
-    [SerializeField] private Image backButtonImage;
-    [SerializeField] private TextMeshProUGUI backButtonPrimaryText;
-    [SerializeField] private TextMeshProUGUI backButtonSecondaryText;
-    [SerializeField] private RectTransform cardsRoot;
-    [SerializeField] private LevelSelectCard[] levelCards = Array.Empty<LevelSelectCard>();
-    [SerializeField] private bool hasBuiltSceneUi;
+    [SerializeField] private RectTransform pageRoot; // 中文：page根节点
+    [SerializeField] private Image backgroundPanel; // 中文：背景面板
+    [SerializeField] private Image frameCorePanel; // 中文：边框核心面板
+    [SerializeField] private Image frameInsetPanel; // 中文：边框Inset面板
+    [SerializeField] private TextMeshProUGUI titleText; // 中文：标题文本
+    [SerializeField] private TextMeshProUGUI subtitleText; // 中文：副标题文本
+    [SerializeField] private TextMeshProUGUI descriptionText; // 中文：描述文本
+    [SerializeField] private Button backButton; // 中文：back按钮
+    [SerializeField] private Image backButtonImage; // 中文：back按钮Image
+    [SerializeField] private TextMeshProUGUI backButtonPrimaryText; // 中文：back按钮主文本
+    [SerializeField] private TextMeshProUGUI backButtonSecondaryText; // 中文：back按钮副文本
+    [SerializeField] private RectTransform cardsRoot; // 中文：卡片列表根节点
+    [SerializeField] private LevelSelectCard[] levelCards = Array.Empty<LevelSelectCard>(); // 中文：等级卡片列表
+    [SerializeField] private bool hasBuiltSceneUi; // 中文：是否有Built场景界面
 
-    private const string CanvasName = "LevelSelectCanvas";
-    private const string EventSystemName = "LevelSelectEventSystem";
-    private const string RootName = "LevelSelectRoot";
-    private const string BackgroundName = "BackgroundPanel";
-    private const string FrameCoreName = "FrameCore";
-    private const string FrameInsetName = "FrameInset";
-    private const string TitleName = "TitleText";
-    private const string SubtitleName = "SubtitleText";
-    private const string DescriptionName = "DescriptionText";
-    private const string BackButtonName = "BackButton";
-    private const string BackPrimaryName = "BackButtonPrimaryText";
-    private const string BackSecondaryName = "BackButtonSecondaryText";
-    private const string CardsRootName = "LevelCardsRoot";
+    private const string CanvasName = "LevelSelectCanvas"; // 中文：画布名称
+    private const string EventSystemName = "LevelSelectEventSystem"; // 中文：事件System名称
+    private const string RootName = "LevelSelectRoot"; // 中文：根节点名称
+    private const string BackgroundName = "BackgroundPanel"; // 中文：背景名称
+    private const string FrameCoreName = "FrameCore"; // 中文：边框核心名称
+    private const string FrameInsetName = "FrameInset"; // 中文：边框Inset名称
+    private const string TitleName = "TitleText"; // 中文：标题名称
+    private const string SubtitleName = "SubtitleText"; // 中文：副标题名称
+    private const string DescriptionName = "DescriptionText"; // 中文：描述名称
+    private const string BackButtonName = "BackButton"; // 中文：Back按钮名称
+    private const string BackPrimaryName = "BackButtonPrimaryText"; // 中文：Back主名称
+    private const string BackSecondaryName = "BackButtonSecondaryText"; // 中文：Back副名称
+    private const string CardsRootName = "LevelCardsRoot"; // 中文：卡片列表根节点名称
 
     private void OnEnable()
     {
@@ -318,11 +318,11 @@ public sealed class LevelSelectController : MonoBehaviour
 
         levels = new[]
         {
-            CreateDefaultLevel("SampleScene", "Assets/Scenes/SampleScene.unity", "LEVEL 01", "CURRENT TEST ROUTE", "The current playable sample battlefield. Use this as the base mission while the later scenes are still being authored.", "OPEN", new Color(1f, 0.68f, 0.36f, 1f)),
-            CreateDefaultLevel("Level02", "Assets/Scenes/Level02.unity", "LEVEL 02", "SECOND FRONT", "A new mission scene prepared for your next map. You can open it directly in the editor and start rebuilding terrain, routes, and decoration.", "EDIT READY", new Color(0.34f, 0.88f, 0.96f, 1f)),
-            CreateDefaultLevel("Level03", "Assets/Scenes/Level03.unity", "LEVEL 03", "OUTER GRID", "Reserved for the third mission layout. The gameplay skeleton is copied over so you can focus on map authoring first.", "EDIT READY", new Color(0.47f, 0.96f, 0.74f, 1f)),
-            CreateDefaultLevel("Level04", "Assets/Scenes/Level04.unity", "LEVEL 04", "RELAY BREAK", "Reserved for the fourth mission layout. Treat this as another fully editable gameplay scene slot.", "EDIT READY", new Color(1f, 0.78f, 0.43f, 1f)),
-            CreateDefaultLevel("Level05", "Assets/Scenes/Level05.unity", "LEVEL 05", "FINAL CIRCUIT", "Reserved for the fifth mission layout. Keep this one for your later, more advanced battlefield ideas.", "EDIT READY", new Color(1f, 0.52f, 0.41f, 1f))
+            CreateDefaultLevel("SampleScene", "Assets/Scenes/SampleScene.unity", "第一关", "当前测试路线", "当前可游玩的样例战场。后续关卡还在制作中时，可以先把这里当作主测试关卡。", "可进入", new Color(1f, 0.68f, 0.36f, 1f)),
+            CreateDefaultLevel("Level02", "Assets/Scenes/Level02.unity", "第二关", "第二战线", "为下一张地图预留的新任务场景。你可以直接在编辑器里打开它，开始重做地形、路线和装饰。", "可编辑", new Color(0.34f, 0.88f, 0.96f, 1f)),
+            CreateDefaultLevel("Level03", "Assets/Scenes/Level03.unity", "第三关", "外围电网", "为第三张任务地图预留的场景。玩法骨架已经复制好，你可以优先专注于地图制作。", "可编辑", new Color(0.47f, 0.96f, 0.74f, 1f)),
+            CreateDefaultLevel("Level04", "Assets/Scenes/Level04.unity", "第四关", "继电断层", "为第四张任务地图预留的场景。可以把它当作另一个完整可编辑的玩法场景槽位。", "可编辑", new Color(1f, 0.78f, 0.43f, 1f)),
+            CreateDefaultLevel("Level05", "Assets/Scenes/Level05.unity", "第五关", "最终回路", "为第五张任务地图预留的场景。适合留给后续更复杂、更进阶的战场构想。", "可编辑", new Color(1f, 0.52f, 0.41f, 1f))
         };
 
         MarkSceneDirty();

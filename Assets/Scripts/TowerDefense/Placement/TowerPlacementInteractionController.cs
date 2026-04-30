@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 /// <summary>
@@ -32,23 +32,23 @@ public sealed class TowerPlacementInteractionController
     /// </summary>
     public delegate bool PlacementValidator(Vector3 worldPosition, TowerType towerType, out string invalidReason);
 
-    private readonly Func<bool> _isGameOverQuery;
-    private readonly Func<int> _currentScrapQuery;
-    private readonly Func<TowerType, bool> _canAffordTower;
-    private readonly Func<TowerType, GameObject> _getPrototype;
-    private readonly Func<TowerType, string> _getTowerDisplayName;
-    private readonly Func<Vector2, Vector3> _screenToWorldPosition;
-    private readonly PlacementValidator _validatePlacementPosition;
-    private readonly Func<TowerType, Bounds> _getPlacementOverlayWorldBounds;
-    private readonly Func<TowerType, Func<Vector3, bool>> _buildPlacementOverlayValidator;
-    private readonly Func<Vector3, TowerType, bool> _tryPlaceTowerAt;
-    private readonly Action _refreshHud;
-    private readonly Action<string> _setStatusMessage;
-    private readonly Action<string> _logPlacementDiagnostic;
+    private readonly Func<bool> _isGameOverQuery; // 中文：是否游戏结束查询
+    private readonly Func<int> _currentScrapQuery; // 中文：当前废料查询
+    private readonly Func<TowerType, bool> _canAffordTower; // 中文：能否Afford塔
+    private readonly Func<TowerType, GameObject> _getPrototype; // 中文：获取原型
+    private readonly Func<TowerType, string> _getTowerDisplayName; // 中文：获取塔显示名称
+    private readonly Func<Vector2, Vector3> _screenToWorldPosition; // 中文：screen到世界位置
+    private readonly PlacementValidator _validatePlacementPosition; // 中文：validate放置位置
+    private readonly Func<TowerType, Bounds> _getPlacementOverlayWorldBounds; // 中文：获取放置覆盖层世界Bounds
+    private readonly Func<TowerType, Func<Vector3, bool>> _buildPlacementOverlayValidator; // 中文：建造放置覆盖层校验器
+    private readonly Func<Vector3, TowerType, bool> _tryPlaceTowerAt; // 中文：尝试放置塔At
+    private readonly Action _refreshHud; // 中文：刷新HUD
+    private readonly Action<string> _setStatusMessage; // 中文：设置状态消息
+    private readonly Action<string> _logPlacementDiagnostic; // 中文：日志放置诊断
 
-    private TowerPlacementVisualController _placementVisualController;
-    private TowerDefenseHudPresenter _hudPresenter;
-    private TowerCatalog _towerCatalog;
+    private TowerPlacementVisualController _placementVisualController; // 中文：放置视觉控制器
+    private TowerDefenseHudPresenter _hudPresenter; // 中文：HUDPresenter
+    private TowerCatalog _towerCatalog; // 中文：塔目录
 
     /// <summary>
     /// 这些字段原本都堆在 `TowerDefenseGame` 里。
@@ -56,12 +56,12 @@ public sealed class TowerPlacementInteractionController
     /// 现在把它们挪到这里，等于明确宣布：
     /// 它们属于“放置交互流程状态”，而不是“整局游戏全局状态”。
     /// </summary>
-    private TowerType _selectedTowerType = TowerType.None;
-    private bool _isPlacementDragActive;
-    private TowerType _dragTowerType = TowerType.None;
-    private Vector3 _previewWorldPosition;
-    private bool _previewPositionIsValid;
-    private string _previewInvalidReason = string.Empty;
+    private TowerType _selectedTowerType = TowerType.None; // 中文：选中塔类型
+    private bool _isPlacementDragActive; // 中文：是否放置拖拽激活
+    private TowerType _dragTowerType = TowerType.None; // 中文：拖拽塔类型
+    private Vector3 _previewWorldPosition; // 中文：预览世界位置
+    private bool _previewPositionIsValid; // 中文：预览位置是否有效
+    private string _previewInvalidReason = string.Empty; // 中文：预览无效原因
 
     public TowerPlacementInteractionController(
         Func<bool> isGameOverQuery,
@@ -111,14 +111,14 @@ public sealed class TowerPlacementInteractionController
         _towerCatalog = towerCatalog;
     }
 
-    public TowerType SelectedTowerType => _selectedTowerType;
-    public bool IsPlacementDragActive => _isPlacementDragActive;
-    public TowerType DragTowerType => _dragTowerType;
+    public TowerType SelectedTowerType => _selectedTowerType; // 中文：选中塔类型
+    public bool IsPlacementDragActive => _isPlacementDragActive; // 中文：是否放置拖拽激活
+    public TowerType DragTowerType => _dragTowerType; // 中文：拖拽塔类型
 
     /// <summary>
     /// 让 HUD 继续只读“交互流程快照”，而不是反向依赖控制器内部细节。
     /// </summary>
-    public TowerDragPreviewState CurrentDragPreviewState =>
+    public TowerDragPreviewState CurrentDragPreviewState => // 中文：当前拖拽预览状态
         new TowerDragPreviewState(_dragTowerType, _previewPositionIsValid, _previewInvalidReason);
 
     public void SelectRelayTower()
@@ -233,14 +233,14 @@ public sealed class TowerPlacementInteractionController
             _selectedTowerType = towerType;
             _refreshHud?.Invoke();
             int currentScrap = _currentScrapQuery != null ? _currentScrapQuery() : 0;
-            _setStatusMessage?.Invoke($"Not enough scrap. You currently have {currentScrap} SCRAP.");
+            _setStatusMessage?.Invoke($"废料不足。你当前只有 {currentScrap} 废料。");
             _logPlacementDiagnostic?.Invoke($"Begin drag rejected: insufficient scrap for {towerType}.");
             return false;
         }
 
         if (_getPrototype == null || _getPrototype(towerType) == null)
         {
-            _setStatusMessage?.Invoke("Card prototype is missing. Check the scene setup.");
+            _setStatusMessage?.Invoke("缺少塔卡原型体，请检查场景配置。");
             _logPlacementDiagnostic?.Invoke($"Begin drag rejected: missing prototype for {towerType}.");
             return false;
         }
@@ -260,7 +260,7 @@ public sealed class TowerPlacementInteractionController
         _hudPresenter?.SetDragPreviewVisible(true);
         ShowPreparedPlacementAreaOverlay(towerType);
         UpdatePlacementDrag(screenPosition);
-        _setStatusMessage?.Invoke("Drag the Generator or Turret into a highlighted legal area, then release to deploy.");
+        _setStatusMessage?.Invoke("把继电器或战斗塔拖到高亮的合法区域中，松开即可部署。");
         _logPlacementDiagnostic?.Invoke($"Begin drag accepted: tower={towerType} screen={screenPosition} previewWorld={_previewWorldPosition} previewValid={_previewPositionIsValid} reason={_previewInvalidReason}");
         return true;
     }
@@ -286,7 +286,7 @@ public sealed class TowerPlacementInteractionController
         else
         {
             _previewPositionIsValid = false;
-            _previewInvalidReason = "Placement validation is unavailable.";
+            _previewInvalidReason = "当前无法执行放置校验。";
         }
 
         _placementVisualController?.SetPreviewPosition(_previewWorldPosition);
@@ -328,7 +328,7 @@ public sealed class TowerPlacementInteractionController
 
         if (releasedOverUserInterface)
         {
-            _setStatusMessage?.Invoke("Deployment cancelled.");
+            _setStatusMessage?.Invoke("已取消部署。");
         }
         else if (!string.IsNullOrEmpty(invalidReason))
         {
@@ -364,12 +364,12 @@ public sealed class TowerPlacementInteractionController
 
         if (towerType == TowerType.None)
         {
-            _setStatusMessage?.Invoke("Deployment selection cleared.");
+            _setStatusMessage?.Invoke("已清除部署选择。");
         }
         else
         {
             string towerDisplayName = _getTowerDisplayName != null ? _getTowerDisplayName(towerType) : towerType.ToString();
-            _setStatusMessage?.Invoke($"Selected: {towerDisplayName}. Drag the card to preview exact legal areas.");
+            _setStatusMessage?.Invoke($"已选择：{towerDisplayName}。拖拽卡片可预览精确合法区域。");
             PrewarmPlacementAreaOverlay(towerType);
         }
 

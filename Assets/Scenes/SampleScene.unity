@@ -315,7 +315,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: CORE
+  m_text: "\u57FA\u5730"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -941,7 +941,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1074,6 +1074,46 @@ Transform:
   - {fileID: 1237843225}
   m_Father: {fileID: 874949295}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!21 &183731922
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: BattlefieldReadabilityLineMaterial
+  m_Shader: {fileID: 10753, guid: 0000000000000000f000000000000000, type: 0}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _AlphaTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - PixelSnap: 0
+    - _EnableExternalAlpha: 0
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Flip: {r: 1, g: 1, b: 1, a: 1}
+    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
 --- !u!1 &185600881
 GameObject:
   m_ObjectHideFlags: 0
@@ -1270,6 +1310,7 @@ MonoBehaviour:
   bodyRendererReference: {fileID: 2119100002}
   visualScaleRootReference: {fileID: 2119100001}
   bodyColor: {r: 0.9, g: 0.25, b: 0.25, a: 1}
+  shieldTintColor: {r: 0.42, g: 0.9, b: 1, a: 1}
   slowTintColor: {r: 0.42, g: 0.95, b: 0.9, a: 1}
   standardHitFlashColor: {r: 1, g: 0.96, b: 0.9, a: 1}
   bombardHitFlashColor: {r: 1, g: 0.74, b: 0.45, a: 1}
@@ -1281,6 +1322,7 @@ MonoBehaviour:
   slowHitPulseScale: 1.04
   hitPulseDuration: 0.12
   healthBarFillColor: {r: 0.2, g: 0.9, b: 0.35, a: 1}
+  healthBarShieldColor: {r: 0.44, g: 0.9, b: 1, a: 1}
   healthBarBackgroundColor: {r: 0.15, g: 0.15, b: 0.15, a: 1}
   healthBarFillSpriteOverride: {fileID: 0}
   healthBarBackgroundSpriteOverride: {fileID: 0}
@@ -1476,10 +1518,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   towerType: 1
-  hoverHint: Drag the card to preview legal areas. Place relays on any empty ground,
-    then deploy turrets inside relay coverage.
+  hoverHint: "\u62D6\u62FD\u5361\u7247\u53EF\u9884\u89C8\u5408\u6CD5\u533A\u57DF\u3002\u7EE7\u7535\u5668\u53EF\u4EE5\u653E\u5728\u4EFB\u610F\u7A7A\u5730\u4E0A\uFF0C\u6218\u6597\u5854\u5FC5\u987B\u653E\u5728\u7EE7\u7535\u5668\u8986\u76D6\u8303\u56F4\u5185\u3002
+    then deploy turrets inside relay coverage."
   backgroundImageReference: {fileID: 203997011}
   iconImageReference: {fileID: 90703277}
+  labelTextReference: {fileID: 2065148646}
   accentGraphicReferences:
   - {fileID: 128532571}
   - {fileID: 1415441122}
@@ -1541,7 +1584,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1689,7 +1732,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1836,7 +1879,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2032,7 +2075,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2337,7 +2380,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2516,7 +2559,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2753,8 +2796,12 @@ MonoBehaviour:
   starterZoneMarkerFillColor: {r: 0.22, g: 0.82, b: 0.88, a: 0.22}
   starterZoneMarkerEdgeColor: {r: 0.9, g: 1, b: 0.98, a: 1}
   starterZoneMarkerSortingOrder: 10
+  towerPresentationCatalogAsset: {fileID: 11400000, guid: 8b715712fddd4258acc2978016cf7b4f, type: 2}
+  hudThemeAsset: {fileID: 11400000, guid: a5b81713c5114ec4aec1ef71c8cb89f2, type: 2}
+  hudCopyAsset: {fileID: 11400000, guid: bbf1c352ec174ce1bdeeb862aa02a2e9, type: 2}
+  placementVisualThemeAsset: {fileID: 11400000, guid: 217dbb4f677d421f99473d4dd5c1f3db, type: 2}
   relayPresentation:
-    displayName: Relay Generator
+    displayName: "\u7EE7\u7535\u5668"
     cardRoleSummary: Relay Node / Supply Grid
     selectionHint: Anchor the power grid first, then expand tower coverage from there.
     upgradeFocusSummary: Upgrades add more supply capacity without changing relay
@@ -2765,7 +2812,7 @@ MonoBehaviour:
     cardBackgroundTint: {r: 0.14, g: 0.1, b: 0.08, a: 0.96}
     cardAccentTint: {r: 1, g: 0.55, b: 0.22, a: 1}
   singleTargetPresentation:
-    displayName: Defense Turret
+    displayName: "\u5355\u4F53\u5854"
     cardRoleSummary: Focus Fire / Frontline
     selectionHint: Reliable direct damage for finishing one target at a time.
     upgradeFocusSummary: Upgrades push faster fire, longer reach, and steadier single-target
@@ -2776,7 +2823,7 @@ MonoBehaviour:
     cardBackgroundTint: {r: 0.07, g: 0.11, b: 0.16, a: 0.96}
     cardAccentTint: {r: 0.28, g: 0.78, b: 1, a: 1}
   slowFieldPresentation:
-    displayName: Slow Field Tower
+    displayName: "\u51CF\u901F\u5854"
     cardRoleSummary: Area Control / Slow
     selectionHint: Controls lanes by slowing every enemy inside the field.
     upgradeFocusSummary: Upgrades strengthen the slow, extend control time, and improve
@@ -2787,7 +2834,7 @@ MonoBehaviour:
     cardBackgroundTint: {r: 0.07, g: 0.14, b: 0.14, a: 0.96}
     cardAccentTint: {r: 0.36, g: 0.95, b: 0.84, a: 1}
   bombardPresentation:
-    displayName: Bombard Tower
+    displayName: "\u70B8\u5F39\u5854"
     cardRoleSummary: Burst Splash / Delayed
     selectionHint: Delayed splash damage that punishes clustered enemies at range.
     upgradeFocusSummary: Upgrades widen the blast, shorten bomb travel, and raise
@@ -2826,13 +2873,15 @@ MonoBehaviour:
   placementPreviewRootReference: {fileID: 0}
   buildZoneReference: {fileID: 425466730}
   battlefieldMapReference: {fileID: 0}
-  placedTowerRootName: PlacedTowers
-  placementPreviewRootName: PlacementPreviewRoot
-  buildZoneName: BuildZone
   scrapTextReference: {fileID: 4181002}
   baseHealthTextReference: {fileID: 676675441}
   waveTextReference: {fileID: 1436609492}
   selectionTextReference: {fileID: 1313010503}
+  operationTextReference: {fileID: 0}
+  liveStatusTextReference: {fileID: 0}
+  powerGridTextReference: {fileID: 0}
+  latestEventTextReference: {fileID: 0}
+  recentLogTextReference: {fileID: 0}
   relayTowerButtonReference: {fileID: 203997010}
   defenseTowerButtonReference: {fileID: 1735439456}
   slowFieldTowerButtonReference: {fileID: 2100011003}
@@ -3180,7 +3229,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -3369,7 +3418,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -3554,6 +3603,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0c7c271565ec7e42850130fa3dfaff4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  zoneShapeRootReference: {fileID: 0}
+  zoneShapeColliders: []
+  autoCollectZoneShapes: 1
+  includeInactiveShapes: 1
   gizmoColor: {r: 0.25, g: 0.85, b: 0.95, a: 0.9}
 --- !u!1 &428783728
 GameObject:
@@ -3608,7 +3661,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -4692,7 +4745,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -4837,7 +4890,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -4984,7 +5037,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -5132,7 +5185,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -5579,7 +5632,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -6120,7 +6173,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Cancel
+  m_text: "\u53D6\u6D88"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -6250,7 +6303,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -6542,7 +6595,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -6902,7 +6955,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -7195,7 +7248,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -7707,7 +7760,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -8097,7 +8150,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Base lost.
+  m_text: "\u57FA\u5730\u5931\u5B88\u3002"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 0}
   m_sharedMaterial: {fileID: 0}
@@ -8949,7 +9002,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -9143,7 +9196,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -9542,7 +9595,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Relay (30)
+  m_text: "\u7EE7\u7535\u5668 (30)"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -9670,7 +9723,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34900c2bae271244aabbf989870b3233, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  waypointRootReference: {fileID: 0}
+  autoFindWaypointRoot: 1
   showReadabilityOverlay: 1
+  proceduralReadabilityOverlay: 1
   autoCreateReadabilityRoot: 1
   readabilityRootReference: {fileID: 1194639117}
   readabilityMaterialOverride: {fileID: 0}
@@ -9736,7 +9792,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -9883,7 +9939,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -10048,7 +10104,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -10195,7 +10251,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -10342,7 +10398,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -10582,7 +10638,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -10734,7 +10790,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: OP-01 / TEST ROUTE
+  m_text: "\u6837\u4F8B\u8DEF\u7EBF / \u6D4B\u8BD5"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -11026,7 +11082,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -11295,7 +11351,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Defense (45)
+  m_text: "\u5355\u4F53\u5854 (45)"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -11559,7 +11615,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -11770,7 +11826,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -11918,7 +11974,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -12133,7 +12189,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -12538,7 +12594,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -12882,7 +12938,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -13315,7 +13371,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -13983,7 +14039,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -14153,7 +14209,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: GAME OVER
+  m_text: "\u6218\u6597\u5931\u8D25"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 0}
   m_sharedMaterial: {fileID: 0}
@@ -14298,7 +14354,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -14467,7 +14523,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: DEPLOY
+  m_text: "\u90E8\u7F72"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -14704,7 +14760,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -14927,7 +14983,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -15065,6 +15121,8 @@ GameObject:
   - component: {fileID: 1548685748}
   - component: {fileID: 1548685747}
   - component: {fileID: 1548685749}
+  - component: {fileID: 1548685751}
+  - component: {fileID: 1548685750}
   m_Layer: 0
   m_Name: RelayTowerPrototype
   m_TagString: Untagged
@@ -15164,6 +15222,53 @@ MonoBehaviour:
   normalColor: {r: 1, g: 0.85, b: 0.2, a: 1}
   saturatedColor: {r: 1, g: 0.5, b: 0.18, a: 1}
   gizmoColor: {r: 1, g: 0.78, b: 0.28, a: 0.8}
+--- !u!114 &1548685750
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1548685746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec078ef1b92848debc325fe6cc5f9002, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!58 &1548685751
+CircleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1548685746}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  serializedVersion: 2
+  m_Radius: 0.5
 --- !u!1 &1552526502
 GameObject:
   m_ObjectHideFlags: 0
@@ -15281,7 +15386,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -15574,7 +15679,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -15745,7 +15850,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -16037,7 +16142,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -16933,6 +17038,8 @@ GameObject:
   - component: {fileID: 1719944051}
   - component: {fileID: 1719944050}
   - component: {fileID: 1719944052}
+  - component: {fileID: 1719944054}
+  - component: {fileID: 1719944053}
   m_Layer: 0
   m_Name: DefenseTowerPrototype
   m_TagString: Untagged
@@ -17204,6 +17311,53 @@ MonoBehaviour:
   levelPipSpacing: 0.22
   levelPipScale: 0.12
   levelPipSortingOffset: 3
+--- !u!114 &1719944053
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1719944049}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec078ef1b92848debc325fe6cc5f9002, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!58 &1719944054
+CircleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1719944049}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 0, y: 0}
+  serializedVersion: 2
+  m_Radius: 0.5
 --- !u!1 &1729006010
 GameObject:
   m_ObjectHideFlags: 0
@@ -17261,7 +17415,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Defense
+  m_text: "\u5355\u4F53\u5854"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -17391,7 +17545,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -17622,10 +17776,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   towerType: 2
-  hoverHint: Drag the card to preview legal areas. Place relays on any empty ground,
-    then deploy turrets inside relay coverage.
+  hoverHint: "\u62D6\u62FD\u5361\u7247\u53EF\u9884\u89C8\u5408\u6CD5\u533A\u57DF\u3002\u7EE7\u7535\u5668\u53EF\u4EE5\u653E\u5728\u4EFB\u610F\u7A7A\u5730\u4E0A\uFF0C\u6218\u6597\u5854\u5FC5\u987B\u653E\u5728\u7EE7\u7535\u5668\u8986\u76D6\u8303\u56F4\u5185\u3002
+    then deploy turrets inside relay coverage."
   backgroundImageReference: {fileID: 1735439457}
   iconImageReference: {fileID: 312683310}
+  labelTextReference: {fileID: 1729006012}
   accentGraphicReferences:
   - {fileID: 600772102}
   - {fileID: 521548321}
@@ -17721,7 +17876,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -17867,14 +18022,14 @@ MonoBehaviour:
   continueCampaignAfterClear: 1
   clearContinuePrimaryKey: 13
   clearContinueSecondaryKey: 32
-  clearContinueMessage: Combat segment secured. Press Enter / Space to continue the story.
+  clearContinueMessage: "\u6218\u6597\u6BB5\u5DF2\u5B8C\u6210\u3002\u6309 Enter /
+    Space \u7EE7\u7EED\u540E\u7EED\u5267\u60C5\u3002"
   battlefieldMapReference: {fileID: 2109000002}
   waveCatalogAsset: {fileID: 11400000, guid: 1f20c0e3cc104e6988ee5f5d88a16101, type: 2}
   enemyCatalogAsset: {fileID: 11400000, guid: 819dd0e8f3ce43b486231f9495890f82, type: 2}
   enemyPathReference: {fileID: 883511605}
   enemyPrototypeReference: {fileID: 5863667738006183233, guid: 188b0c4095b17be4d9ca76d998df24f1, type: 3}
   enemyRootReference: {fileID: 2035091432}
-  waves: []
 --- !u!1 &1759276076
 GameObject:
   m_ObjectHideFlags: 0
@@ -17960,7 +18115,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -18108,7 +18263,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -18590,7 +18745,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: DEPLOY
+  m_text: "\u90E8\u7F72"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 1315430162}
@@ -18918,46 +19073,6 @@ Transform:
   - {fileID: 901456697}
   m_Father: {fileID: 2109000031}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!21 &1861997120
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: BattlefieldReadabilityLineMaterial
-  m_Shader: {fileID: 10753, guid: 0000000000000000f000000000000000, type: 0}
-  m_Parent: {fileID: 0}
-  m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_LockedProperties: 
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _AlphaTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _MainTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - PixelSnap: 0
-    - _EnableExternalAlpha: 0
-    m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Flip: {r: 1, g: 1, b: 1, a: 1}
-    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-  m_BuildTextureStacks: []
 --- !u!1 &1871151308
 GameObject:
   m_ObjectHideFlags: 0
@@ -19011,7 +19126,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -19413,7 +19528,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -19632,7 +19747,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -19811,7 +19926,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1861997120}
+  - {fileID: 183731922}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -20073,7 +20188,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Relay
+  m_text: "\u7EE7\u7535\u5668"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -20431,10 +20546,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   towerType: 3
-  hoverHint: Drag the card to preview legal areas. Slow field towers need relay coverage
-    and hinder every enemy in range.
+  hoverHint: "\u62D6\u62FD\u5361\u7247\u53EF\u9884\u89C8\u5408\u6CD5\u533A\u57DF\u3002\u51CF\u901F\u5854\u5FC5\u987B\u653E\u5728\u7EE7\u7535\u5668\u8986\u76D6\u8303\u56F4\u5185\u3002
+    and hinder every enemy in range."
   backgroundImageReference: {fileID: 2100011004}
   iconImageReference: {fileID: 2100011022}
+  labelTextReference: {fileID: 2100011012}
   accentGraphicReferences:
   - {fileID: 2100011022}
   draggingAlpha: 0.82
@@ -20499,7 +20615,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Slow Field
+  m_text: "\u51CF\u901F\u5854"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -20922,10 +21038,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   towerType: 4
-  hoverHint: Drag the card to preview legal areas. Bombard towers need relay coverage
-    and strike after a short travel delay.
+  hoverHint: "\u62D6\u62FD\u5361\u7247\u53EF\u9884\u89C8\u5408\u6CD5\u533A\u57DF\u3002\u70B8\u5F39\u5854\u5FC5\u987B\u653E\u5728\u7EE7\u7535\u5668\u8986\u76D6\u8303\u56F4\u5185\u3002
+    and strike after a short travel delay."
   backgroundImageReference: {fileID: 2100012004}
   iconImageReference: {fileID: 2100012022}
+  labelTextReference: {fileID: 2100012012}
   accentGraphicReferences:
   - {fileID: 2100012022}
   draggingAlpha: 0.82
@@ -20990,7 +21107,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Bombard
+  m_text: "\u70B8\u5F39\u5854"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -21476,6 +21593,10 @@ MonoBehaviour:
   - {fileID: 2109000022}
   defensePoints:
   - {fileID: 2109000032}
+  autoCollectSceneReferences: 1
+  spawnGateRootReference: {fileID: 0}
+  defensePointRootReference: {fileID: 0}
+  includeInactiveChildren: 1
   relayLimit: 4
 --- !u!1 &2109000010
 GameObject:
@@ -21527,6 +21648,7 @@ MonoBehaviour:
   enemyPathReference: {fileID: 883511605}
   targetDefensePointReference: {fileID: 2109000032}
   showReadabilityMarker: 1
+  proceduralReadabilityMarker: 1
   autoCreateReadabilityRoot: 1
   readabilityRootReference: {fileID: 787574474}
   readabilityMaterialOverride: {fileID: 0}
@@ -21589,6 +21711,7 @@ MonoBehaviour:
   enemyPathReference: {fileID: 2109000042}
   targetDefensePointReference: {fileID: 2109000032}
   showReadabilityMarker: 1
+  proceduralReadabilityMarker: 1
   autoCreateReadabilityRoot: 1
   readabilityRootReference: {fileID: 736054428}
   readabilityMaterialOverride: {fileID: 0}
@@ -21649,6 +21772,7 @@ MonoBehaviour:
   pointId: Core
   displayName: Base Defense Point
   showReadabilityMarker: 1
+  proceduralReadabilityMarker: 1
   autoCreateReadabilityRoot: 1
   readabilityRootReference: {fileID: 1856571767}
   readabilityMaterialOverride: {fileID: 0}
@@ -21712,7 +21836,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 34900c2bae271244aabbf989870b3233, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  waypointRootReference: {fileID: 0}
+  autoFindWaypointRoot: 1
   showReadabilityOverlay: 1
+  proceduralReadabilityOverlay: 1
   autoCreateReadabilityRoot: 1
   readabilityRootReference: {fileID: 874949295}
   readabilityMaterialOverride: {fileID: 0}

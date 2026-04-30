@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: WaveCatalog_Level03
   m_EditorClassIdentifier: 
   waves:
-  - displayName: Wave 01
+  - displayName: 第 01 波
     designerNote: Level 3 attrition wave. Shielded scavengers and heavies arrive together.
     spawnGroups:
     - enemyType: 3
@@ -22,7 +22,7 @@ MonoBehaviour:
     - enemyType: 5
       enemyCount: 2
       spawnInterval: 1.05
-  - displayName: Wave 02
+  - displayName: 第 02 波
     designerNote: Level 3 repair wave. Mechanics keep the armored front alive.
     spawnGroups:
     - enemyType: 4
@@ -34,7 +34,7 @@ MonoBehaviour:
     - enemyType: 1
       enemyCount: 4
       spawnInterval: 0.75
-  - displayName: Wave 03
+  - displayName: 第 03 波
     designerNote: Level 3 mixed climax. One abomination backed by stealth stalkers and wolves.
     spawnGroups:
     - enemyType: 7

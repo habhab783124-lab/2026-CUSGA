@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -35,78 +35,78 @@ public class DefenseTower : MonoBehaviour
     [System.Serializable]
     private sealed class CombatTuning
     {
-        [Header("Attack")]
-        [Min(0.1f)] public float attackRange = 2.8f;
-        public float attackRangePerUpgrade = 0.2f;
-        [Min(0.05f)] public float attackInterval = 0.65f;
-        public float attackIntervalPerUpgradeDelta = -0.06f;
-        [Min(0)] public int baseDamage = 1;
-        [Min(0)] public int damagePerUpgrade = 1;
-        public GameObject shotTracePrefab = null;
-        public Sprite shotTraceSprite = null;
-        public Color shotTraceColor = new Color(0.68f, 0.9f, 1f, 0.92f);
-        [Min(0.02f)] public float shotTraceThickness = 0.1f;
-        [Min(0.02f)] public float shotTraceDuration = 0.08f;
+        [Header("攻击")]
+        [Min(0.1f), InspectorName("攻击范围")] public float attackRange = 2.8f; // 中文：攻击范围
+        [InspectorName("每级攻击范围增量")] public float attackRangePerUpgrade = 0.2f; // 中文：攻击范围Per升级
+        [Min(0.05f), InspectorName("攻击间隔")] public float attackInterval = 0.65f; // 中文：攻击间隔
+        [InspectorName("每级攻击间隔改变量")] public float attackIntervalPerUpgradeDelta = -0.06f; // 中文：攻击间隔Per升级Delta
+        [Min(0), InspectorName("基础伤害")] public int baseDamage = 1; // 中文：基础伤害
+        [Min(0), InspectorName("每级伤害增量")] public int damagePerUpgrade = 1; // 中文：伤害Per升级
+        [InspectorName("弹道 Prefab")] public GameObject shotTracePrefab = null; // 中文：shot轨迹预制体
+        [InspectorName("弹道精灵")] public Sprite shotTraceSprite = null; // 中文：shot轨迹精灵
+        [InspectorName("弹道颜色")] public Color shotTraceColor = new Color(0.68f, 0.9f, 1f, 0.92f); // 中文：shot轨迹颜色
+        [Min(0.02f), InspectorName("弹道粗细")] public float shotTraceThickness = 0.1f; // 中文：shot轨迹Thickness
+        [Min(0.02f), InspectorName("弹道持续时间")] public float shotTraceDuration = 0.08f; // 中文：shot轨迹持续时间
 
-        [Header("Power")]
-        [Min(0)] public int basePowerRequired = 2;
-        [Min(0)] public int powerRequiredPerUpgrade = 1;
+        [Header("供电")]
+        [Min(0), InspectorName("基础耗电")] public int basePowerRequired = 2; // 中文：基础供电Required
+        [Min(0), InspectorName("每级耗电增量")] public int powerRequiredPerUpgrade = 1; // 中文：供电RequiredPer升级
 
-        [Header("Upgrade Cost")]
-        [Min(0)] public int upgradeCostBase = 30;
-        [Min(0)] public int upgradeCostPerLevel = 15;
+        [Header("升级费用")]
+        [Min(0), InspectorName("升级基础费用")] public int upgradeCostBase = 30; // 中文：升级费用基础
+        [Min(0), InspectorName("每级升级增量")] public int upgradeCostPerLevel = 15; // 中文：升级费用Per等级
 
-        [Header("Slow Field")]
-        [Range(0.15f, 1f)] public float slowMultiplier = 0.65f;
-        public float slowMultiplierPerUpgradeDelta = -0.05f;
-        [Min(0f)] public float slowDuration = 1.1f;
-        public float slowDurationPerUpgrade = 0.2f;
-        public GameObject slowPulsePrefab = null;
-        public Sprite slowPulseSprite = null;
-        public Color slowPulseColor = new Color(0.36f, 0.95f, 0.84f, 0.28f);
-        [Min(0.05f)] public float slowPulseDuration = 0.18f;
-        [Min(0.05f)] public float slowPulseStartScale = 0.2f;
-        [Min(0.1f)] public float slowPulseScaleMultiplier = 2.1f;
+        [Header("减速场")]
+        [Range(0.15f, 1f), InspectorName("减速倍率")] public float slowMultiplier = 0.65f; // 中文：减速倍率
+        [InspectorName("每级减速倍率改变量")] public float slowMultiplierPerUpgradeDelta = -0.05f; // 中文：减速倍率Per升级Delta
+        [Min(0f), InspectorName("减速持续时间")] public float slowDuration = 1.1f; // 中文：减速持续时间
+        [InspectorName("每级减速时长增量")] public float slowDurationPerUpgrade = 0.2f; // 中文：减速持续时间Per升级
+        [InspectorName("减速脉冲 Prefab")] public GameObject slowPulsePrefab = null; // 中文：减速脉冲预制体
+        [InspectorName("减速脉冲精灵")] public Sprite slowPulseSprite = null; // 中文：减速脉冲精灵
+        [InspectorName("减速脉冲颜色")] public Color slowPulseColor = new Color(0.36f, 0.95f, 0.84f, 0.28f); // 中文：减速脉冲颜色
+        [Min(0.05f), InspectorName("减速脉冲时长")] public float slowPulseDuration = 0.18f; // 中文：减速脉冲持续时间
+        [Min(0.05f), InspectorName("减速脉冲起始缩放")] public float slowPulseStartScale = 0.2f; // 中文：减速脉冲开始缩放
+        [Min(0.1f), InspectorName("减速脉冲缩放倍率")] public float slowPulseScaleMultiplier = 2.1f; // 中文：减速脉冲缩放倍率
 
-        [Header("Bombard")]
-        [Min(0.05f)] public float bombFlightTime = 0.45f;
-        public float bombFlightTimePerUpgradeDelta = -0.04f;
-        [Min(0.1f)] public float bombRadius = 1.2f;
-        public float bombRadiusPerUpgrade = 0.2f;
-        [Min(0f)] public float bombArcHeight = 0.5f;
-        [Min(0.05f)] public float bombProjectileScale = 0.18f;
-        [Min(0.05f)] public float bombExplosionDuration = 0.24f;
-        [Min(0.1f)] public float bombExplosionScaleMultiplier = 1.45f;
-        public GameObject bombProjectilePrefab = null;
-        public GameObject bombExplosionPrefab = null;
-        public Sprite bombProjectileSprite = null;
-        public Sprite bombExplosionSprite = null;
-        public Color bombProjectileColor = new Color(1f, 0.76f, 0.34f, 1f);
-        public Color bombExplosionColor = new Color(1f, 0.54f, 0.2f, 0.9f);
+        [Header("炸弹")]
+        [Min(0.05f), InspectorName("飞行时间")] public float bombFlightTime = 0.45f; // 中文：炸弹飞行时间
+        [InspectorName("每级飞行时间改变量")] public float bombFlightTimePerUpgradeDelta = -0.04f; // 中文：炸弹飞行时间Per升级Delta
+        [Min(0.1f), InspectorName("爆炸半径")] public float bombRadius = 1.2f; // 中文：炸弹半径
+        [InspectorName("每级爆炸半径增量")] public float bombRadiusPerUpgrade = 0.2f; // 中文：炸弹半径Per升级
+        [Min(0f), InspectorName("抛物线高度")] public float bombArcHeight = 0.5f; // 中文：炸弹弧线Height
+        [Min(0.05f), InspectorName("投射物缩放")] public float bombProjectileScale = 0.18f; // 中文：炸弹投射物缩放
+        [Min(0.05f), InspectorName("爆炸持续时间")] public float bombExplosionDuration = 0.24f; // 中文：炸弹爆炸持续时间
+        [Min(0.1f), InspectorName("爆炸缩放倍率")] public float bombExplosionScaleMultiplier = 1.45f; // 中文：炸弹爆炸缩放倍率
+        [InspectorName("炸弹投射物 Prefab")] public GameObject bombProjectilePrefab = null; // 中文：炸弹投射物预制体
+        [InspectorName("炸弹爆炸 Prefab")] public GameObject bombExplosionPrefab = null; // 中文：炸弹爆炸预制体
+        [InspectorName("投射物精灵")] public Sprite bombProjectileSprite = null; // 中文：炸弹投射物精灵
+        [InspectorName("爆炸精灵")] public Sprite bombExplosionSprite = null; // 中文：炸弹爆炸精灵
+        [InspectorName("投射物颜色")] public Color bombProjectileColor = new Color(1f, 0.76f, 0.34f, 1f); // 中文：炸弹投射物颜色
+        [InspectorName("爆炸颜色")] public Color bombExplosionColor = new Color(1f, 0.54f, 0.2f, 0.9f); // 中文：炸弹爆炸颜色
 
-        [Header("Look")]
-        public Sprite bodySprite = null;
-        public Color poweredColor = new Color(0.2f, 0.55f, 1f, 1f);
+        [Header("外观")]
+        [InspectorName("主体精灵")] public Sprite bodySprite = null; // 中文：主体精灵
+        [InspectorName("通电颜色")] public Color poweredColor = new Color(0.2f, 0.55f, 1f, 1f); // 中文：powered颜色
 
-        [Header("Type Signature")]
-        public Sprite signatureSprite = null;
-        public Color signatureColor = new Color(1f, 1f, 1f, 0.9f);
-        public Vector2 signatureOffset = Vector2.zero;
-        public Vector2 signatureBaseScale = new Vector2(0.25f, 0.25f);
-        public Vector2 signatureScalePerRange = Vector2.zero;
-        public float signatureRotationDegrees = 0f;
-        public float signatureRotationSpeed = 0f;
-        public float signaturePulseAmplitude = 0f;
-        public float signaturePulseSpeed = 2f;
-        public float signatureVerticalBobAmplitude = 0f;
-        public float signatureVerticalBobSpeed = 2f;
+        [Header("塔型签名")]
+        [InspectorName("签名精灵")] public Sprite signatureSprite = null; // 中文：签名精灵
+        [InspectorName("签名颜色")] public Color signatureColor = new Color(1f, 1f, 1f, 0.9f); // 中文：签名颜色
+        [InspectorName("签名偏移")] public Vector2 signatureOffset = Vector2.zero; // 中文：签名偏移
+        [InspectorName("签名基础缩放")] public Vector2 signatureBaseScale = new Vector2(0.25f, 0.25f); // 中文：签名基础缩放
+        [InspectorName("每范围缩放增量")] public Vector2 signatureScalePerRange = Vector2.zero; // 中文：签名缩放Per范围
+        [InspectorName("签名初始旋转角")] public float signatureRotationDegrees = 0f; // 中文：签名旋转Degrees
+        [InspectorName("签名旋转速度")] public float signatureRotationSpeed = 0f; // 中文：签名旋转速度
+        [InspectorName("签名脉冲幅度")] public float signaturePulseAmplitude = 0f; // 中文：签名脉冲Amplitude
+        [InspectorName("签名脉冲速度")] public float signaturePulseSpeed = 2f; // 中文：签名脉冲速度
+        [InspectorName("签名上下浮动幅度")] public float signatureVerticalBobAmplitude = 0f; // 中文：签名VerticalBobAmplitude
+        [InspectorName("签名上下浮动速度")] public float signatureVerticalBobSpeed = 2f; // 中文：签名VerticalBob速度
     }
 
-    [Header("Type")]
-    [SerializeField] private TowerType buildType = TowerType.SingleTarget;
+    [Header("塔型")]
+    [SerializeField, InspectorName("建造类型")] private TowerType buildType = TowerType.SingleTarget; // 中文：建造类型
 
-    [Header("Tunings")]
-    [SerializeField] private CombatTuning singleTargetTuning = new CombatTuning
+    [Header("参数配置")]
+    [SerializeField, InspectorName("单体塔参数")] private CombatTuning singleTargetTuning = new CombatTuning // 中文：单体目标Tuning
     {
         attackRange = 2.8f,
         attackRangePerUpgrade = 0.25f,
@@ -126,7 +126,7 @@ public class DefenseTower : MonoBehaviour
         signaturePulseSpeed = 5.2f
     };
 
-    [SerializeField] private CombatTuning slowFieldTuning = new CombatTuning
+    [SerializeField, InspectorName("减速塔参数")] private CombatTuning slowFieldTuning = new CombatTuning // 中文：减速区域Tuning
     {
         attackRange = 2.35f,
         attackRangePerUpgrade = 0.3f,
@@ -151,7 +151,7 @@ public class DefenseTower : MonoBehaviour
         signaturePulseSpeed = 2.4f
     };
 
-    [SerializeField] private CombatTuning bombardTuning = new CombatTuning
+    [SerializeField, InspectorName("炸弹塔参数")] private CombatTuning bombardTuning = new CombatTuning // 中文：炸弹Tuning
     {
         attackRange = 3.4f,
         attackRangePerUpgrade = 0.35f,
@@ -185,11 +185,11 @@ public class DefenseTower : MonoBehaviour
         signatureVerticalBobSpeed = 3.1f
     };
 
-    [Header("Progression")]
-    [SerializeField] private int currentLevel = 1;
-    [SerializeField] private int maxLevel = 3;
+    [Header("成长")]
+    [SerializeField, InspectorName("当前等级")] private int currentLevel = 1; // 中文：当前等级
+    [SerializeField, InspectorName("最大等级")] private int maxLevel = 3; // 中文：最大等级
 
-    [Header("Visual References")]
+    [Header("视觉引用")]
 
     /// <summary>
     /// 塔本体的主渲染器。
@@ -197,7 +197,7 @@ public class DefenseTower : MonoBehaviour
     /// 如果你后续把塔做成更复杂的层级，
     /// 这里可以显式指定“哪一个 SpriteRenderer 才代表主塔身”。
     /// </summary>
-    [SerializeField] private SpriteRenderer bodyRendererReference;
+    [SerializeField, InspectorName("主体渲染器")] private SpriteRenderer bodyRendererReference; // 中文：主体Renderer引用
 
     /// <summary>
     /// 所有运行时反馈对象的挂点。
@@ -205,76 +205,76 @@ public class DefenseTower : MonoBehaviour
     /// 这样炸弹、爆炸、脉冲和 tracer 不会再默认挂到塔根节点上乱长，
     /// 也更方便后续整体替换或隐藏这一层效果。
     /// </summary>
-    [SerializeField] private Transform feedbackRootReference;
+    [SerializeField, InspectorName("反馈根节点")] private Transform feedbackRootReference; // 中文：反馈根节点引用
 
     /// <summary>
     /// 单体塔反馈的专用挂点。
     /// 这样 `tracer` 的起点可以独立调整，而不是总从塔中心生硬飞出。
     /// </summary>
-    [SerializeField] private Transform singleTargetFeedbackRootReference;
+    [SerializeField, InspectorName("单体塔反馈根")] private Transform singleTargetFeedbackRootReference; // 中文：单体目标反馈根节点引用
 
     /// <summary>
     /// 减速塔反馈的专用挂点。
     /// </summary>
-    [SerializeField] private Transform slowFieldFeedbackRootReference;
+    [SerializeField, InspectorName("减速塔反馈根")] private Transform slowFieldFeedbackRootReference; // 中文：减速区域反馈根节点引用
 
     /// <summary>
     /// 炸弹塔反馈的专用挂点。
     /// 这样投射物和爆炸可以围绕更明确的视觉锚点展开。
     /// </summary>
-    [SerializeField] private Transform bombardFeedbackRootReference;
+    [SerializeField, InspectorName("炸弹塔反馈根")] private Transform bombardFeedbackRootReference; // 中文：炸弹反馈根节点引用
 
     /// <summary>
     /// 塔型签名的挂点。
     /// </summary>
-    [SerializeField] private Transform typeSignatureRootReference;
+    [SerializeField, InspectorName("塔型签名根")] private Transform typeSignatureRootReference; // 中文：类型签名根节点引用
 
     /// <summary>
     /// 等级标记的挂点。
     /// </summary>
-    [SerializeField] private Transform levelMarkerRootReference;
+    [SerializeField, InspectorName("等级标记根")] private Transform levelMarkerRootReference; // 中文：等级标记根节点引用
 
-    [Header("Shared Visuals")]
-    [SerializeField] private Color flashColor = Color.white;
-    [SerializeField] private Color offlineColor = new Color(0.24f, 0.28f, 0.36f, 1f);
-    [SerializeField] private float flashDuration = 0.06f;
-    [SerializeField] private Color upgradeFlashColor = new Color(1f, 0.96f, 0.68f, 1f);
-    [SerializeField] private float upgradePulseDuration = 0.18f;
-    [SerializeField] private float upgradeScaleMultiplier = 1.14f;
-    [SerializeField] private Material feedbackMaterial;
+    [Header("共享视觉")]
+    [SerializeField, InspectorName("受击闪光颜色")] private Color flashColor = Color.white; // 中文：闪光颜色
+    [SerializeField, InspectorName("断电颜色")] private Color offlineColor = new Color(0.24f, 0.28f, 0.36f, 1f); // 中文：离线颜色
+    [SerializeField, InspectorName("受击闪光时长")] private float flashDuration = 0.06f; // 中文：闪光持续时间
+    [SerializeField, InspectorName("升级闪光颜色")] private Color upgradeFlashColor = new Color(1f, 0.96f, 0.68f, 1f); // 中文：升级闪光颜色
+    [SerializeField, InspectorName("升级脉冲时长")] private float upgradePulseDuration = 0.18f; // 中文：升级脉冲持续时间
+    [SerializeField, InspectorName("升级缩放倍率")] private float upgradeScaleMultiplier = 1.14f; // 中文：升级缩放倍率
+    [SerializeField, InspectorName("反馈材质")] private Material feedbackMaterial; // 中文：反馈材质
 
-    [Header("Level Marker")]
-    [SerializeField] private Sprite levelPipSprite = null;
-    [SerializeField] private Color levelPipColor = new Color(0.98f, 0.96f, 0.78f, 1f);
-    [SerializeField] private Vector2 levelPipOffset = new Vector2(0f, -0.65f);
-    [SerializeField] private float levelPipSpacing = 0.22f;
-    [SerializeField] private float levelPipScale = 0.12f;
-    [SerializeField] private int levelPipSortingOffset = 3;
+    [Header("等级标记")]
+    [SerializeField, InspectorName("等级点精灵")] private Sprite levelPipSprite = null; // 中文：等级等级点精灵
+    [SerializeField, InspectorName("等级点颜色")] private Color levelPipColor = new Color(0.98f, 0.96f, 0.78f, 1f); // 中文：等级等级点颜色
+    [SerializeField, InspectorName("等级点偏移")] private Vector2 levelPipOffset = new Vector2(0f, -0.65f); // 中文：等级等级点偏移
+    [SerializeField, InspectorName("等级点间距")] private float levelPipSpacing = 0.22f; // 中文：等级等级点间距
+    [SerializeField, InspectorName("等级点缩放")] private float levelPipScale = 0.12f; // 中文：等级等级点缩放
+    [SerializeField, InspectorName("等级点排序偏移")] private int levelPipSortingOffset = 3; // 中文：等级等级点Sorting偏移
 
-    private static Sprite s_runtimeFallbackSprite;
+    private static Sprite s_runtimeFallbackSprite; // 中文：运行时Fallback精灵
 
-    private readonly List<GameObject> _activeFeedbackObjects = new List<GameObject>(4);
-    private readonly List<SpriteRenderer> _levelPipRenderers = new List<SpriteRenderer>(4);
-    private SpriteRenderer _spriteRenderer;
-    private SpriteRenderer _typeSignatureRenderer;
-    private float _attackTimer;
-    private Sprite _defaultBodySprite;
+    private readonly List<GameObject> _activeFeedbackObjects = new List<GameObject>(4); // 中文：激活反馈Objects
+    private readonly List<SpriteRenderer> _levelPipRenderers = new List<SpriteRenderer>(4); // 中文：等级等级点Renderers
+    private SpriteRenderer _spriteRenderer; // 中文：精灵Renderer
+    private SpriteRenderer _typeSignatureRenderer; // 中文：类型签名Renderer
+    private float _attackTimer; // 中文：攻击计时器
+    private Sprite _defaultBodySprite; // 中文：默认主体精灵
 
-    public int TowerNumber { get; private set; } = 100;
-    public TowerType BuildType => buildType;
-    public int CurrentLevel => Mathf.Max(1, currentLevel);
-    public int MaxLevel => Mathf.Max(1, maxLevel);
-    public int DamagePerShot => EvaluateDamage(CurrentLevel);
-    public int PowerRequired => EvaluatePowerRequired(CurrentLevel);
-    public float AttackRange => EvaluateAttackRange(CurrentLevel);
-    public float AttackInterval => EvaluateAttackInterval(CurrentLevel);
-    public float SlowMultiplier => EvaluateSlowMultiplier(CurrentLevel);
-    public float SlowDuration => EvaluateSlowDuration(CurrentLevel);
-    public float BombFlightTime => EvaluateBombFlightTime(CurrentLevel);
-    public float BombRadius => EvaluateBombRadius(CurrentLevel);
-    public bool IsPowered { get; private set; } = true;
-    public RelayTower AssignedRelay { get; private set; }
-    public string PowerStatusMessage { get; private set; } = "Awaiting power evaluation.";
+    public int TowerNumber { get; private set; } = 100; // 中文：塔Number
+    public TowerType BuildType => buildType; // 中文：建造类型
+    public int CurrentLevel => Mathf.Max(1, currentLevel); // 中文：当前等级
+    public int MaxLevel => Mathf.Max(1, maxLevel); // 中文：最大等级
+    public int DamagePerShot => EvaluateDamage(CurrentLevel); // 中文：伤害PerShot
+    public int PowerRequired => EvaluatePowerRequired(CurrentLevel); // 中文：供电Required
+    public float AttackRange => EvaluateAttackRange(CurrentLevel); // 中文：攻击范围
+    public float AttackInterval => EvaluateAttackInterval(CurrentLevel); // 中文：攻击间隔
+    public float SlowMultiplier => EvaluateSlowMultiplier(CurrentLevel); // 中文：减速倍率
+    public float SlowDuration => EvaluateSlowDuration(CurrentLevel); // 中文：减速持续时间
+    public float BombFlightTime => EvaluateBombFlightTime(CurrentLevel); // 中文：炸弹飞行时间
+    public float BombRadius => EvaluateBombRadius(CurrentLevel); // 中文：炸弹半径
+    public bool IsPowered { get; private set; } = true; // 中文：是否Powered
+    public RelayTower AssignedRelay { get; private set; } // 中文：已分配继电器
+    public string PowerStatusMessage { get; private set; } = "等待供电结算。"; // 中文：供电状态消息
 
     private CombatTuning ActiveTuning
     {
@@ -401,13 +401,13 @@ public class DefenseTower : MonoBehaviour
         IsPowered = isPowered;
         AssignedRelay = assignedRelay;
         PowerStatusMessage = string.IsNullOrWhiteSpace(powerStatusMessage)
-            ? (isPowered ? "Powered and operational." : "Offline.")
+            ? (isPowered ? "已通电并正常运作。" : "当前离线。")
             : powerStatusMessage;
         RefreshVisualState();
         RefreshLevelMarkerVisual();
     }
 
-    public bool CanUpgrade => CurrentLevel < MaxLevel;
+    public bool CanUpgrade => CurrentLevel < MaxLevel; // 中文：能否升级
 
     public int GetUpgradeCost()
     {
@@ -463,13 +463,13 @@ public class DefenseTower : MonoBehaviour
         switch (buildType)
         {
             case TowerType.SlowField:
-                return $"DMG {DamagePerShot} / SLOW {GetSlowPercent(SlowMultiplier):0}% / DUR {SlowDuration:0.00}s / RATE {AttackInterval:0.00}s / RNG {AttackRange:0.0}";
+                return $"伤害 {DamagePerShot} / 减速 {GetSlowPercent(SlowMultiplier):0}% / 持续 {SlowDuration:0.00}s / 攻速 {AttackInterval:0.00}s / 射程 {AttackRange:0.0}";
 
             case TowerType.Bombard:
-                return $"DMG {DamagePerShot} / BLAST {BombRadius:0.0} / FLIGHT {BombFlightTime:0.00}s / RATE {AttackInterval:0.00}s / RNG {AttackRange:0.0}";
+                return $"伤害 {DamagePerShot} / 爆炸 {BombRadius:0.0} / 飞行 {BombFlightTime:0.00}s / 攻速 {AttackInterval:0.00}s / 射程 {AttackRange:0.0}";
 
             default:
-                return $"DMG {DamagePerShot} / RATE {AttackInterval:0.00}s / RNG {AttackRange:0.0}";
+                return $"伤害 {DamagePerShot} / 攻速 {AttackInterval:0.00}s / 射程 {AttackRange:0.0}";
         }
     }
 
@@ -481,22 +481,22 @@ public class DefenseTower : MonoBehaviour
     {
         if (!CanUpgrade)
         {
-            return "At max level.";
+            return "已经达到最大等级。";
         }
 
         switch (buildType)
         {
             case TowerType.SlowField:
                 return
-                    $"Next DMG {PreviewUpgradedDamagePerShot()} / SLOW {GetSlowPercent(PreviewUpgradedSlowMultiplier()):0}% / DUR {PreviewUpgradedSlowDuration():0.00}s / RATE {PreviewUpgradedAttackInterval():0.00}s / PWR {PreviewUpgradedPowerRequired()}";
+                    $"升级后伤害 {PreviewUpgradedDamagePerShot()} / 减速 {GetSlowPercent(PreviewUpgradedSlowMultiplier()):0}% / 持续 {PreviewUpgradedSlowDuration():0.00}s / 攻速 {PreviewUpgradedAttackInterval():0.00}s / 耗电 {PreviewUpgradedPowerRequired()}";
 
             case TowerType.Bombard:
                 return
-                    $"Next DMG {PreviewUpgradedDamagePerShot()} / BLAST {PreviewUpgradedBombRadius():0.0} / FLIGHT {PreviewUpgradedBombFlightTime():0.00}s / RATE {PreviewUpgradedAttackInterval():0.00}s / PWR {PreviewUpgradedPowerRequired()}";
+                    $"升级后伤害 {PreviewUpgradedDamagePerShot()} / 爆炸 {PreviewUpgradedBombRadius():0.0} / 飞行 {PreviewUpgradedBombFlightTime():0.00}s / 攻速 {PreviewUpgradedAttackInterval():0.00}s / 耗电 {PreviewUpgradedPowerRequired()}";
 
             default:
                 return
-                    $"Next DMG {PreviewUpgradedDamagePerShot()} / RATE {PreviewUpgradedAttackInterval():0.00}s / RNG {PreviewUpgradedAttackRange():0.0} / PWR {PreviewUpgradedPowerRequired()}";
+                    $"升级后伤害 {PreviewUpgradedDamagePerShot()} / 攻速 {PreviewUpgradedAttackInterval():0.00}s / 射程 {PreviewUpgradedAttackRange():0.0} / 耗电 {PreviewUpgradedPowerRequired()}";
         }
     }
 

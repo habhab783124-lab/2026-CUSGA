@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// PlacedTower 表示“已经成功放到地图上的一座塔实例”。
@@ -23,7 +23,7 @@ public class PlacedTower : MonoBehaviour
     /// “卖塔后在原位置重新开放建造”等功能，
     /// 这个引用都会成为非常直接的入口。
     /// </summary>
-    private BuildPad _ownerPad;
+    private BuildPad _ownerPad; // 中文：归属Pad
 
     /// <summary>
     /// 当前这座塔的类型。
@@ -31,7 +31,7 @@ public class PlacedTower : MonoBehaviour
     /// 现在它主要承担记录作用，
     /// 以后可以自然扩展到升级分支、出售价格、说明面板等系统里。
     /// </summary>
-    public TowerType TowerType { get; private set; } = TowerType.None;
+    public TowerType TowerType { get; private set; } = TowerType.None; // 中文：塔类型
 
     /// <summary>
     /// 是否已经完成初始化。
@@ -39,12 +39,12 @@ public class PlacedTower : MonoBehaviour
     /// 这个标记的作用是防止对象在“尚未绑定塔位信息”时就被销毁，
     /// 从而错误触发清空塔位的逻辑。
     /// </summary>
-    private bool _isInitialized;
+    private bool _isInitialized; // 中文：是否Initialized
 
     /// <summary>
     /// 对外暴露所属塔位的只读访问。
     /// </summary>
-    public BuildPad OwnerPad => _ownerPad;
+    public BuildPad OwnerPad => _ownerPad; // 中文：归属Pad
 
     /// <summary>
     /// 在塔被成功放置后，向它注入所属塔位和塔类型。

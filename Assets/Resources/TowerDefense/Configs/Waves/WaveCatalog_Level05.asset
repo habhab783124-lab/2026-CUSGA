@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: WaveCatalog_Level05
   m_EditorClassIdentifier: 
   waves:
-  - displayName: Wave 01
+  - displayName: 第 01 波
     designerNote: Final mission opener. Heavy mixed pressure from almost every regular archetype.
     spawnGroups:
     - enemyType: 1
@@ -28,7 +28,7 @@ MonoBehaviour:
     - enemyType: 6
       enemyCount: 2
       spawnInterval: 0.7
-  - displayName: Wave 02
+  - displayName: 第 02 波
     designerNote: Final mission support wave. Mechanics and heavies with wolves to punish openings.
     spawnGroups:
     - enemyType: 4
@@ -40,7 +40,7 @@ MonoBehaviour:
     - enemyType: 2
       enemyCount: 5
       spawnInterval: 0.45
-  - displayName: Wave 03
+  - displayName: 第 03 波
     designerNote: Final mission climax. Multiple abominations plus mixed support pressure.
     spawnGroups:
     - enemyType: 7

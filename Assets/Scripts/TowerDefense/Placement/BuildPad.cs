@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
 /// <summary>
@@ -43,7 +43,7 @@ public class BuildPad : MonoBehaviour
     /// 这里默认使用偏亮的绿色，是为了向玩家传达“这是一个正向、可操作状态”。
     /// 在塔防游戏里，建造反馈必须足够直观，否则玩家很容易在高压节奏下误判。
     /// </summary>
-    [SerializeField] private Color availableColor = new Color(0.15f, 0.82f, 0.42f, 1f);
+    [SerializeField] private Color availableColor = new Color(0.15f, 0.82f, 0.42f, 1f); // 中文：available颜色
 
     /// <summary>
     /// 当塔位已经被某个塔占据、不能再次放置时显示的颜色。
@@ -52,7 +52,7 @@ public class BuildPad : MonoBehaviour
     /// “这个位置仍然存在，但它现在已经不是可用槽位了”。
     /// 这比直接隐藏对象更有助于保持地图布局的可读性。
     /// </summary>
-    [SerializeField] private Color occupiedColor = new Color(0.18f, 0.32f, 0.22f, 1f);
+    [SerializeField] private Color occupiedColor = new Color(0.18f, 0.32f, 0.22f, 1f); // 中文：occupied颜色
 
     /// <summary>
     /// 对本体 SpriteRenderer 的缓存引用。
@@ -60,7 +60,7 @@ public class BuildPad : MonoBehaviour
     /// 我们在 Awake 阶段只获取一次组件，后续刷新外观时重复使用，
     /// 这样能减少重复 GetComponent 调用，也让代码意图更加明确。
     /// </summary>
-    private SpriteRenderer _spriteRenderer;
+    private SpriteRenderer _spriteRenderer; // 中文：精灵Renderer
 
     /// <summary>
     /// 当前占据该塔位的塔对象。
@@ -73,7 +73,7 @@ public class BuildPad : MonoBehaviour
     /// - null：当前塔位为空
     /// - 非 null：当前塔位已被占用
     /// </summary>
-    private GameObject _occupant;
+    private GameObject _occupant; // 中文：占用物
 
     /// <summary>
     /// 当前塔位是否已经有塔驻留。
@@ -83,7 +83,7 @@ public class BuildPad : MonoBehaviour
     /// 而不是具体通过哪个字段来实现该状态。
     /// 这种封装方式能让外部依赖更稳定，也更符合“暴露意图而不是暴露细节”的思路。
     /// </summary>
-    public bool IsOccupied => _occupant != null;
+    public bool IsOccupied => _occupant != null; // 中文：是否Occupied
 
     /// <summary>
     /// Unity 生命周期回调，在对象初始化时执行。

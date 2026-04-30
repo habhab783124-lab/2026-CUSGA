@@ -40,12 +40,12 @@ namespace TowerDefense.Editor
         private void DrawSceneReferenceSummary()
         {
             string missing = string.Empty;
-            AppendMissing(ref missing, "sceneCamera", "Main Camera");
+            AppendMissing(ref missing, "sceneCamera", "主相机");
             AppendMissing(ref missing, "mainCanvas", "Canvas");
             AppendMissing(ref missing, "eventSystem", "EventSystem");
-            AppendMissing(ref missing, "pageRoot", "Page Root");
-            AppendMissing(ref missing, "cardsRoot", "Cards Root");
-            AppendMissing(ref missing, "backButton", "Back Button");
+            AppendMissing(ref missing, "pageRoot", "页面根节点");
+            AppendMissing(ref missing, "cardsRoot", "卡片根节点");
+            AppendMissing(ref missing, "backButton", "返回按钮");
 
             if (string.IsNullOrWhiteSpace(missing))
             {
@@ -61,13 +61,13 @@ namespace TowerDefense.Editor
             LevelSelectController controller = (LevelSelectController)target;
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Materialize Scene UI"))
+            if (GUILayout.Button("物化场景 UI"))
             {
                 controller.EditorMaterializeSceneUi();
                 EditorUtility.SetDirty(controller);
             }
 
-            if (GUILayout.Button("Apply Authoring To Scene"))
+            if (GUILayout.Button("应用作者设置到场景"))
             {
                 controller.EditorApplyAuthoringToScene();
                 EditorUtility.SetDirty(controller);

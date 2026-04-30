@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -38,21 +38,21 @@ public readonly struct PowerGridHudSnapshot
         StatusMessage = statusMessage ?? string.Empty;
     }
 
-    public int RelayCount { get; }
+    public int RelayCount { get; } // 中文：继电器数量
 
-    public int RelayLimit { get; }
+    public int RelayLimit { get; } // 中文：继电器上限
 
-    public int TotalTowerCount { get; }
+    public int TotalTowerCount { get; } // 中文：总塔数量
 
-    public int PoweredTowerCount { get; }
+    public int PoweredTowerCount { get; } // 中文：Powered塔数量
 
-    public int OfflineTowerCount { get; }
+    public int OfflineTowerCount { get; } // 中文：离线塔数量
 
-    public int AssignedLoad { get; }
+    public int AssignedLoad { get; } // 中文：已分配加载
 
-    public int TotalCapacity { get; }
+    public int TotalCapacity { get; } // 中文：总容量
 
-    public string StatusMessage { get; }
+    public string StatusMessage { get; } // 中文：状态消息
 }
 
 /// <summary>
@@ -68,22 +68,22 @@ public sealed class TowerPowerGridCoordinator
             Message = message;
         }
 
-        public string Message { get; }
+        public string Message { get; } // 中文：消息
     }
 
     private sealed class RelayEvaluation
     {
-        public RelayTower Relay { get; set; }
-        public List<DefenseTower> WorkingTowers { get; } = new List<DefenseTower>();
-        public int RemainingCapacity { get; set; }
+        public RelayTower Relay { get; set; } // 中文：继电器
+        public List<DefenseTower> WorkingTowers { get; } = new List<DefenseTower>(); // 中文：Working塔列表
+        public int RemainingCapacity { get; set; } // 中文：剩余容量
     }
 
-    private readonly Func<BattlefieldMapDefinition> _mapDefinitionQuery;
-    private readonly Action<string> _logDiagnostic;
-    private readonly Stack<int> _relayNumbers = new Stack<int>();
-    private readonly Stack<int> _towerNumbers = new Stack<int>();
+    private readonly Func<BattlefieldMapDefinition> _mapDefinitionQuery; // 中文：地图定义查询
+    private readonly Action<string> _logDiagnostic; // 中文：日志诊断
+    private readonly Stack<int> _relayNumbers = new Stack<int>(); // 中文：继电器Numbers
+    private readonly Stack<int> _towerNumbers = new Stack<int>(); // 中文：塔Numbers
 
-    private Transform _placedTowerRoot;
+    private Transform _placedTowerRoot; // 中文：已放置塔根节点
 
     public TowerPowerGridCoordinator(
         Func<BattlefieldMapDefinition> mapDefinitionQuery,
@@ -99,7 +99,7 @@ public sealed class TowerPowerGridCoordinator
         }
     }
 
-    public int RelayLimit => _mapDefinitionQuery != null && _mapDefinitionQuery() != null
+    public int RelayLimit => _mapDefinitionQuery != null && _mapDefinitionQuery() != null // 中文：继电器上限
         ? _mapDefinitionQuery().RelayLimit
         : int.MaxValue;
 
@@ -121,7 +121,7 @@ public sealed class TowerPowerGridCoordinator
         int placedRelayCount = GetPlacedRelayCount();
         if (placedRelayCount >= relayLimit)
         {
-            invalidReason = $"Relay limit reached. This map allows at most {relayLimit} relay nodes.";
+            invalidReason = $"继电器数量已达上限。本地图最多允许放置 {relayLimit} 个继电器。";
             return false;
         }
 
@@ -182,30 +182,30 @@ public sealed class TowerPowerGridCoordinator
         if (relayCount == 0)
         {
             statusMessage = totalTowerCount > 0
-                ? "No relay coverage is active. Deployed towers will stay offline."
-                : "Place a relay first to open the power network.";
+                ? "当前没有任何继电器供电，已部署的战斗塔都会离线。"
+                : "先放置一个继电器，打开供电网络。";
         }
         else if (totalTowerCount == 0)
         {
             statusMessage = relayCount >= RelayLimit
-                ? "Relay network ready, but the relay limit is already full."
-                : "Relay network ready. Deploy combat towers inside relay coverage.";
+                ? "供电网络已就绪，但继电器数量已达上限。"
+                : "供电网络已就绪。请在继电器覆盖范围内放置战斗塔。";
         }
         else if (offlineTowerCount > 0)
         {
-            statusMessage = $"{offlineTowerCount} tower(s) offline. Expand capacity or reposition the next build.";
+            statusMessage = $"有 {offlineTowerCount} 座塔离线。请扩充容量或调整后续部署。";
         }
         else if (relayCount >= RelayLimit)
         {
-            statusMessage = "All towers are powered. Further expansion now depends on upgrading existing relays.";
+            statusMessage = "所有塔都已通电。后续扩张需要优先升级现有继电器。";
         }
         else if (totalCapacity > 0 && assignedLoad >= totalCapacity)
         {
-            statusMessage = "Grid is saturated. New builds or upgrades may trip supply immediately.";
+            statusMessage = "电网已满载。新的建造或升级可能会立刻断电。";
         }
         else
         {
-            statusMessage = "Grid stable. Current relay capacity is covering all deployed towers.";
+            statusMessage = "电网稳定，当前继电器容量足以覆盖所有已部署塔。";
         }
 
         return new PowerGridHudSnapshot(
@@ -268,20 +268,20 @@ public sealed class TowerPowerGridCoordinator
 
         if (relay == null)
         {
-            invalidReason = "No relay is selected.";
+            invalidReason = "当前没有选中继电器。";
             return false;
         }
 
         if (!relay.CanUpgrade)
         {
-            invalidReason = "Relay is already at max level.";
+            invalidReason = "该继电器已经满级。";
             return false;
         }
 
         upgradeCost = relay.GetUpgradeCost();
         if (availableEnergy < upgradeCost)
         {
-            invalidReason = $"Not enough scrap. Upgrade requires {upgradeCost} SCRAP.";
+            invalidReason = $"废料不足，升级需要 {upgradeCost} 废料。";
             return false;
         }
 
@@ -295,20 +295,20 @@ public sealed class TowerPowerGridCoordinator
 
         if (tower == null)
         {
-            invalidReason = "No defense tower is selected.";
+            invalidReason = "当前没有选中战斗塔。";
             return false;
         }
 
         if (!tower.CanUpgrade)
         {
-            invalidReason = "Defense tower is already at max level.";
+            invalidReason = "该战斗塔已经满级。";
             return false;
         }
 
         upgradeCost = tower.GetUpgradeCost();
         if (availableEnergy < upgradeCost)
         {
-            invalidReason = $"Not enough scrap. Upgrade requires {upgradeCost} SCRAP.";
+            invalidReason = $"废料不足，升级需要 {upgradeCost} 废料。";
             return false;
         }
 
@@ -329,8 +329,8 @@ public sealed class TowerPowerGridCoordinator
                 upgradedSimulation.Evaluations,
                 upgradedSimulation.Assignments);
             invalidReason = upgradeReasons.TryGetValue(tower, out TowerOfflineReason reason)
-                ? $"Upgrade blocked: {reason.Message}"
-                : "Upgrade blocked: this tower would lose its power supply.";
+                ? $"升级被阻止：{reason.Message}"
+                : "升级被阻止：这座塔升级后会失去供电。";
             return false;
         }
 
@@ -338,7 +338,7 @@ public sealed class TowerPowerGridCoordinator
         {
             if (!upgradedSimulation.Assignments.ContainsKey(currentAssignment.Key))
             {
-                invalidReason = $"Upgrade blocked: tower #{currentAssignment.Key.TowerNumber} would be forced offline.";
+                invalidReason = $"升级被阻止：塔 #{currentAssignment.Key.TowerNumber} 会因此被迫断电。";
                 return false;
             }
         }
@@ -379,7 +379,7 @@ public sealed class TowerPowerGridCoordinator
 
         for (int i = 0; i < towers.Count; i++)
         {
-            towers[i].SetPowerState(false, null, "Awaiting power evaluation.");
+            towers[i].SetPowerState(false, null, "等待供电结算。");
         }
 
         if (relays.Count == 0 || towers.Count == 0)
@@ -571,14 +571,14 @@ public sealed class TowerPowerGridCoordinator
                 DefenseTower tower = relayTowers[towerIndex];
                 if (tower.PowerRequired > remainingCapacity)
                 {
-                    tower.SetPowerState(false, null, $"Relay #{relay.RelayNumber} no longer has enough remaining capacity.");
+                    tower.SetPowerState(false, null, $"继电器 #{relay.RelayNumber} 的剩余容量已不足。");
                     continue;
                 }
 
                 remainingCapacity -= tower.PowerRequired;
                 assignedLoad += tower.PowerRequired;
                 poweredTowers.Add(tower);
-                tower.SetPowerState(true, relay, $"Powered by relay #{relay.RelayNumber}. Remaining relay capacity: {remainingCapacity}.");
+                tower.SetPowerState(true, relay, $"由继电器 #{relay.RelayNumber} 供电。该继电器剩余容量：{remainingCapacity}。");
             }
 
             relay.SetRuntimeLoad(assignedLoad);
@@ -594,7 +594,7 @@ public sealed class TowerPowerGridCoordinator
 
             string message = offlineReasons != null && offlineReasons.TryGetValue(tower, out TowerOfflineReason reason)
                 ? reason.Message
-                : "Tower is offline.";
+                : "该塔当前离线。";
             tower.SetPowerState(false, null, message);
         }
 
@@ -627,7 +627,7 @@ public sealed class TowerPowerGridCoordinator
 
             if (coveringRelays.Count == 0)
             {
-                reasons[tower] = new TowerOfflineReason("Offline: not inside any relay coverage.");
+                reasons[tower] = new TowerOfflineReason("断电：当前不在任何继电器覆盖范围内。");
                 continue;
             }
 
@@ -635,7 +635,7 @@ public sealed class TowerPowerGridCoordinator
             if (coveringRelays.Count == 1)
             {
                 reasons[tower] = new TowerOfflineReason(
-                    $"Offline: relay #{lowestRelay.RelayNumber} ran out of capacity before this tower's turn.");
+                    $"断电：轮到这座塔时，继电器 #{lowestRelay.RelayNumber} 的容量已经耗尽。");
                 continue;
             }
 
@@ -644,9 +644,9 @@ public sealed class TowerPowerGridCoordinator
 
             reasons[tower] = anyRelayHasWorkingTower
                 ? new TowerOfflineReason(
-                    $"Offline: covered by multiple relays, but higher-priority towers consumed all available supply before this tower could be powered.")
+                    $"断电：虽然处于多个继电器覆盖内，但更高优先级的塔先耗尽了所有可用供电。")
                 : new TowerOfflineReason(
-                    $"Offline: covered by relays, but no relay can currently reserve enough capacity for this tower.");
+                    $"断电：虽然处于继电器覆盖内，但当前没有任何继电器能为这座塔预留足够容量。");
         }
 
         return reasons;
@@ -730,7 +730,7 @@ public sealed class TowerPowerGridCoordinator
 
     private sealed class SimulationResult
     {
-        public Dictionary<RelayTower, RelayEvaluation> Evaluations { get; set; }
-        public Dictionary<DefenseTower, RelayTower> Assignments { get; set; }
+        public Dictionary<RelayTower, RelayEvaluation> Evaluations { get; set; } // 中文：Evaluations
+        public Dictionary<DefenseTower, RelayTower> Assignments { get; set; } // 中文：Assignments
     }
 }

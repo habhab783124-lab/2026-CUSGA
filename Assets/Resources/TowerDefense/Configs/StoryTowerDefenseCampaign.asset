@@ -18,60 +18,60 @@ MonoBehaviour:
   - segmentType: 0
     sceneName: StoryInterludePlaceholder
     scenePath: Assets/Scenes/StoryInterludePlaceholder.unity
-    displayName: Story Intro
-    designerNote: Placeholder scene for the opening side-scrolling story segment.
-    continuePrompt: Press Enter / Space to enter the first tower-defense encounter.
+    displayName: 剧情序章
+    designerNote: 开场横板剧情段的占位场景。
+    continuePrompt: 按 Enter / Space 进入第一段塔防战斗。
   - segmentType: 1
     sceneName: SampleScene
     scenePath: Assets/Scenes/SampleScene.unity
-    displayName: Defense Route 01
-    designerNote: First playable tower-defense encounter.
-    continuePrompt: Clear the wave set, then continue to the next story segment.
+    displayName: 防线 01
+    designerNote: 第一段可游玩的塔防遭遇战。
+    continuePrompt: 清完这一关的波次后，继续进入下一段剧情。
   - segmentType: 0
     sceneName: StoryInterludePlaceholder
     scenePath: Assets/Scenes/StoryInterludePlaceholder.unity
-    displayName: Story Bridge 01
-    designerNote: Placeholder scene between level 1 and level 2.
-    continuePrompt: Press Enter / Space to continue to the next defense mission.
+    displayName: 剧情过桥 01
+    designerNote: 第一关与第二关之间的剧情占位场景。
+    continuePrompt: 按 Enter / Space 继续进入下一段防守任务。
   - segmentType: 1
     sceneName: Level02
     scenePath: Assets/Scenes/Level02.unity
-    displayName: Defense Route 02
-    designerNote: Second tower-defense encounter.
-    continuePrompt: Clear the wave set, then continue to the next story segment.
+    displayName: 防线 02
+    designerNote: 第二段塔防遭遇战。
+    continuePrompt: 清完这一关的波次后，继续进入下一段剧情。
   - segmentType: 0
     sceneName: StoryInterludePlaceholder
     scenePath: Assets/Scenes/StoryInterludePlaceholder.unity
-    displayName: Story Bridge 02
-    designerNote: Placeholder scene between level 2 and level 3.
-    continuePrompt: Press Enter / Space to continue to the next defense mission.
+    displayName: 剧情过桥 02
+    designerNote: 第二关与第三关之间的剧情占位场景。
+    continuePrompt: 按 Enter / Space 继续进入下一段防守任务。
   - segmentType: 1
     sceneName: Level03
     scenePath: Assets/Scenes/Level03.unity
-    displayName: Defense Route 03
-    designerNote: Third tower-defense encounter.
-    continuePrompt: Clear the wave set, then continue to the next story segment.
+    displayName: 防线 03
+    designerNote: 第三段塔防遭遇战。
+    continuePrompt: 清完这一关的波次后，继续进入下一段剧情。
   - segmentType: 0
     sceneName: StoryInterludePlaceholder
     scenePath: Assets/Scenes/StoryInterludePlaceholder.unity
-    displayName: Story Bridge 03
-    designerNote: Placeholder scene between level 3 and level 4.
-    continuePrompt: Press Enter / Space to continue to the next defense mission.
+    displayName: 剧情过桥 03
+    designerNote: 第三关与第四关之间的剧情占位场景。
+    continuePrompt: 按 Enter / Space 继续进入下一段防守任务。
   - segmentType: 1
     sceneName: Level04
     scenePath: Assets/Scenes/Level04.unity
-    displayName: Defense Route 04
-    designerNote: Fourth tower-defense encounter.
-    continuePrompt: Clear the wave set, then continue to the next story segment.
+    displayName: 防线 04
+    designerNote: 第四段塔防遭遇战。
+    continuePrompt: 清完这一关的波次后，继续进入下一段剧情。
   - segmentType: 0
     sceneName: StoryInterludePlaceholder
     scenePath: Assets/Scenes/StoryInterludePlaceholder.unity
-    displayName: Final Story Prelude
-    designerNote: Placeholder scene before the final defense mission.
-    continuePrompt: Press Enter / Space to enter the final defense mission.
+    displayName: 最终战前剧情
+    designerNote: 最终防守任务前的剧情占位场景。
+    continuePrompt: 按 Enter / Space 进入最终防守任务。
   - segmentType: 1
     sceneName: Level05
     scenePath: Assets/Scenes/Level05.unity
-    displayName: Defense Route 05
-    designerNote: Final tower-defense encounter placeholder.
-    continuePrompt: Clear the final wave set to finish the current campaign chain.
+    displayName: 防线 05
+    designerNote: 最终塔防遭遇战占位段。
+    continuePrompt: 清完最终波次，结束当前这条战役流程。

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,21 +18,21 @@ using UnityEngine;
 /// </summary>
 public sealed class TowerDefensePresentationCoordinator
 {
-    private readonly Func<TowerDefenseSessionState> _sessionStateQuery;
-    private readonly Func<TowerPlacementInteractionController> _interactionControllerQuery;
-    private readonly Func<PlacedStructureHudState> _placedStructureHudStateQuery;
-    private readonly Func<PowerGridHudSnapshot> _powerGridHudSnapshotQuery;
-    private readonly Func<TowerType, bool> _canAffordTower;
-    private readonly Action _refreshStarterZoneMarker;
-    private readonly List<HudNoticeEntry> _recentHudNotices = new List<HudNoticeEntry>();
-    private HudNoticeEntry _transientHudNotice = new HudNoticeEntry(string.Empty, HudNoticeTone.Neutral);
-    private float _transientHudNoticeHideAt = -1f;
-    private string _currentStatusMessage = string.Empty;
+    private readonly Func<TowerDefenseSessionState> _sessionStateQuery; // 中文：会话状态查询
+    private readonly Func<TowerPlacementInteractionController> _interactionControllerQuery; // 中文：交互控制器查询
+    private readonly Func<PlacedStructureHudState> _placedStructureHudStateQuery; // 中文：已放置StructureHUD状态查询
+    private readonly Func<PowerGridHudSnapshot> _powerGridHudSnapshotQuery; // 中文：供电电网HUDSnapshot查询
+    private readonly Func<TowerType, bool> _canAffordTower; // 中文：能否Afford塔
+    private readonly Action _refreshStarterZoneMarker; // 中文：刷新起始区域标记
+    private readonly List<HudNoticeEntry> _recentHudNotices = new List<HudNoticeEntry>(); // 中文：近期HUD提示列表
+    private HudNoticeEntry _transientHudNotice = new HudNoticeEntry(string.Empty, HudNoticeTone.Neutral); // 中文：transientHUD提示
+    private float _transientHudNoticeHideAt = -1f; // 中文：transientHUD提示隐藏At
+    private string _currentStatusMessage = string.Empty; // 中文：当前状态消息
 
-    private TowerDefenseHudPresenter _hudPresenter;
-    private TowerCatalog _towerCatalog;
+    private TowerDefenseHudPresenter _hudPresenter; // 中文：HUDPresenter
+    private TowerCatalog _towerCatalog; // 中文：塔目录
 
-    private const int MaxHudNoticeHistory = 4;
+    private const int MaxHudNoticeHistory = 4; // 中文：最大HUD提示History
 
     public TowerDefensePresentationCoordinator(
         Func<TowerDefenseSessionState> sessionStateQuery,
@@ -149,10 +149,10 @@ public sealed class TowerDefensePresentationCoordinator
         HideActiveEnemyHealthBars();
 
         _hudPresenter?.ShowGameOver(
-            title: "GAME OVER",
-            hint: "The base has fallen. Exit Play Mode to keep adjusting the level and deployment flow.");
+            title: "战斗失败",
+            hint: "基地已经失守。退出 Play Mode 后可继续调整关卡和部署流程。");
 
-        SetStatusMessage("Base integrity depleted. Operation failed.");
+        SetStatusMessage("基地完整度归零，防线失守。");
         RefreshHud();
     }
 

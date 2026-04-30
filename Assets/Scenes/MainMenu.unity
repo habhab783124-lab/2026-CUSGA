@@ -190,14 +190,14 @@ MonoBehaviour:
   titleFontAsset: {fileID: 0}
   bodyFontAsset: {fileID: 0}
   accentFontAsset: {fileID: 0}
-  titleCopy: Power Grid Defense
-  subtitleCopy: Power Grid Defense / Prototype Access Terminal
-  descriptionCopy: "Enter the current tower-defense test mission here.\n\nUse generators and turrets to expand your defense network under limited energy.\n\nPress Start below to load the active gameplay scene."
-  hintCopy: START will open the mission selection page
-  startPrimaryCopy: Start
-  startSecondaryCopy: OPEN LEVEL SELECT / MISSION TERMINAL
-  footerLeftCopy: ENTRY NODE / MAIN MENU
-  footerRightCopy: Press Enter / Space or click Start
+  titleCopy: 电网防线
+  subtitleCopy: 电网防线 / 原型入口终端
+  descriptionCopy: "从这里进入当前塔防原型的测试流程。\n\n利用继电器和战斗塔扩张你的部署网络，在有限废料与供电条件下守住防线。\n\n点击下方开始，进入当前的关卡选择页面。"
+  hintCopy: 点击开始将进入关卡选择页面
+  startPrimaryCopy: 开始
+  startSecondaryCopy: 进入关卡选择 / 任务终端
+  footerLeftCopy: 入口节点 / 主菜单
+  footerRightCopy: 按 Enter / Space 或点击开始
   sceneCamera: {fileID: 452637971}
   mainCanvas: {fileID: 1674773601}
   canvasScaler: {fileID: 1674773600}
@@ -412,7 +412,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Press Enter / Space or click Start
+  m_text: 按 Enter / Space 或点击开始
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -621,7 +621,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: ENTRY NODE / MAIN MENU
+  m_text: 入口节点 / 主菜单
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -957,7 +957,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: ENTER BATTLEFIELD / SAMPLE SCENE
+  m_text: 进入战场 / 样例场景
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1091,7 +1091,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Power Grid Defense / Prototype Access Terminal
+  m_text: 电网防线 / 原型入口终端
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1868,7 +1868,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: START will load SampleScene directly
+  m_text: 点击开始将进入关卡选择页面
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

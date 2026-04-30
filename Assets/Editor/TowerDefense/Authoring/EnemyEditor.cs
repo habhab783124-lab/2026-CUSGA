@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 
 namespace TowerDefense.Editor
@@ -19,7 +19,7 @@ namespace TowerDefense.Editor
     [CustomEditor(typeof(Enemy))]
     public sealed class EnemyEditor : UnityEditor.Editor
     {
-        private const string DefaultEnemyCatalogAssetPath = "Assets/Resources/TowerDefense/Configs/EnemyCatalog.asset";
+        private const string DefaultEnemyCatalogAssetPath = "Assets/Resources/TowerDefense/Configs/EnemyCatalog.asset"; // 中文：默认敌人目录资产路径
 
         public override void OnInspectorGUI()
         {
@@ -44,13 +44,13 @@ namespace TowerDefense.Editor
             string healthBarFill = DescribeObject("healthBarFillReference");
 
             EditorGUILayout.HelpBox(
-                $"Body Renderer: {bodyRenderer}\n" +
-                $"Visual Scale Root: {scaleRoot}\n" +
-                $"Health Bar Root: {healthBarRoot}\n" +
-                $"Health Bar Fill: {healthBarFill}",
+                $"主体渲染器：{bodyRenderer}\n" +
+                $"视觉缩放根：{scaleRoot}\n" +
+                $"血条根节点：{healthBarRoot}\n" +
+                $"血条填充：{healthBarFill}",
                 MessageType.Info);
 
-            if (bodyRenderer == "None" || healthBarRoot == "None" || healthBarFill == "None")
+            if (bodyRenderer == "未设置" || healthBarRoot == "未设置" || healthBarFill == "未设置")
             {
                 EditorGUILayout.HelpBox(
                     "当前敌人 prefab 还有视觉引用缺项。为了后续继续替换正式美术，建议把主体与血条链路都显式接齐。",
@@ -69,16 +69,16 @@ namespace TowerDefense.Editor
             }
 
             string armorSummary = definition.ArmorTier == EnemyArmorTier.None
-                ? "None"
-                : $"{definition.ArmorTier} ({definition.NonPiercingDamageMultiplier:0.00}x non-piercing)";
+                ? "无甲"
+                : $"{definition.ArmorTier}（非穿甲 {definition.NonPiercingDamageMultiplier:0.00}x）";
 
             EditorGUILayout.HelpBox(
-                $"Catalog Match: {definition.DisplayName}\n" +
-                $"Archetype: {definition.ArchetypeId}\n" +
-                $"HP: {definition.MaxHealth}  Move: {definition.MoveSpeed:0.00}  Scrap: {definition.ScrapReward}\n" +
-                $"Base Damage: {definition.BaseDamageToBase}\n" +
-                $"Armor: {armorSummary}\n" +
-                $"Passive Traits: {BuildPassiveTraitSummary(definition)}",
+                $"目录匹配：{definition.DisplayName}\n" +
+                $"敌人类型：{definition.ArchetypeId}\n" +
+                $"生命：{definition.MaxHealth}  速度：{definition.MoveSpeed:0.00}  废料：{definition.ScrapReward}\n" +
+                $"到点伤害：{definition.BaseDamageToBase}\n" +
+                $"护甲：{armorSummary}\n" +
+                $"被动特征：{BuildPassiveTraitSummary(definition)}",
                 MessageType.Info);
         }
 
@@ -90,11 +90,11 @@ namespace TowerDefense.Editor
             bool hasSplitModule = enemy.GetComponent<EnemySplitOnDeathModule>() != null;
 
             EditorGUILayout.HelpBox(
-                $"Mechanic Modules\n" +
-                $"- Stealth: {ToYesNo(hasStealthModule)}\n" +
-                $"- Shield Aura: {ToYesNo(hasShieldAuraModule)}\n" +
-                $"- Repair: {ToYesNo(hasRepairModule)}\n" +
-                $"- Split On Death: {ToYesNo(hasSplitModule)}",
+                $"机制模块\n" +
+                $"- 隐身：{ToYesNo(hasStealthModule)}\n" +
+                $"- 护盾光环：{ToYesNo(hasShieldAuraModule)}\n" +
+                $"- 修理：{ToYesNo(hasRepairModule)}\n" +
+                $"- 死亡分裂：{ToYesNo(hasSplitModule)}",
                 MessageType.None);
 
             if (hasStealthModule || hasShieldAuraModule || hasRepairModule || hasSplitModule)
@@ -124,7 +124,7 @@ namespace TowerDefense.Editor
             {
                 EditorGUILayout.HelpBox(mismatchMessage.TrimEnd(), MessageType.Warning);
 
-                if (GUILayout.Button("Attach Missing Catalog Modules"))
+                if (GUILayout.Button("补挂目录要求的模块"))
                 {
                     AttachMissingCatalogModules(enemy, definition);
                 }
@@ -136,7 +136,7 @@ namespace TowerDefense.Editor
             SerializedProperty property = serializedObject.FindProperty(propertyName);
             if (property == null || property.objectReferenceValue == null)
             {
-                return "None";
+                return "未设置";
             }
 
             return property.objectReferenceValue.name;
@@ -226,11 +226,11 @@ namespace TowerDefense.Editor
 
         private static string BuildPassiveTraitSummary(EnemyCatalogAsset.EnemyArchetypeDefinition definition)
         {
-            string summary = definition.IgnoresSlowEffects ? "Ignores Slow" : "Affected by Slow";
+            string summary = definition.IgnoresSlowEffects ? "免疫减速" : "会受到减速影响";
 
             if (definition.CanBeRepairedByMechanic)
             {
-                summary += " / Repairable";
+                summary += " / 可被机械师修理";
             }
 
             if (definition.ShieldAmount <= 0 &&
@@ -238,7 +238,7 @@ namespace TowerDefense.Editor
                 !definition.EntersStealthAfterFirstDirectHit &&
                 definition.SplitChildType == EnemyArchetypeId.None)
             {
-                summary += " / No active mechanic module required";
+                summary += " / 不需要额外主动机制模块";
             }
 
             return summary;
@@ -246,7 +246,7 @@ namespace TowerDefense.Editor
 
         private static string ToYesNo(bool value)
         {
-            return value ? "Yes" : "No";
+            return value ? "是" : "否";
         }
 
         private static void AppendMissingMechanicWarning(ref string currentMessage, bool shouldAppend, string message)

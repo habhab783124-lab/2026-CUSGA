@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 /// <summary>
@@ -13,17 +13,17 @@ using UnityEngine;
 /// </summary>
 public sealed class StarterZoneMarkerRenderer : IDisposable
 {
-    private const int MarkerTextureSize = 64;
-    private const int MarkerBorderThickness = 3;
+    private const int MarkerTextureSize = 64; // 中文：标记Texture大小
+    private const int MarkerBorderThickness = 3; // 中文：标记BorderThickness
 
-    private readonly Color _fillColor;
-    private readonly Color _edgeColor;
-    private readonly int _sortingOrder;
+    private readonly Color _fillColor; // 中文：fill颜色
+    private readonly Color _edgeColor; // 中文：edge颜色
+    private readonly int _sortingOrder; // 中文：sorting顺序
 
-    private GameObject _markerObject;
-    private SpriteRenderer _spriteRenderer;
-    private Texture2D _markerTexture;
-    private Sprite _markerSprite;
+    private GameObject _markerObject; // 中文：标记Object
+    private SpriteRenderer _spriteRenderer; // 中文：精灵Renderer
+    private Texture2D _markerTexture; // 中文：标记Texture
+    private Sprite _markerSprite; // 中文：标记精灵
 
     public StarterZoneMarkerRenderer(Color fillColor, Color edgeColor, int sortingOrder)
     {

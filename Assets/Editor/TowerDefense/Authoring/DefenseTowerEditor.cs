@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -15,34 +15,34 @@ namespace TowerDefense.Editor
     [CustomEditor(typeof(DefenseTower))]
     public sealed class DefenseTowerEditor : UnityEditor.Editor
     {
-        private SerializedProperty _buildTypeProperty;
-        private SerializedProperty _singleTargetTuningProperty;
-        private SerializedProperty _slowFieldTuningProperty;
-        private SerializedProperty _bombardTuningProperty;
-        private SerializedProperty _currentLevelProperty;
-        private SerializedProperty _maxLevelProperty;
-        private SerializedProperty _bodyRendererReferenceProperty;
-        private SerializedProperty _feedbackRootReferenceProperty;
-        private SerializedProperty _singleTargetFeedbackRootReferenceProperty;
-        private SerializedProperty _slowFieldFeedbackRootReferenceProperty;
-        private SerializedProperty _bombardFeedbackRootReferenceProperty;
-        private SerializedProperty _typeSignatureRootReferenceProperty;
-        private SerializedProperty _levelMarkerRootReferenceProperty;
-        private SerializedProperty _flashColorProperty;
-        private SerializedProperty _offlineColorProperty;
-        private SerializedProperty _flashDurationProperty;
-        private SerializedProperty _upgradeFlashColorProperty;
-        private SerializedProperty _upgradePulseDurationProperty;
-        private SerializedProperty _upgradeScaleMultiplierProperty;
-        private SerializedProperty _feedbackMaterialProperty;
-        private SerializedProperty _levelPipSpriteProperty;
-        private SerializedProperty _levelPipColorProperty;
-        private SerializedProperty _levelPipOffsetProperty;
-        private SerializedProperty _levelPipSpacingProperty;
-        private SerializedProperty _levelPipScaleProperty;
-        private SerializedProperty _levelPipSortingOffsetProperty;
+        private SerializedProperty _buildTypeProperty; // 中文：建造类型Property
+        private SerializedProperty _singleTargetTuningProperty; // 中文：单体目标TuningProperty
+        private SerializedProperty _slowFieldTuningProperty; // 中文：减速区域TuningProperty
+        private SerializedProperty _bombardTuningProperty; // 中文：炸弹TuningProperty
+        private SerializedProperty _currentLevelProperty; // 中文：当前等级Property
+        private SerializedProperty _maxLevelProperty; // 中文：最大等级Property
+        private SerializedProperty _bodyRendererReferenceProperty; // 中文：主体Renderer引用Property
+        private SerializedProperty _feedbackRootReferenceProperty; // 中文：反馈根节点引用Property
+        private SerializedProperty _singleTargetFeedbackRootReferenceProperty; // 中文：单体目标反馈根节点引用Property
+        private SerializedProperty _slowFieldFeedbackRootReferenceProperty; // 中文：减速区域反馈根节点引用Property
+        private SerializedProperty _bombardFeedbackRootReferenceProperty; // 中文：炸弹反馈根节点引用Property
+        private SerializedProperty _typeSignatureRootReferenceProperty; // 中文：类型签名根节点引用Property
+        private SerializedProperty _levelMarkerRootReferenceProperty; // 中文：等级标记根节点引用Property
+        private SerializedProperty _flashColorProperty; // 中文：闪光颜色Property
+        private SerializedProperty _offlineColorProperty; // 中文：离线颜色Property
+        private SerializedProperty _flashDurationProperty; // 中文：闪光持续时间Property
+        private SerializedProperty _upgradeFlashColorProperty; // 中文：升级闪光颜色Property
+        private SerializedProperty _upgradePulseDurationProperty; // 中文：升级脉冲持续时间Property
+        private SerializedProperty _upgradeScaleMultiplierProperty; // 中文：升级缩放倍率Property
+        private SerializedProperty _feedbackMaterialProperty; // 中文：反馈材质Property
+        private SerializedProperty _levelPipSpriteProperty; // 中文：等级等级点精灵Property
+        private SerializedProperty _levelPipColorProperty; // 中文：等级等级点颜色Property
+        private SerializedProperty _levelPipOffsetProperty; // 中文：等级等级点偏移Property
+        private SerializedProperty _levelPipSpacingProperty; // 中文：等级等级点间距Property
+        private SerializedProperty _levelPipScaleProperty; // 中文：等级等级点缩放Property
+        private SerializedProperty _levelPipSortingOffsetProperty; // 中文：等级等级点Sorting偏移Property
 
-        private bool _showAllTuningBlocks;
+        private bool _showAllTuningBlocks; // 中文：显示AllTuningBlocks
 
         private void OnEnable()
         {
@@ -104,8 +104,8 @@ namespace TowerDefense.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Authoring Actions", EditorStyles.boldLabel);
-                if (GUILayout.Button("Materialize Visual Roots"))
+                EditorGUILayout.LabelField("作者操作", EditorStyles.boldLabel);
+                if (GUILayout.Button("生成视觉根节点"))
                 {
                     MaterializeVisualRoots(tower);
                 }
@@ -175,7 +175,7 @@ namespace TowerDefense.Editor
 
         private void DrawOptionalOtherTuningBlocks(TowerType buildType)
         {
-            _showAllTuningBlocks = EditorGUILayout.Foldout(_showAllTuningBlocks, "查看其余塔型 Tuning", true);
+            _showAllTuningBlocks = EditorGUILayout.Foldout(_showAllTuningBlocks, "查看其余塔型参数", true);
             if (!_showAllTuningBlocks)
             {
                 return;
@@ -210,7 +210,7 @@ namespace TowerDefense.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Progression", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("成长", EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(_currentLevelProperty);
                 EditorGUILayout.PropertyField(_maxLevelProperty);
             }
@@ -220,7 +220,7 @@ namespace TowerDefense.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Visual References", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("视觉引用", EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(_bodyRendererReferenceProperty);
                 EditorGUILayout.PropertyField(_feedbackRootReferenceProperty);
                 EditorGUILayout.PropertyField(_singleTargetFeedbackRootReferenceProperty);
@@ -235,7 +235,7 @@ namespace TowerDefense.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Shared Visuals", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("共享视觉", EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(_flashColorProperty);
                 EditorGUILayout.PropertyField(_offlineColorProperty);
                 EditorGUILayout.PropertyField(_flashDurationProperty);
@@ -250,7 +250,7 @@ namespace TowerDefense.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Level Marker", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("等级标记", EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(_levelPipSpriteProperty);
                 EditorGUILayout.PropertyField(_levelPipColorProperty);
                 EditorGUILayout.PropertyField(_levelPipOffsetProperty);
@@ -269,14 +269,14 @@ namespace TowerDefense.Editor
 
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Runtime Snapshot", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField("Tower Number", tower.TowerNumber.ToString());
-                EditorGUILayout.LabelField("Current Level", tower.CurrentLevel.ToString());
-                EditorGUILayout.LabelField("Damage / Shot", tower.DamagePerShot.ToString());
-                EditorGUILayout.LabelField("Power Required", tower.PowerRequired.ToString());
-                EditorGUILayout.LabelField("Attack Range", tower.AttackRange.ToString("0.00"));
-                EditorGUILayout.LabelField("Powered", tower.IsPowered ? "Yes" : "No");
-                EditorGUILayout.LabelField("Power Status", tower.PowerStatusMessage);
+                EditorGUILayout.LabelField("运行时快照", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("塔编号", tower.TowerNumber.ToString());
+                EditorGUILayout.LabelField("当前等级", tower.CurrentLevel.ToString());
+                EditorGUILayout.LabelField("单次伤害", tower.DamagePerShot.ToString());
+                EditorGUILayout.LabelField("耗电需求", tower.PowerRequired.ToString());
+                EditorGUILayout.LabelField("攻击范围", tower.AttackRange.ToString("0.00"));
+                EditorGUILayout.LabelField("是否通电", tower.IsPowered ? "是" : "否");
+                EditorGUILayout.LabelField("供电状态", tower.PowerStatusMessage);
             }
         }
 
@@ -300,13 +300,13 @@ namespace TowerDefense.Editor
             switch (buildType)
             {
                 case TowerType.SlowField:
-                    return "Slow Field Tuning";
+                    return "减速塔参数";
 
                 case TowerType.Bombard:
-                    return "Bombard Tuning";
+                    return "炸弹塔参数";
 
                 default:
-                    return "Single Target Tuning";
+                    return "单体塔参数";
             }
         }
     }

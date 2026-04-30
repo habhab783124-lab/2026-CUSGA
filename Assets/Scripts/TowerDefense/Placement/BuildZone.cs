@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -18,31 +18,31 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class BuildZone : MonoBehaviour
 {
-    private const string DefaultZoneShapeRootName = "ZoneShapes";
+    private const string DefaultZoneShapeRootName = "ZoneShapes"; // 中文：默认区域形状根节点名称
 
-    [Header("Shape Authoring")]
+    [Header("形状作者设置")]
     [Tooltip("可选的建造区形状根节点。指定后，系统会优先从它下面收集多个 Collider2D 作为真实建造区形状。")]
-    [SerializeField] private Transform zoneShapeRootReference;
+    [SerializeField, InspectorName("形状根节点")] private Transform zoneShapeRootReference; // 中文：区域形状根节点引用
     [Tooltip("当前 BuildZone 真正参与判定的形状碰撞体列表。通常通过场景自动收集维护，不建议手工长期维护。")]
-    [SerializeField] private Collider2D[] zoneShapeColliders = new Collider2D[0];
+    [SerializeField, InspectorName("形状碰撞体列表")] private Collider2D[] zoneShapeColliders = new Collider2D[0]; // 中文：区域形状碰撞体列表
     [Tooltip("开启后，编辑器中会自动从 ZoneShapes 根节点或当前对象层级收集形状碰撞体。")]
-    [SerializeField] private bool autoCollectZoneShapes = true;
+    [SerializeField, InspectorName("自动收集形状")] private bool autoCollectZoneShapes = true; // 中文：自动收集区域形状列表
     [Tooltip("自动收集建造区形状时，是否包含未激活对象。")]
-    [SerializeField] private bool includeInactiveShapes = true;
+    [SerializeField, InspectorName("包含未激活对象")] private bool includeInactiveShapes = true; // 中文：包含未激活形状列表
 
     [Header("Gizmo")]
     [Tooltip("Scene 视图中显示建造区轮廓时使用的颜色。")]
-    [SerializeField] private Color gizmoColor = new Color(0.25f, 0.85f, 0.95f, 0.9f);
+    [SerializeField, InspectorName("轮廓颜色")] private Color gizmoColor = new Color(0.25f, 0.85f, 0.95f, 0.9f); // 中文：Gizmo颜色
 
     /// <summary>
     /// 根对象上直接挂着的默认碰撞体。
     /// 当还没有显式收集到不规则形状时，它就是兼容旧工作流的回退区域。
     /// </summary>
-    private Collider2D _fallbackCollider;
+    private Collider2D _fallbackCollider; // 中文：fallback碰撞体
 
-    public Bounds WorldBounds => BuildWorldBounds();
-    public Transform ZoneShapeRoot => zoneShapeRootReference;
-    public int ZoneShapeCount => CollectValidZoneShapes(null);
+    public Bounds WorldBounds => BuildWorldBounds(); // 中文：世界Bounds
+    public Transform ZoneShapeRoot => zoneShapeRootReference; // 中文：区域形状根节点
+    public int ZoneShapeCount => CollectValidZoneShapes(null); // 中文：区域形状数量
 
     private void Awake()
     {
@@ -117,7 +117,7 @@ public sealed class BuildZone : MonoBehaviour
     public string BuildAuthoringSummary()
     {
         string rootName = zoneShapeRootReference != null ? zoneShapeRootReference.name : "(BuildZone Root)";
-        string fallbackName = _fallbackCollider != null ? _fallbackCollider.GetType().Name : "None";
+        string fallbackName = _fallbackCollider != null ? _fallbackCollider.GetType().Name : "未设置";
         return $"ZoneShapeRoot={rootName} | ShapeColliders={ZoneShapeCount} | FallbackCollider={fallbackName}";
     }
 

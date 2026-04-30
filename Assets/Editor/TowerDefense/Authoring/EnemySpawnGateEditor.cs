@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -15,8 +15,8 @@ namespace TowerDefense.Editor
     [CustomEditor(typeof(EnemySpawnGate))]
     public sealed class EnemySpawnGateEditor : UnityEditor.Editor
     {
-        private SerializedProperty _readabilityRootReferenceProperty;
-        private SerializedProperty _autoCreateReadabilityRootProperty;
+        private SerializedProperty _readabilityRootReferenceProperty; // 中文：可读性根节点引用Property
+        private SerializedProperty _autoCreateReadabilityRootProperty; // 中文：自动创建可读性根节点Property
 
         private void OnEnable()
         {
@@ -29,22 +29,22 @@ namespace TowerDefense.Editor
             serializedObject.Update();
 
             EnemySpawnGate spawnGate = (EnemySpawnGate)target;
-            string routeName = spawnGate.EnemyPath != null ? spawnGate.EnemyPath.name : "None";
-            string defensePointName = spawnGate.TargetDefensePoint != null ? spawnGate.TargetDefensePoint.name : "None";
+            string routeName = spawnGate.EnemyPath != null ? spawnGate.EnemyPath.name : "未设置";
+            string defensePointName = spawnGate.TargetDefensePoint != null ? spawnGate.TargetDefensePoint.name : "未设置";
             bool proceduralMarker = serializedObject.FindProperty("proceduralReadabilityMarker")?.boolValue ?? true;
-            string readabilityMode = proceduralMarker ? "Procedural Marker" : "Authored Root Only";
+            string readabilityMode = proceduralMarker ? "程序化标记" : "仅使用作者根节点";
 
             EditorGUILayout.HelpBox(
-                $"Gate: {spawnGate.DisplayName}\nEnemyPath: {routeName}\nTargetDefensePoint: {defensePointName}\nReadability Mode: {readabilityMode}",
+                $"出怪口：{spawnGate.DisplayName}\n敌人路线：{routeName}\n目标防御点：{defensePointName}\n可读性模式：{readabilityMode}",
                 MessageType.Info);
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Assign / Create Readability Root"))
+            if (GUILayout.Button("指定 / 创建可读性根节点"))
             {
                 AssignOrCreateReadabilityRoot(spawnGate, "__SpawnGateReadability");
             }
 
-            if (GUILayout.Button("Refresh Marker"))
+            if (GUILayout.Button("刷新标记"))
             {
                 spawnGate.EditorRefreshAuthoringState();
                 EditorUtility.SetDirty(spawnGate);
@@ -62,7 +62,7 @@ namespace TowerDefense.Editor
             if (existingRoot == null)
             {
                 GameObject rootObject = new GameObject(rootName);
-                Undo.RegisterCreatedObjectUndo(rootObject, "Create Spawn Gate Readability Root");
+                Undo.RegisterCreatedObjectUndo(rootObject, "创建出怪口可读性根节点");
                 existingRoot = rootObject.transform;
                 existingRoot.SetParent(spawnGate.transform, false);
                 existingRoot.localPosition = Vector3.zero;

@@ -14,40 +14,40 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   entries:
   - towerType: 1
-    displayName: Relay Generator
-    cardRoleSummary: Relay Node / Supply Grid
-    selectionHint: Anchor the power grid first, then expand tower coverage from there.
-    upgradeFocusSummary: Upgrades add more supply capacity without changing relay coverage radius.
+    displayName: 继电器
+    cardRoleSummary: 供电节点 / 网络扩张
+    selectionHint: 先铺设继电器，再把战斗塔接入供电范围。
+    upgradeFocusSummary: 升级会提升供电容量，但不会扩大覆盖范围。
     accentColor: {r: 1, g: 0.55, b: 0.22, a: 1}
     cardIconSprite: {fileID: 0}
     cardIconTint: {r: 1, g: 0.66, b: 0.3, a: 1}
     cardBackgroundTint: {r: 0.14, g: 0.1, b: 0.08, a: 0.96}
     cardAccentTint: {r: 1, g: 0.55, b: 0.22, a: 1}
   - towerType: 2
-    displayName: Defense Turret
-    cardRoleSummary: Focus Fire / Frontline
-    selectionHint: Reliable direct damage for finishing one target at a time.
-    upgradeFocusSummary: Upgrades push faster fire, longer reach, and steadier single-target DPS.
+    displayName: 单体塔
+    cardRoleSummary: 点杀 / 前线
+    selectionHint: 稳定的单体直伤，适合补掉关键目标。
+    upgradeFocusSummary: 升级会强化射速、射程和单体输出。
     accentColor: {r: 0.28, g: 0.78, b: 1, a: 1}
     cardIconSprite: {fileID: 0}
     cardIconTint: {r: 0.55, g: 0.88, b: 1, a: 1}
     cardBackgroundTint: {r: 0.07, g: 0.11, b: 0.16, a: 0.96}
     cardAccentTint: {r: 0.28, g: 0.78, b: 1, a: 1}
   - towerType: 3
-    displayName: Slow Field Tower
-    cardRoleSummary: Area Control / Slow
-    selectionHint: Controls lanes by slowing every enemy inside the field.
-    upgradeFocusSummary: Upgrades strengthen the slow, extend control time, and improve area denial.
+    displayName: 减速塔
+    cardRoleSummary: 范围控制 / 减速
+    selectionHint: 减速范围内所有敌人，适合控线。
+    upgradeFocusSummary: 升级会强化减速、延长控制时间并扩大压制力。
     accentColor: {r: 0.36, g: 0.95, b: 0.84, a: 1}
     cardIconSprite: {fileID: 0}
     cardIconTint: {r: 0.66, g: 1, b: 0.91, a: 1}
     cardBackgroundTint: {r: 0.07, g: 0.14, b: 0.14, a: 0.96}
     cardAccentTint: {r: 0.36, g: 0.95, b: 0.84, a: 1}
   - towerType: 4
-    displayName: Bombard Tower
-    cardRoleSummary: Burst Splash / Delayed
-    selectionHint: Delayed splash damage that punishes clustered enemies at range.
-    upgradeFocusSummary: Upgrades widen the blast, shorten bomb travel, and raise burst damage.
+    displayName: 炸弹塔
+    cardRoleSummary: 爆发溅射 / 延迟
+    selectionHint: 延迟爆炸，适合打击密集敌群。
+    upgradeFocusSummary: 升级会扩大爆炸范围、缩短飞行时间并提高爆发伤害。
     accentColor: {r: 1, g: 0.62, b: 0.26, a: 1}
     cardIconSprite: {fileID: 0}
     cardIconTint: {r: 1, g: 0.78, b: 0.46, a: 1}

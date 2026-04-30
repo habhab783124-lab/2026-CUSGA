@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -13,9 +13,9 @@ namespace TowerDefense.Editor
     /// </summary>
     public static class MainMenuSceneAuthoringTool
     {
-        private const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity";
+        private const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity"; // 中文：主菜单场景路径
 
-        [MenuItem("Tools/Tower Defense/Materialize Main Menu Scene")]
+        [MenuItem("Tools/Tower Defense/物化主菜单场景")]
         public static void BatchCreateOrUpdateMainMenuScene()
         {
             EditorSceneManager.OpenScene(MainMenuScenePath, OpenSceneMode.Single);
@@ -23,7 +23,7 @@ namespace TowerDefense.Editor
             MainMenuController controller = UnityEngine.Object.FindFirstObjectByType<MainMenuController>();
             if (controller == null)
             {
-                throw new InvalidOperationException("MainMenu scene is missing MainMenuController.");
+                throw new InvalidOperationException("MainMenu 场景缺少 MainMenuController。");
             }
 
             controller.EditorMaterializeDefaultSceneUi();
@@ -34,7 +34,7 @@ namespace TowerDefense.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
-            Debug.Log("MainMenuSceneAuthoringTool: MainMenu scene materialized successfully.");
+            Debug.Log("MainMenuSceneAuthoringTool：主菜单场景物化完成。");
         }
     }
 }

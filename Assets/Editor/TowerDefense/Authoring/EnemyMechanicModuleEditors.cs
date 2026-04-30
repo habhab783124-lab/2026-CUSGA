@@ -39,7 +39,7 @@ namespace TowerDefense.Editor
 
                 using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                 {
-                    EditorGUILayout.LabelField("Local Override Parameters", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField("本地覆盖参数", EditorStyles.boldLabel);
                     DrawProperties(serializedObject, localPropertyNames);
                 }
             }
@@ -52,7 +52,7 @@ namespace TowerDefense.Editor
                 using (new EditorGUI.DisabledScope(true))
                 using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                 {
-                    EditorGUILayout.LabelField("Local Override Preview", EditorStyles.boldLabel);
+                    EditorGUILayout.LabelField("本地覆盖预览", EditorStyles.boldLabel);
                     DrawProperties(serializedObject, localPropertyNames);
                 }
             }

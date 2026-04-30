@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Reflection;
 using UnityEditor;
@@ -19,17 +19,17 @@ namespace TowerDefense.Editor
     /// </summary>
     public static class TowerDefenseValidationRunner
     {
-        private const string SampleScenePath = "Assets/Scenes/SampleScene.unity";
-        private const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity";
-        private const string RelayPrefabPath = "Assets/Prefabs/TowerDefense/Runtime/RelayTowerPrototype.prefab";
-        private const string SingleTargetPrefabPath = "Assets/Prefabs/TowerDefense/Runtime/SingleTargetTowerPrototype.prefab";
-        private const string SlowFieldPrefabPath = "Assets/Prefabs/TowerDefense/Runtime/SlowFieldTowerPrototype.prefab";
-        private const string BombardPrefabPath = "Assets/Prefabs/TowerDefense/Runtime/BombardTowerPrototype.prefab";
-        private const string EnemyPrefabPath = "Assets/Prefabs/TowerDefense/Runtime/EnemyPrototype.prefab";
-        private const string ShotTracePrefabPath = "Assets/Prefabs/TowerDefense/Vfx/ShotTrace.prefab";
-        private const string SlowPulsePrefabPath = "Assets/Prefabs/TowerDefense/Vfx/SlowPulse.prefab";
-        private const string BombProjectilePrefabPath = "Assets/Prefabs/TowerDefense/Vfx/BombProjectile.prefab";
-        private const string BombExplosionPrefabPath = "Assets/Prefabs/TowerDefense/Vfx/BombExplosion.prefab";
+        private const string SampleScenePath = "Assets/Scenes/SampleScene.unity"; // 中文：Sample场景路径
+        private const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity"; // 中文：主菜单场景路径
+        private const string RelayPrefabPath = "Assets/Prefabs/TowerDefense/Runtime/RelayTowerPrototype.prefab"; // 中文：继电器预制体路径
+        private const string SingleTargetPrefabPath = "Assets/Prefabs/TowerDefense/Runtime/SingleTargetTowerPrototype.prefab"; // 中文：单体目标预制体路径
+        private const string SlowFieldPrefabPath = "Assets/Prefabs/TowerDefense/Runtime/SlowFieldTowerPrototype.prefab"; // 中文：减速区域预制体路径
+        private const string BombardPrefabPath = "Assets/Prefabs/TowerDefense/Runtime/BombardTowerPrototype.prefab"; // 中文：炸弹预制体路径
+        private const string EnemyPrefabPath = "Assets/Prefabs/TowerDefense/Runtime/EnemyPrototype.prefab"; // 中文：敌人预制体路径
+        private const string ShotTracePrefabPath = "Assets/Prefabs/TowerDefense/Vfx/ShotTrace.prefab"; // 中文：Shot轨迹预制体路径
+        private const string SlowPulsePrefabPath = "Assets/Prefabs/TowerDefense/Vfx/SlowPulse.prefab"; // 中文：减速脉冲预制体路径
+        private const string BombProjectilePrefabPath = "Assets/Prefabs/TowerDefense/Vfx/BombProjectile.prefab"; // 中文：炸弹投射物预制体路径
+        private const string BombExplosionPrefabPath = "Assets/Prefabs/TowerDefense/Vfx/BombExplosion.prefab"; // 中文：炸弹爆炸预制体路径
 
         public static void RunAll()
         {

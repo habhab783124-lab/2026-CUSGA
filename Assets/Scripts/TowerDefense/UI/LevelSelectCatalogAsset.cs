@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using UnityEngine;
 
@@ -25,33 +25,33 @@ public sealed class LevelSelectCatalogAsset : ScriptableObject
     public sealed class LevelEntry
     {
 #if UNITY_EDITOR
-        [Header("Scene Ref")]
-        [SerializeField] private SceneAsset sceneAsset;
+        [Header("场景引用")]
+        [SerializeField, InspectorName("场景资产")] private SceneAsset sceneAsset; // 中文：场景资产
 #endif
 
-        [SerializeField] private string sceneName = "SampleScene";
-        [SerializeField] private string scenePath = "Assets/Scenes/SampleScene.unity";
+        [SerializeField, InspectorName("场景名")] private string sceneName = "SampleScene"; // 中文：场景名称
+        [SerializeField, InspectorName("场景路径")] private string scenePath = "Assets/Scenes/SampleScene.unity"; // 中文：场景路径
 
-        [Header("Display Copy")]
-        [SerializeField] private string displayName = "LEVEL 01";
-        [SerializeField] private string subtitle = "CURRENT TEST ROUTE";
-        [SerializeField] [TextArea(2, 5)] private string description = "The current playable sample mission.";
-        [SerializeField] private string statusLabel = "OPEN";
+        [Header("显示文案")]
+        [SerializeField, InspectorName("显示名称")] private string displayName = "第一关"; // 中文：显示名称
+        [SerializeField, InspectorName("副标题")] private string subtitle = "当前测试路线"; // 中文：副标题
+        [SerializeField, TextArea(2, 5), InspectorName("描述")] private string description = "当前可游玩的样例关卡。"; // 中文：描述
+        [SerializeField, InspectorName("状态标签")] private string statusLabel = "可进入"; // 中文：状态标签
 
-        [Header("Card Style")]
-        [SerializeField] private Sprite iconSprite;
-        [SerializeField] private Color accentColor = new Color(1f, 0.68f, 0.36f, 1f);
-        [SerializeField] private bool interactable = true;
+        [Header("卡片样式")]
+        [SerializeField, InspectorName("图标")] private Sprite iconSprite; // 中文：图标精灵
+        [SerializeField, InspectorName("强调色")] private Color accentColor = new Color(1f, 0.68f, 0.36f, 1f); // 中文：accent颜色
+        [SerializeField, InspectorName("可交互")] private bool interactable = true; // 中文：可交互
 
-        public string SceneName => sceneName;
-        public string ScenePath => scenePath;
-        public string DisplayName => displayName;
-        public string Subtitle => subtitle;
-        public string Description => description;
-        public string StatusLabel => statusLabel;
-        public Sprite IconSprite => iconSprite;
-        public Color AccentColor => accentColor;
-        public bool Interactable => interactable;
+        public string SceneName => sceneName; // 中文：场景名称
+        public string ScenePath => scenePath; // 中文：场景路径
+        public string DisplayName => displayName; // 中文：显示名称
+        public string Subtitle => subtitle; // 中文：副标题
+        public string Description => description; // 中文：描述
+        public string StatusLabel => statusLabel; // 中文：状态标签
+        public Sprite IconSprite => iconSprite; // 中文：图标精灵
+        public Color AccentColor => accentColor; // 中文：Accent颜色
+        public bool Interactable => interactable; // 中文：可交互
 
 #if UNITY_EDITOR
         public bool SyncSceneReference()
@@ -77,9 +77,9 @@ public sealed class LevelSelectCatalogAsset : ScriptableObject
 #endif
     }
 
-    [SerializeField] private LevelEntry[] levels = Array.Empty<LevelEntry>();
+    [SerializeField, InspectorName("关卡列表")] private LevelEntry[] levels = Array.Empty<LevelEntry>(); // 中文：等级列表
 
-    public LevelEntry[] Levels => levels ?? Array.Empty<LevelEntry>();
+    public LevelEntry[] Levels => levels ?? Array.Empty<LevelEntry>(); // 中文：等级列表
 
 #if UNITY_EDITOR
     public bool SyncSceneReferences()

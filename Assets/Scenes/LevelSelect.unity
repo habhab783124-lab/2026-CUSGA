@@ -172,55 +172,50 @@ MonoBehaviour:
   - sceneAsset: {fileID: 0}
     sceneName: SampleScene
     scenePath: Assets/Scenes/SampleScene.unity
-    displayName: LEVEL 01
-    subtitle: CURRENT TEST ROUTE
-    description: The current playable sample battlefield. Use this as the base mission
-      while the later scenes are still being authored.
-    statusLabel: OPEN
+    displayName: 第一关
+    subtitle: 当前测试路线
+    description: 当前可游玩的样例战场。后续关卡还在制作中时，可以先把这里当作主测试关卡。
+    statusLabel: 可进入
     iconSprite: {fileID: 0}
     accentColor: {r: 1, g: 0.68, b: 0.36, a: 1}
     interactable: 1
   - sceneAsset: {fileID: 0}
     sceneName: Level02
     scenePath: Assets/Scenes/Level02.unity
-    displayName: LEVEL 02
-    subtitle: SECOND FRONT
-    description: A new mission scene prepared for your next map. You can open it
-      directly in the editor and start rebuilding terrain, routes, and decoration.
-    statusLabel: EDIT READY
+    displayName: 第二关
+    subtitle: 第二战线
+    description: 为下一张地图预留的新任务场景。你可以直接在编辑器里打开它，开始重做地形、路线和装饰。
+    statusLabel: 可编辑
     iconSprite: {fileID: 0}
     accentColor: {r: 0.34, g: 0.88, b: 0.96, a: 1}
     interactable: 1
   - sceneAsset: {fileID: 0}
     sceneName: Level03
     scenePath: Assets/Scenes/Level03.unity
-    displayName: LEVEL 03
-    subtitle: OUTER GRID
-    description: Reserved for the third mission layout. The gameplay skeleton is
-      copied over so you can focus on map authoring first.
-    statusLabel: EDIT READY
+    displayName: 第三关
+    subtitle: 外围电网
+    description: 为第三张任务地图预留的场景。玩法骨架已经复制好，你可以优先专注于地图制作。
+    statusLabel: 可编辑
     iconSprite: {fileID: 0}
     accentColor: {r: 0.47, g: 0.96, b: 0.74, a: 1}
     interactable: 1
   - sceneAsset: {fileID: 0}
     sceneName: Level04
     scenePath: Assets/Scenes/Level04.unity
-    displayName: LEVEL 04
-    subtitle: RELAY BREAK
-    description: Reserved for the fourth mission layout. Treat this as another fully
-      editable gameplay scene slot.
-    statusLabel: EDIT READY
+    displayName: 第四关
+    subtitle: 继电断层
+    description: 为第四张任务地图预留的场景。可以把它当作另一个完整可编辑的玩法场景槽位。
+    statusLabel: 可编辑
     iconSprite: {fileID: 0}
     accentColor: {r: 1, g: 0.78, b: 0.43, a: 1}
     interactable: 1
   - sceneAsset: {fileID: 0}
     sceneName: Level05
     scenePath: Assets/Scenes/Level05.unity
-    displayName: LEVEL 05
-    subtitle: FINAL CIRCUIT
-    description: Reserved for the fifth mission layout. Keep this one for your later,
-      more advanced battlefield ideas.
-    statusLabel: EDIT READY
+    displayName: 第五关
+    subtitle: 最终回路
+    description: 为第五张任务地图预留的场景。适合留给后续更复杂、更进阶的战场构想。
+    statusLabel: 可编辑
     iconSprite: {fileID: 0}
     accentColor: {r: 1, g: 0.52, b: 0.41, a: 1}
     interactable: 1
@@ -240,13 +235,12 @@ MonoBehaviour:
   titleFontAsset: {fileID: 0}
   bodyFontAsset: {fileID: 0}
   accentFontAsset: {fileID: 0}
-  titleCopy: MISSION SELECT
-  subtitleCopy: Choose a battlefield scene to edit or play
-  descriptionCopy: The first mission is the current sample scene. The extra four
-    scenes are prepared so you can continue building later maps directly in the Unity
-    editor.
-  backPrimaryCopy: Back
-  backSecondaryCopy: RETURN TO MAIN MENU
+  titleCopy: 关卡选择
+  subtitleCopy: 选择要编辑或游玩的战场场景
+  descriptionCopy: 第一关是当前主测试场景，后面的四个场景已经预留好，方便你直接在
+    Unity 里继续制作后续地图。
+  backPrimaryCopy: 返回
+  backSecondaryCopy: 回到主菜单
   sceneCamera: {fileID: 719106632}
   mainCanvas: {fileID: 1770868145}
   canvasScaler: {fileID: 1770868144}
@@ -397,7 +391,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: SECOND FRONT
+  m_text: 第二战线
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -678,7 +672,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: FINAL CIRCUIT
+  m_text: 最终回路
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -887,7 +881,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: LEVEL 05
+  m_text: 第五关
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1021,7 +1015,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: EDIT READY
+  m_text: 可编辑
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1155,7 +1149,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: EDIT READY
+  m_text: 可编辑
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1289,7 +1283,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: CURRENT TEST ROUTE
+  m_text: 当前测试路线
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1423,8 +1417,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: A new mission scene prepared for your next map. You can open it directly
-    in the editor and start rebuilding terrain, routes, and decoration.
+  m_text: 为下一张地图预留的新任务场景。你可以直接在编辑器里打开它，开始重做地形、路线和装饰。
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1558,7 +1551,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: RETURN TO MAIN MENU
+  m_text: 回到主菜单
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1692,8 +1685,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Reserved for the fourth mission layout. Treat this as another fully editable
-    gameplay scene slot.
+  m_text: 为第四张任务地图预留的场景。可以把它当作另一个完整可编辑的玩法场景槽位。
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2178,7 +2170,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: OPEN
+  m_text: 可进入
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2387,7 +2379,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: LEVEL 01
+  m_text: 第一关
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3172,8 +3164,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Reserved for the third mission layout. The gameplay skeleton is copied
-    over so you can focus on map authoring first.
+  m_text: 为第三张任务地图预留的场景。玩法骨架已经复制好，你可以优先专注于地图制作。
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3454,7 +3445,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: EDIT READY
+  m_text: 可编辑
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3588,7 +3579,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: LEVEL 04
+  m_text: 第四关
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3722,8 +3713,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: The first mission is the current sample scene. The extra four scenes are
-    prepared so you can continue building later maps directly in the Unity editor.
+  m_text: 第一关是当前主测试场景，后面的四个场景已经预留好，方便你直接在 Unity 里继续制作后续地图。
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -3932,7 +3922,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Back
+  m_text: 返回
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -4213,8 +4203,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Reserved for the fifth mission layout. Keep this one for your later, more
-    advanced battlefield ideas.
+  m_text: 为第五张任务地图预留的场景。适合留给后续更复杂、更进阶的战场构想。
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -4423,7 +4412,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: OUTER GRID
+  m_text: 外围电网
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -4632,7 +4621,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: EDIT READY
+  m_text: 可编辑
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -4944,7 +4933,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: LEVEL 03
+  m_text: 第三关
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5078,7 +5067,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: RELAY BREAK
+  m_text: 继电断层
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5212,7 +5201,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: MISSION SELECT
+  m_text: 关卡选择
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5346,8 +5335,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: The current playable sample battlefield. Use this as the base mission while
-    the later scenes are still being authored.
+  m_text: 当前可游玩的样例战场。后续关卡还在制作中时，可以先把这里当作主测试关卡。
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5481,7 +5469,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: LEVEL 02
+  m_text: 第二关
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5737,7 +5725,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Choose a battlefield scene to edit or play
+  m_text: 选择要编辑或游玩的战场场景
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

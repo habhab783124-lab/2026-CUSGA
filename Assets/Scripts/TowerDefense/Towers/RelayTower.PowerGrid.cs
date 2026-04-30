@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
 /// <summary>
@@ -16,18 +16,18 @@ using UnityEngine.EventSystems;
 /// </summary>
 public partial class RelayTower
 {
-    [Header("Supply")]
-    [SerializeField] private float supplyRange = 4.5f;
-    [SerializeField] private int baseSupplyCapacity = 6;
-    [SerializeField] private int supplyCapacityPerUpgrade = 2;
+    [Header("供电")]
+    [SerializeField, InspectorName("供电范围")] private float supplyRange = 4.5f; // 中文：供电范围
+    [SerializeField, InspectorName("基础供电容量")] private int baseSupplyCapacity = 6; // 中文：基础供电容量
+    [SerializeField, InspectorName("每级供电增量")] private int supplyCapacityPerUpgrade = 2; // 中文：供电容量Per升级
 
-    [Header("Progression")]
-    [SerializeField] private int currentLevel = 1;
-    [SerializeField] private int maxLevel = 3;
-    [SerializeField] private int upgradeCostBase = 16;
-    [SerializeField] private int upgradeCostPerLevel = 12;
+    [Header("成长")]
+    [SerializeField, InspectorName("当前等级")] private int currentLevel = 1; // 中文：当前等级
+    [SerializeField, InspectorName("最大等级")] private int maxLevel = 3; // 中文：最大等级
+    [SerializeField, InspectorName("升级基础费用")] private int upgradeCostBase = 16; // 中文：升级费用基础
+    [SerializeField, InspectorName("每级升级增量")] private int upgradeCostPerLevel = 12; // 中文：升级费用Per等级
 
-    [Header("Visual References")]
+    [Header("视觉引用")]
 
     /// <summary>
     /// 继电器的视觉根节点。
@@ -37,7 +37,7 @@ public partial class RelayTower
     /// 后续如果你要给继电器补正式美术、额外装饰或发光层，
     /// 直接围绕这个根节点继续扩展会更清楚。
     /// </summary>
-    [SerializeField] private Transform visualRootReference;
+    [SerializeField, InspectorName("视觉根节点")] private Transform visualRootReference; // 中文：视觉根节点引用
 
     /// <summary>
     /// 当前真正代表继电器本体外观的主渲染器。
@@ -45,25 +45,25 @@ public partial class RelayTower
     /// 如果已经明确指定了 `visualRootReference`，
     /// 这里优先读取那个根节点上的 `SpriteRenderer`。
     /// </summary>
-    [SerializeField] private SpriteRenderer bodyRendererReference;
+    [SerializeField, InspectorName("主体渲染器")] private SpriteRenderer bodyRendererReference; // 中文：主体Renderer引用
 
-    [Header("Visuals")]
-    [SerializeField] private Color normalColor = new Color(1f, 0.85f, 0.2f, 1f);
-    [SerializeField] private Color saturatedColor = new Color(1f, 0.5f, 0.18f, 1f);
-    [SerializeField] private Color gizmoColor = new Color(1f, 0.78f, 0.28f, 0.8f);
+    [Header("视觉")]
+    [SerializeField, InspectorName("正常颜色")] private Color normalColor = new Color(1f, 0.85f, 0.2f, 1f); // 中文：正常颜色
+    [SerializeField, InspectorName("满载颜色")] private Color saturatedColor = new Color(1f, 0.5f, 0.18f, 1f); // 中文：饱和颜色
+    [SerializeField, InspectorName("Gizmo 颜色")] private Color gizmoColor = new Color(1f, 0.78f, 0.28f, 0.8f); // 中文：Gizmo颜色
 
-    private SpriteRenderer _spriteRenderer;
-    private int _currentAssignedLoad;
+    private SpriteRenderer _spriteRenderer; // 中文：精灵Renderer
+    private int _currentAssignedLoad; // 中文：当前已分配加载
 
-    public int RelayNumber { get; private set; } = 100;
-    public int CurrentLevel => Mathf.Max(1, currentLevel);
-    public int MaxLevel => Mathf.Max(1, maxLevel);
-    public int SupplyCapacity => Mathf.Max(0, baseSupplyCapacity + (CurrentLevel - 1) * supplyCapacityPerUpgrade);
-    public float SupplyRange => Mathf.Max(0.1f, supplyRange);
-    public int CurrentAssignedLoad => _currentAssignedLoad;
-    public int RemainingCapacity => Mathf.Max(0, SupplyCapacity - _currentAssignedLoad);
+    public int RelayNumber { get; private set; } = 100; // 中文：继电器Number
+    public int CurrentLevel => Mathf.Max(1, currentLevel); // 中文：当前等级
+    public int MaxLevel => Mathf.Max(1, maxLevel); // 中文：最大等级
+    public int SupplyCapacity => Mathf.Max(0, baseSupplyCapacity + (CurrentLevel - 1) * supplyCapacityPerUpgrade); // 中文：供电容量
+    public float SupplyRange => Mathf.Max(0.1f, supplyRange); // 中文：供电范围
+    public int CurrentAssignedLoad => _currentAssignedLoad; // 中文：当前已分配加载
+    public int RemainingCapacity => Mathf.Max(0, SupplyCapacity - _currentAssignedLoad); // 中文：剩余容量
 
-    public Bounds CoverageBounds =>
+    public Bounds CoverageBounds => // 中文：CoverageBounds
         new Bounds(transform.position, new Vector3(SupplyRange * 2f, SupplyRange * 2f, 0.01f));
 
     private void Awake()
@@ -103,7 +103,7 @@ public partial class RelayTower
         RefreshVisualState();
     }
 
-    public bool CanUpgrade => CurrentLevel < MaxLevel;
+    public bool CanUpgrade => CurrentLevel < MaxLevel; // 中文：能否升级
 
     public int GetUpgradeCost()
     {

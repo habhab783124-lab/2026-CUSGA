@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 /// <summary>
@@ -18,7 +18,7 @@ public sealed class PlacementAreaOverlayRenderer : IDisposable
     /// 略微把采样密度提一点，让边界不会显得太粗糙。
     /// 这里保留的是已经调过性能和视觉平衡后的参数。
     /// </summary>
-    private const float OverlayResolutionScale = 1.1f;
+    private const float OverlayResolutionScale = 1.1f; // 中文：覆盖层Resolution缩放
 
     /// <summary>
     /// 后期部署网络变大后，覆盖层重建的主要风险不再是“边界够不够顺滑”，
@@ -28,28 +28,28 @@ public sealed class PlacementAreaOverlayRenderer : IDisposable
     /// 当扫描范围继续变大时，我们优先主动降低分辨率，
     /// 保证拖拽起手仍然顺，而不是死守同样密度导致后期每次放塔都轻微顿一下。
     /// </summary>
-    private const int MaxOverlayPixelCount = 64000;
+    private const int MaxOverlayPixelCount = 64000; // 中文：最大覆盖层Pixel数量
 
     /// <summary>
     /// 只在“边界像素”上做轻量细采样。
     ///
     /// 这样既能让边界更顺滑，也不会像整图多重采样那样把性能打爆。
     /// </summary>
-    private const int EdgeSupersampleGridSize = 2;
+    private const int EdgeSupersampleGridSize = 2; // 中文：EdgeSupersample电网大小
 
-    private readonly float _pixelsPerUnit;
-    private readonly Color _fillColor;
-    private readonly Color _edgeColor;
-    private readonly int _sortingOrder;
+    private readonly float _pixelsPerUnit; // 中文：pixelsPerUnit
+    private readonly Color _fillColor; // 中文：fill颜色
+    private readonly Color _edgeColor; // 中文：edge颜色
+    private readonly int _sortingOrder; // 中文：sorting顺序
 
-    private GameObject _overlayObject;
-    private SpriteRenderer _spriteRenderer;
-    private Texture2D _overlayTexture;
-    private Sprite _overlaySprite;
-    private bool[] _legalMaskBuffer;
-    private Color[] _pixelBuffer;
-    private int _bufferWidth;
-    private int _bufferHeight;
+    private GameObject _overlayObject; // 中文：覆盖层Object
+    private SpriteRenderer _spriteRenderer; // 中文：精灵Renderer
+    private Texture2D _overlayTexture; // 中文：覆盖层Texture
+    private Sprite _overlaySprite; // 中文：覆盖层精灵
+    private bool[] _legalMaskBuffer; // 中文：合法MaskBuffer
+    private Color[] _pixelBuffer; // 中文：pixelBuffer
+    private int _bufferWidth; // 中文：bufferWidth
+    private int _bufferHeight; // 中文：bufferHeight
 
     public PlacementAreaOverlayRenderer(float pixelsPerUnit, Color fillColor, Color edgeColor, int sortingOrder)
     {

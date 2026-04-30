@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// `EnemyMechanicModule` 是敌人特殊机制组件的统一基类。
@@ -17,14 +17,14 @@ public abstract class EnemyMechanicModule : MonoBehaviour
     /// 当前模块所服务的敌人主体。
     /// 由 `Enemy` 在初始化时统一绑定。
     /// </summary>
-    protected Enemy Owner { get; private set; }
+    protected Enemy Owner { get; private set; } // 中文：归属
 
     /// <summary>
     /// 为了减少每个模块里反复判空，这里统一暴露当前敌人的目录定义。
     /// 如果当前敌人不是按目录驱动初始化的，这里可能为 `null`，
     /// 模块应当把这种情况视为“当前机制不启用”。
     /// </summary>
-    protected EnemyCatalogAsset.EnemyArchetypeDefinition Definition => Owner != null ? Owner.CurrentDefinition : null;
+    protected EnemyCatalogAsset.EnemyArchetypeDefinition Definition => Owner != null ? Owner.CurrentDefinition : null; // 中文：定义
 
     /// <summary>
     /// 由 `Enemy` 在完成自身初始化后调用，通知模块：
@@ -92,11 +92,11 @@ public abstract class EnemyMechanicModule : MonoBehaviour
     /// 默认情况下，敌人是可被直接锁定的。
     /// 只有隐身模块会覆写这条规则。
     /// </summary>
-    public virtual bool CanBeDirectlyTargeted => true;
+    public virtual bool CanBeDirectlyTargeted => true; // 中文：能否BeDirectlyTargeted
 
     /// <summary>
     /// 默认情况下，模块不会额外压低身体透明度。
     /// 只有隐身模块会返回更小的透明度倍率。
     /// </summary>
-    public virtual float BodyAlphaMultiplier => 1f;
+    public virtual float BodyAlphaMultiplier => 1f; // 中文：主体透明度倍率
 }

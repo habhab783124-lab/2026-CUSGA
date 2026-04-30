@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -37,99 +37,99 @@ public class Enemy : MonoBehaviour
         Bombard
     }
 
-    private static readonly List<Enemy> ActiveEnemies = new List<Enemy>();
+    private static readonly List<Enemy> ActiveEnemies = new List<Enemy>(); // 中文：激活敌人列表
 
     [Header("Movement")]
-    [SerializeField] private float reachWaypointDistance = 0.05f;
+    [SerializeField] private float reachWaypointDistance = 0.05f; // 中文：reach路径点Distance
 
     [Header("Body Look")]
-    [SerializeField] private SpriteRenderer bodyRendererReference;
-    [SerializeField] private Transform visualScaleRootReference;
-    [SerializeField] private Color bodyColor = new Color(0.9f, 0.25f, 0.25f, 1f);
-    [SerializeField] private Color shieldTintColor = new Color(0.42f, 0.9f, 1f, 1f);
-    [SerializeField] private Color slowTintColor = new Color(0.42f, 0.95f, 0.9f, 1f);
-    [SerializeField] private Color standardHitFlashColor = new Color(1f, 0.96f, 0.9f, 1f);
-    [SerializeField] private Color bombardHitFlashColor = new Color(1f, 0.74f, 0.45f, 1f);
+    [SerializeField] private SpriteRenderer bodyRendererReference; // 中文：主体Renderer引用
+    [SerializeField] private Transform visualScaleRootReference; // 中文：视觉缩放根节点引用
+    [SerializeField] private Color bodyColor = new Color(0.9f, 0.25f, 0.25f, 1f); // 中文：主体颜色
+    [SerializeField] private Color shieldTintColor = new Color(0.42f, 0.9f, 1f, 1f); // 中文：护盾Tint颜色
+    [SerializeField] private Color slowTintColor = new Color(0.42f, 0.95f, 0.9f, 1f); // 中文：减速Tint颜色
+    [SerializeField] private Color standardHitFlashColor = new Color(1f, 0.96f, 0.9f, 1f); // 中文：standardHit闪光颜色
+    [SerializeField] private Color bombardHitFlashColor = new Color(1f, 0.74f, 0.45f, 1f); // 中文：炸弹Hit闪光颜色
 
     [Header("Body Feedback Timing")]
-    [SerializeField] private float standardHitFlashDuration = 0.08f;
-    [SerializeField] private float bombardHitFlashDuration = 0.16f;
-    [SerializeField] private float slowFeedbackFlashDuration = 0.1f;
-    [SerializeField] private float standardHitPulseScale = 1.05f;
-    [SerializeField] private float bombardHitPulseScale = 1.13f;
-    [SerializeField] private float slowHitPulseScale = 1.04f;
-    [SerializeField] private float hitPulseDuration = 0.12f;
+    [SerializeField] private float standardHitFlashDuration = 0.08f; // 中文：standardHit闪光持续时间
+    [SerializeField] private float bombardHitFlashDuration = 0.16f; // 中文：炸弹Hit闪光持续时间
+    [SerializeField] private float slowFeedbackFlashDuration = 0.1f; // 中文：减速反馈闪光持续时间
+    [SerializeField] private float standardHitPulseScale = 1.05f; // 中文：standardHit脉冲缩放
+    [SerializeField] private float bombardHitPulseScale = 1.13f; // 中文：炸弹Hit脉冲缩放
+    [SerializeField] private float slowHitPulseScale = 1.04f; // 中文：减速Hit脉冲缩放
+    [SerializeField] private float hitPulseDuration = 0.12f; // 中文：hit脉冲持续时间
 
     [Header("Health Bar Visuals")]
-    [SerializeField] private Color healthBarFillColor = new Color(0.2f, 0.9f, 0.35f, 1f);
-    [SerializeField] private Color healthBarShieldColor = new Color(0.44f, 0.9f, 1f, 1f);
-    [SerializeField] private Color healthBarBackgroundColor = new Color(0.15f, 0.15f, 0.15f, 1f);
-    [SerializeField] private Sprite healthBarFillSpriteOverride;
-    [SerializeField] private Sprite healthBarBackgroundSpriteOverride;
+    [SerializeField] private Color healthBarFillColor = new Color(0.2f, 0.9f, 0.35f, 1f); // 中文：生命BarFill颜色
+    [SerializeField] private Color healthBarShieldColor = new Color(0.44f, 0.9f, 1f, 1f); // 中文：生命Bar护盾颜色
+    [SerializeField] private Color healthBarBackgroundColor = new Color(0.15f, 0.15f, 0.15f, 1f); // 中文：生命Bar背景颜色
+    [SerializeField] private Sprite healthBarFillSpriteOverride; // 中文：生命BarFill精灵覆盖
+    [SerializeField] private Sprite healthBarBackgroundSpriteOverride; // 中文：生命Bar背景精灵覆盖
 
     [Header("Health Bar References")]
-    [SerializeField] private Transform healthBarRootReference;
-    [SerializeField] private Transform healthBarFillReference;
-    [SerializeField] private SpriteRenderer healthBarFillRendererReference;
-    [SerializeField] private SpriteRenderer healthBarBackgroundRendererReference;
+    [SerializeField] private Transform healthBarRootReference; // 中文：生命Bar根节点引用
+    [SerializeField] private Transform healthBarFillReference; // 中文：生命BarFill引用
+    [SerializeField] private SpriteRenderer healthBarFillRendererReference; // 中文：生命BarFillRenderer引用
+    [SerializeField] private SpriteRenderer healthBarBackgroundRendererReference; // 中文：生命Bar背景Renderer引用
 
-    private SpriteRenderer _spriteRenderer;
-    private Transform _healthBarRoot;
-    private Transform _healthBarFill;
-    private SpriteRenderer _healthBarFillRenderer;
-    private SpriteRenderer _healthBarBackgroundRenderer;
-    private EnemyMechanicModule[] _mechanicModules = new EnemyMechanicModule[0];
-    private EnemyStealthModule _stealthModule;
+    private SpriteRenderer _spriteRenderer; // 中文：精灵Renderer
+    private Transform _healthBarRoot; // 中文：生命Bar根节点
+    private Transform _healthBarFill; // 中文：生命BarFill
+    private SpriteRenderer _healthBarFillRenderer; // 中文：生命BarFillRenderer
+    private SpriteRenderer _healthBarBackgroundRenderer; // 中文：生命Bar背景Renderer
+    private EnemyMechanicModule[] _mechanicModules = new EnemyMechanicModule[0]; // 中文：机制模块列表
+    private EnemyStealthModule _stealthModule; // 中文：隐身模块
 
-    private EnemyPath _path;
-    private EnemyCatalogAsset _enemyCatalog;
-    private EnemyCatalogAsset.EnemyArchetypeDefinition _definition;
-    private GameObject _enemyPrototypePrefab;
-    private Transform _enemyRoot;
+    private EnemyPath _path; // 中文：路径
+    private EnemyCatalogAsset _enemyCatalog; // 中文：敌人目录
+    private EnemyCatalogAsset.EnemyArchetypeDefinition _definition; // 中文：定义
+    private GameObject _enemyPrototypePrefab; // 中文：敌人原型预制体
+    private Transform _enemyRoot; // 中文：敌人根节点
 
-    private float _moveSpeed;
-    private float _slowMultiplier = 1f;
-    private float _slowTimer;
-    private int _maxHealth;
-    private int _currentHealth;
-    private int _currentShield;
-    private int _scrapRewardOnDeath;
-    private int _baseDamageToBase = 1;
-    private int _targetWaypointIndex;
-    private bool _hasReachedBase;
+    private float _moveSpeed; // 中文：move速度
+    private float _slowMultiplier = 1f; // 中文：减速倍率
+    private float _slowTimer; // 中文：减速计时器
+    private int _maxHealth; // 中文：最大生命
+    private int _currentHealth; // 中文：当前生命
+    private int _currentShield; // 中文：当前护盾
+    private int _scrapRewardOnDeath; // 中文：废料RewardOn死亡
+    private int _baseDamageToBase = 1; // 中文：基础伤害到基础
+    private int _targetWaypointIndex; // 中文：目标路径点Index
+    private bool _hasReachedBase; // 中文：是否有Reached基础
 
-    private EnemyArmorTier _armorTier = EnemyArmorTier.None;
-    private float _nonPiercingDamageMultiplier = 1f;
-    private bool _ignoresSlowEffects;
-    private bool _canBeRepairedByMechanic;
+    private EnemyArmorTier _armorTier = EnemyArmorTier.None; // 中文：armorTier
+    private float _nonPiercingDamageMultiplier = 1f; // 中文：nonPiercing伤害倍率
+    private bool _ignoresSlowEffects; // 中文：ignores减速Effects
+    private bool _canBeRepairedByMechanic; // 中文：能否BeRepairedBy机制
 
-    private Vector3 _nativeScale = Vector3.one;
-    private Vector3 _configuredScale = Vector3.one;
-    private float _bodyScaleMultiplier = 1f;
-    private float _hitFlashTimer;
-    private float _hitFlashDuration;
-    private Color _hitFlashColor = Color.white;
-    private float _pulseTimer;
-    private float _pulseDuration;
-    private float _pulseScaleMultiplier = 1f;
+    private Vector3 _nativeScale = Vector3.one; // 中文：native缩放
+    private Vector3 _configuredScale = Vector3.one; // 中文：configured缩放
+    private float _bodyScaleMultiplier = 1f; // 中文：主体缩放倍率
+    private float _hitFlashTimer; // 中文：hit闪光计时器
+    private float _hitFlashDuration; // 中文：hit闪光持续时间
+    private Color _hitFlashColor = Color.white; // 中文：hit闪光颜色
+    private float _pulseTimer; // 中文：脉冲计时器
+    private float _pulseDuration; // 中文：脉冲持续时间
+    private float _pulseScaleMultiplier = 1f; // 中文：脉冲缩放倍率
 
-    public static int ActiveEnemyCount => ActiveEnemies.Count;
+    public static int ActiveEnemyCount => ActiveEnemies.Count; // 中文：激活敌人数量
 
     public static Enemy GetActiveEnemy(int index)
     {
         return ActiveEnemies[index];
     }
 
-    public EnemyArchetypeId ArchetypeId => _definition != null ? _definition.ArchetypeId : EnemyArchetypeId.None;
-    public bool CanBeDirectlyTargeted => _stealthModule == null || _stealthModule.CanBeDirectlyTargeted;
-    public int CurrentHealth => _currentHealth;
-    public int MaxHealth => _maxHealth;
-    public bool IsAlive => _currentHealth > 0;
-    public bool CanReceiveMechanicRepair => _canBeRepairedByMechanic && _currentHealth > 0;
-    internal EnemyCatalogAsset.EnemyArchetypeDefinition CurrentDefinition => _definition;
-    internal EnemyPath CurrentPath => _path;
-    internal Transform EnemyRoot => _enemyRoot;
-    internal int CurrentWaypointIndex => _targetWaypointIndex;
+    public EnemyArchetypeId ArchetypeId => _definition != null ? _definition.ArchetypeId : EnemyArchetypeId.None; // 中文：原型类别标识
+    public bool CanBeDirectlyTargeted => _stealthModule == null || _stealthModule.CanBeDirectlyTargeted; // 中文：能否BeDirectlyTargeted
+    public int CurrentHealth => _currentHealth; // 中文：当前生命
+    public int MaxHealth => _maxHealth; // 中文：最大生命
+    public bool IsAlive => _currentHealth > 0; // 中文：是否Alive
+    public bool CanReceiveMechanicRepair => _canBeRepairedByMechanic && _currentHealth > 0; // 中文：能否Receive机制修理
+    internal EnemyCatalogAsset.EnemyArchetypeDefinition CurrentDefinition => _definition; // 中文：当前定义
+    internal EnemyPath CurrentPath => _path; // 中文：当前路径
+    internal Transform EnemyRoot => _enemyRoot; // 中文：敌人根节点
+    internal int CurrentWaypointIndex => _targetWaypointIndex; // 中文：当前路径点Index
 
     public void SetHealthBarVisible(bool visible)
     {

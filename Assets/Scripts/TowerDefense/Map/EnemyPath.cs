@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -26,37 +26,37 @@ using UnityEngine;
 [ExecuteAlways]
 public class EnemyPath : MonoBehaviour
 {
-    private const string WaypointRootName = "Waypoints";
-    private const string ReadabilityRootName = "__PathReadability";
+    private const string WaypointRootName = "Waypoints"; // 中文：路径点根节点名称
+    private const string ReadabilityRootName = "__PathReadability"; // 中文：可读性根节点名称
 
     [Header("Waypoint Authoring")]
     [Tooltip("可选的路径点根节点。指定后，只有这棵根下面的直接子物体会被当作真正路线点。")]
-    [SerializeField] private Transform waypointRootReference;
+    [SerializeField] private Transform waypointRootReference; // 中文：路径点根节点引用
     [Tooltip("如果还没显式拖路径点根，就尝试按约定名字自动找到名为 `Waypoints` 的子节点。")]
-    [SerializeField] private bool autoFindWaypointRoot = true;
+    [SerializeField] private bool autoFindWaypointRoot = true; // 中文：自动查找路径点根节点
 
     [Header("Readability Overlay")]
-    [SerializeField] private bool showReadabilityOverlay = true;
-    [SerializeField] private bool proceduralReadabilityOverlay = true;
-    [SerializeField] private bool autoCreateReadabilityRoot = true;
-    [SerializeField] private Transform readabilityRootReference;
-    [SerializeField] private Material readabilityMaterialOverride;
-    [SerializeField] private Color routeLineColor = new Color(1f, 0.62f, 0.26f, 0.92f);
-    [SerializeField] private Color routeArrowColor = new Color(1f, 0.93f, 0.72f, 0.96f);
-    [SerializeField] private Color hotspotColor = new Color(1f, 0.52f, 0.26f, 0.92f);
-    [SerializeField] private float routeLineWidth = 0.22f;
-    [SerializeField] private float arrowSpacing = 1.8f;
-    [SerializeField] private float arrowSize = 0.38f;
-    [SerializeField] private float hotspotRadius = 0.42f;
-    [SerializeField] private float turnHotspotThreshold = 20f;
-    [SerializeField] private int readabilitySortingOrder = 2;
+    [SerializeField] private bool showReadabilityOverlay = true; // 中文：显示可读性覆盖层
+    [SerializeField] private bool proceduralReadabilityOverlay = true; // 中文：程序化可读性覆盖层
+    [SerializeField] private bool autoCreateReadabilityRoot = true; // 中文：自动创建可读性根节点
+    [SerializeField] private Transform readabilityRootReference; // 中文：可读性根节点引用
+    [SerializeField] private Material readabilityMaterialOverride; // 中文：可读性材质覆盖
+    [SerializeField] private Color routeLineColor = new Color(1f, 0.62f, 0.26f, 0.92f); // 中文：路线线颜色
+    [SerializeField] private Color routeArrowColor = new Color(1f, 0.93f, 0.72f, 0.96f); // 中文：路线Arrow颜色
+    [SerializeField] private Color hotspotColor = new Color(1f, 0.52f, 0.26f, 0.92f); // 中文：hotspot颜色
+    [SerializeField] private float routeLineWidth = 0.22f; // 中文：路线线Width
+    [SerializeField] private float arrowSpacing = 1.8f; // 中文：arrow间距
+    [SerializeField] private float arrowSize = 0.38f; // 中文：arrow大小
+    [SerializeField] private float hotspotRadius = 0.42f; // 中文：hotspot半径
+    [SerializeField] private float turnHotspotThreshold = 20f; // 中文：turnHotspotThreshold
+    [SerializeField] private int readabilitySortingOrder = 2; // 中文：可读性Sorting顺序
 
     /// <summary>
     /// 运行时是否允许显示路线辅助层。
     /// 在编辑器模式下我们仍然默认显示，方便继续调路径；
     /// 在 Play 模式下则由 `WaveSpawner` 控制显隐。
     /// </summary>
-    private bool _runtimeReadabilityVisible = true;
+    private bool _runtimeReadabilityVisible = true; // 中文：运行时可读性Visible
 
     /// <summary>
     /// 当前路径上缓存的所有路径点。
@@ -64,7 +64,7 @@ public class EnemyPath : MonoBehaviour
     /// 它们来自该对象的直接子节点，顺序与 Hierarchy 中的排列顺序一致。
     /// 敌人会按照这个列表依次移动。
     /// </summary>
-    private readonly List<Transform> _waypoints = new List<Transform>();
+    private readonly List<Transform> _waypoints = new List<Transform>(); // 中文：路径点列表
 
     /// <summary>
     /// 路线的本地坐标缓存。
@@ -73,15 +73,15 @@ public class EnemyPath : MonoBehaviour
     /// 因为表现层根节点也会挂在 `EnemyPath` 下面，
     /// 所以本地坐标能直接拿来做折线、箭头和热点的局部摆放。
     /// </summary>
-    private readonly List<Vector3> _localRoutePoints = new List<Vector3>();
+    private readonly List<Vector3> _localRoutePoints = new List<Vector3>(); // 中文：本地路线点列表
 
-    private int _lastReadabilityHash;
+    private int _lastReadabilityHash; // 中文：last可读性Hash
 
     /// <summary>
     /// 当前路径点数量。
     /// </summary>
-    public int WaypointCount => _waypoints.Count;
-    public Transform WaypointRoot => waypointRootReference;
+    public int WaypointCount => _waypoints.Count; // 中文：路径点数量
+    public Transform WaypointRoot => waypointRootReference; // 中文：路径点根节点
 
     /// <summary>
     /// 在运行时初始化路径点缓存和路径表现。
@@ -604,7 +604,7 @@ public class EnemyPath : MonoBehaviour
 /// </summary>
 public static class BattlefieldReadabilityVisualUtility
 {
-    private static Material s_sharedLineMaterial;
+    private static Material s_sharedLineMaterial; // 中文：shared线材质
 
     /// <summary>
     /// 确保某个父节点下存在一个指定名字的子节点。

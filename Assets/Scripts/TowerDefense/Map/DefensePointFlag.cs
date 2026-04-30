@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// `DefensePointFlag` 表示地图中的一个防御点旗帜。
@@ -15,35 +15,35 @@ using UnityEngine;
 [ExecuteAlways]
 public sealed class DefensePointFlag : MonoBehaviour
 {
-    private const string ReadabilityRootName = "__DefensePointReadability";
+    private const string ReadabilityRootName = "__DefensePointReadability"; // 中文：可读性根节点名称
 
     [Header("Identity")]
-    [SerializeField] private string pointId = "Core";
-    [SerializeField] private string displayName = "Defense Point";
+    [SerializeField] private string pointId = "Core"; // 中文：点标识
+    [SerializeField] private string displayName = "Defense Point"; // 中文：显示名称
 
     [Header("Readability Visual")]
-    [SerializeField] private bool showReadabilityMarker = true;
-    [SerializeField] private bool proceduralReadabilityMarker = true;
-    [SerializeField] private bool autoCreateReadabilityRoot = true;
-    [SerializeField] private Transform readabilityRootReference;
-    [SerializeField] private Material readabilityMaterialOverride;
-    [SerializeField] private Color coreColor = new Color(0.2f, 0.95f, 1f, 0.98f);
-    [SerializeField] private Color defenseZoneColor = new Color(0.72f, 1f, 0.98f, 0.92f);
-    [SerializeField] private float coreRingRadius = 0.42f;
-    [SerializeField] private float defenseZoneRadius = 1.2f;
-    [SerializeField] private float frameHalfSize = 0.56f;
-    [SerializeField] private float frameCornerLength = 0.22f;
-    [SerializeField] private int readabilitySortingOrder = 6;
+    [SerializeField] private bool showReadabilityMarker = true; // 中文：显示可读性标记
+    [SerializeField] private bool proceduralReadabilityMarker = true; // 中文：程序化可读性标记
+    [SerializeField] private bool autoCreateReadabilityRoot = true; // 中文：自动创建可读性根节点
+    [SerializeField] private Transform readabilityRootReference; // 中文：可读性根节点引用
+    [SerializeField] private Material readabilityMaterialOverride; // 中文：可读性材质覆盖
+    [SerializeField] private Color coreColor = new Color(0.2f, 0.95f, 1f, 0.98f); // 中文：核心颜色
+    [SerializeField] private Color defenseZoneColor = new Color(0.72f, 1f, 0.98f, 0.92f); // 中文：防御区域颜色
+    [SerializeField] private float coreRingRadius = 0.42f; // 中文：核心圆环半径
+    [SerializeField] private float defenseZoneRadius = 1.2f; // 中文：防御区域半径
+    [SerializeField] private float frameHalfSize = 0.56f; // 中文：边框Half大小
+    [SerializeField] private float frameCornerLength = 0.22f; // 中文：边框CornerLength
+    [SerializeField] private int readabilitySortingOrder = 6; // 中文：可读性Sorting顺序
 
     [Header("Scene Gizmo")]
-    [SerializeField] private Color gizmoColor = new Color(0.15f, 0.9f, 1f, 1f);
-    [SerializeField] private float gizmoRadius = 0.35f;
+    [SerializeField] private Color gizmoColor = new Color(0.15f, 0.9f, 1f, 1f); // 中文：Gizmo颜色
+    [SerializeField] private float gizmoRadius = 0.35f; // 中文：Gizmo半径
 
-    private int _lastReadabilityHash;
+    private int _lastReadabilityHash; // 中文：last可读性Hash
 
-    public string PointId => string.IsNullOrWhiteSpace(pointId) ? name : pointId;
-    public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? PointId : displayName;
-    public Vector3 WorldPosition => transform.position;
+    public string PointId => string.IsNullOrWhiteSpace(pointId) ? name : pointId; // 中文：点标识
+    public string DisplayName => string.IsNullOrWhiteSpace(displayName) ? PointId : displayName; // 中文：显示名称
+    public Vector3 WorldPosition => transform.position; // 中文：世界位置
 
     /// <summary>
     /// 给编辑器作者工作流一个显式刷新入口。

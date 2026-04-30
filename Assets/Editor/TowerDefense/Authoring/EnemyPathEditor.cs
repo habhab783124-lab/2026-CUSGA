@@ -1,4 +1,4 @@
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
@@ -14,7 +14,7 @@ namespace TowerDefense.Editor
     [CustomEditor(typeof(EnemyPath))]
     public sealed class EnemyPathEditor : UnityEditor.Editor
     {
-        private SerializedProperty _waypointRootReferenceProperty;
+        private SerializedProperty _waypointRootReferenceProperty; // 中文：路径点根节点引用Property
 
         private void OnEnable()
         {
@@ -29,17 +29,17 @@ namespace TowerDefense.Editor
 
             string waypointRootName = enemyPath.WaypointRoot != null ? enemyPath.WaypointRoot.name : "(Direct Children)";
             bool proceduralOverlay = serializedObject.FindProperty("proceduralReadabilityOverlay")?.boolValue ?? true;
-            string readabilityMode = proceduralOverlay ? "Procedural Overlay" : "Authored Root Only";
-            EditorGUILayout.HelpBox($"Waypoint Count: {enemyPath.WaypointCount}\nWaypoint Root: {waypointRootName}\nReadability Mode: {readabilityMode}", MessageType.Info);
+            string readabilityMode = proceduralOverlay ? "程序化覆盖层" : "仅使用作者根节点";
+            EditorGUILayout.HelpBox($"路径点数量：{enemyPath.WaypointCount}\n路径点根节点：{waypointRootName}\n可读性模式：{readabilityMode}", MessageType.Info);
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Assign / Create Waypoints Root"))
+            if (GUILayout.Button("指定 / 创建 Waypoints 根节点"))
             {
                 AssignOrCreateWaypointRoot(enemyPath);
                 serializedObject.Update();
             }
 
-            if (GUILayout.Button("Refresh Path Visuals"))
+            if (GUILayout.Button("刷新路径表现"))
             {
                 enemyPath.EditorRefreshAuthoringState();
                 EditorUtility.SetDirty(enemyPath);
@@ -59,7 +59,7 @@ namespace TowerDefense.Editor
             if (existingRoot == null)
             {
                 GameObject rootObject = new GameObject("Waypoints");
-                Undo.RegisterCreatedObjectUndo(rootObject, "Create Waypoints Root");
+                Undo.RegisterCreatedObjectUndo(rootObject, "创建 Waypoints 根节点");
                 existingRoot = rootObject.transform;
                 existingRoot.SetParent(enemyPath.transform, false);
                 existingRoot.localPosition = Vector3.zero;
@@ -75,7 +75,7 @@ namespace TowerDefense.Editor
                     continue;
                 }
 
-                Undo.SetTransformParent(child, existingRoot, "Move Path Waypoint Under Waypoints Root");
+                Undo.SetTransformParent(child, existingRoot, "把路径点移入 Waypoints 根节点");
             }
 
             _waypointRootReferenceProperty.objectReferenceValue = existingRoot;

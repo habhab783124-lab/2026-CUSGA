@@ -1,4 +1,4 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -36,7 +36,7 @@ public class TowerShopCard : MonoBehaviour,
     /// 不再根据对象名去猜是发电机还是炮塔。
     /// 这样后续就算你改卡片对象名，也不会把功能改坏。
     /// </summary>
-    [SerializeField] private TowerType towerType = TowerType.None;
+    [SerializeField] private TowerType towerType = TowerType.None; // 中文：塔类型
 
     /// <summary>
     /// 鼠标悬停在卡片上时显示的提示语。
@@ -45,7 +45,7 @@ public class TowerShopCard : MonoBehaviour,
     /// - 当前卡片代表什么建筑。
     /// - 拖拽后会看到什么反馈。
     /// </summary>
-    [SerializeField] private string hoverHint = "Drag the card to preview exact legal areas. Your first structure starts in the starter zone.";
+    [SerializeField] private string hoverHint = "拖拽卡片可预览精确合法区域。你的第一座建筑必须从起始区开始部署。"; // 中文：悬停提示
 
     [Header("Card Visual Refs")]
 
@@ -55,21 +55,21 @@ public class TowerShopCard : MonoBehaviour,
     /// 这里优先支持显式 Inspector 引用；
     /// 如果暂时没拖，脚本会先回退到按钮本体上的 `Image`。
     /// </summary>
-    [SerializeField] private Image backgroundImageReference;
+    [SerializeField] private Image backgroundImageReference; // 中文：背景Image引用
 
     /// <summary>
     /// 卡片主图标。
     ///
     /// 这让“卡片用什么图标”从场景零散子节点，变成一个更明确的替换入口。
     /// </summary>
-    [SerializeField] private Image iconImageReference;
+    [SerializeField] private Image iconImageReference; // 中文：图标Image引用
 
     /// <summary>
     /// 卡片主文本引用。
     /// 这样卡片自己的文案入口就能继续留在卡片组件上，
     /// 方便直接在 Inspector 中确认和替换，而不是让别的系统跨层级去猜。
     /// </summary>
-    [SerializeField] private TMP_Text labelTextReference;
+    [SerializeField] private TMP_Text labelTextReference; // 中文：标签文本引用
 
     /// <summary>
     /// 卡片上的强调图形。
@@ -82,7 +82,7 @@ public class TowerShopCard : MonoBehaviour,
     /// 这些元素通常不需要逐个写逻辑，
     /// 但它们的颜色最好能跟着塔定义统一切换。
     /// </summary>
-    [SerializeField] private Graphic[] accentGraphicReferences = new Graphic[0];
+    [SerializeField] private Graphic[] accentGraphicReferences = new Graphic[0]; // 中文：accentGraphic引用
 
     [Header("Drag Feedback")]
 
@@ -91,14 +91,14 @@ public class TowerShopCard : MonoBehaviour,
     ///
     /// 这样做是为了让玩家看见“手里抓着卡”，同时又不会完全挡住地图。
     /// </summary>
-    [SerializeField] private float draggingAlpha = 0.82f;
+    [SerializeField] private float draggingAlpha = 0.82f; // 中文：dragging透明度
 
     /// <summary>
     /// 拖拽进行时，卡片本体缩放倍率。
     ///
     /// 略微缩小一点可以让“卡片已经被抓起”这件事更明显。
     /// </summary>
-    [SerializeField] private float draggingScaleMultiplier = 0.98f;
+    [SerializeField] private float draggingScaleMultiplier = 0.98f; // 中文：dragging缩放倍率
 
     [Header("Idle Motion")]
 
@@ -108,36 +108,36 @@ public class TowerShopCard : MonoBehaviour,
     /// 这类轻微缩放主要用于告诉玩家：
     /// “这张卡当前正处于可交互状态”。
     /// </summary>
-    [SerializeField] private float hoverScaleMultiplier = 1.035f;
+    [SerializeField] private float hoverScaleMultiplier = 1.035f; // 中文：悬停缩放倍率
 
     /// <summary>
     /// 悬停脉冲的速度。
     ///
     /// 数值越大，卡片在悬停时的呼吸感越明显。
     /// </summary>
-    [SerializeField] private float hoverPulseSpeed = 4.2f;
+    [SerializeField] private float hoverPulseSpeed = 4.2f; // 中文：悬停脉冲速度
 
     /// <summary>
     /// 悬停脉冲的幅度。
     ///
     /// 这里保持很小，是为了让卡片更灵动，而不是变成夸张跳动的 UI。
     /// </summary>
-    [SerializeField] private float hoverPulseAmplitude = 0.02f;
+    [SerializeField] private float hoverPulseAmplitude = 0.02f; // 中文：悬停脉冲Amplitude
 
     /// <summary>
     /// 控制卡片透明度和射线拦截状态的 `CanvasGroup` 缓存。
     /// </summary>
-    private CanvasGroup _canvasGroup;
+    private CanvasGroup _canvasGroup; // 中文：画布Group
 
     /// <summary>
     /// 卡片初始缩放，用于在悬停和拖拽结束后恢复原状。
     /// </summary>
-    private Vector3 _originalScale;
+    private Vector3 _originalScale; // 中文：original缩放
 
     /// <summary>
     /// 当前这张卡是否已经进入“正式拖拽放置”状态。
     /// </summary>
-    private bool _isDragging;
+    private bool _isDragging; // 中文：是否Dragging
 
     /// <summary>
     /// 记录“Unity 已经进入拖拽手势，但我们还没真正启动放置拖拽链”的过渡状态。
@@ -149,16 +149,16 @@ public class TowerShopCard : MonoBehaviour,
     ///
     /// 这样可以避免第一次只是轻微点按或抖动时，就在地图中央提前实例化一个不跟手的预览塔。
     /// </summary>
-    private bool _isAwaitingPlacementDragStart;
+    private bool _isAwaitingPlacementDragStart; // 中文：是否Awaiting放置拖拽开始
 
     /// <summary>
     /// 当前鼠标是否悬停在卡片上。
     ///
     /// `Update()` 会根据这个状态驱动轻量缩放和呼吸动画。
     /// </summary>
-    private bool _isPointerOver;
+    private bool _isPointerOver; // 中文：是否Pointer结束
 
-    public TMP_Text LabelText => labelTextReference;
+    public TMP_Text LabelText => labelTextReference; // 中文：标签文本
 
     /// <summary>
     /// 缓存并补齐运行时需要的 UI 组件引用。

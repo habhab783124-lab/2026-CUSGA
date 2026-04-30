@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -40,11 +40,11 @@ public readonly struct HudNoticeEntry
         Tone = ResolveTone(Message, tone);
     }
 
-    public string Message { get; }
+    public string Message { get; } // 中文：消息
 
-    public HudNoticeTone Tone { get; }
+    public HudNoticeTone Tone { get; } // 中文：Tone
 
-    public bool HasMessage => !string.IsNullOrWhiteSpace(Message);
+    public bool HasMessage => !string.IsNullOrWhiteSpace(Message); // 中文：是否有消息
 
     private static HudNoticeTone ResolveTone(string message, HudNoticeTone requestedTone)
     {
@@ -128,29 +128,29 @@ public readonly struct TowerDefenseHudState
         RecentHudNotices = recentHudNotices ?? Array.Empty<HudNoticeEntry>();
     }
 
-    public int CurrentScrap { get; }
+    public int CurrentScrap { get; } // 中文：当前废料
 
-    public int CurrentBaseHealth { get; }
+    public int CurrentBaseHealth { get; } // 中文：当前基础生命
 
-    public int CurrentWave { get; }
+    public int CurrentWave { get; } // 中文：当前波次
 
-    public int TotalWaves { get; }
+    public int TotalWaves { get; } // 中文：总波次列表
 
-    public TowerType SelectedTowerType { get; }
+    public TowerType SelectedTowerType { get; } // 中文：选中塔类型
 
-    public bool IsPlacementDragActive { get; }
+    public bool IsPlacementDragActive { get; } // 中文：是否放置拖拽激活
 
-    public TowerType DragTowerType { get; }
+    public TowerType DragTowerType { get; } // 中文：拖拽塔类型
 
-    public PlacedStructureHudState PlacedStructureState { get; }
+    public PlacedStructureHudState PlacedStructureState { get; } // 中文：已放置Structure状态
 
-    public PowerGridHudSnapshot PowerGridSnapshot { get; }
+    public PowerGridHudSnapshot PowerGridSnapshot { get; } // 中文：供电电网Snapshot
 
-    public string CurrentStatusMessage { get; }
+    public string CurrentStatusMessage { get; } // 中文：当前状态消息
 
-    public HudNoticeEntry TransientNotice { get; }
+    public HudNoticeEntry TransientNotice { get; } // 中文：Transient提示
 
-    public HudNoticeEntry[] RecentHudNotices { get; }
+    public HudNoticeEntry[] RecentHudNotices { get; } // 中文：近期HUD提示列表
 }
 
 public readonly struct PlacedStructureHudState
@@ -162,9 +162,9 @@ public readonly struct PlacedStructureHudState
         Details = details ?? string.Empty;
     }
 
-    public bool HasSelection { get; }
-    public string Title { get; }
-    public string Details { get; }
+    public bool HasSelection { get; } // 中文：是否有Selection
+    public string Title { get; } // 中文：标题
+    public string Details { get; } // 中文：Details
 }
 
 /// <summary>
@@ -187,11 +187,11 @@ public readonly struct TowerDragPreviewState
         InvalidReason = invalidReason ?? string.Empty;
     }
 
-    public TowerType TowerType { get; }
+    public TowerType TowerType { get; } // 中文：塔类型
 
-    public bool IsValid { get; }
+    public bool IsValid { get; } // 中文：是否有效
 
-    public string InvalidReason { get; }
+    public string InvalidReason { get; } // 中文：无效原因
 }
 
 /// <summary>
@@ -248,27 +248,27 @@ public readonly struct TowerDefenseHudTheme
         DragPreviewPanelOffset = dragPreviewPanelOffset;
     }
 
-    public Color MetricLabelColor { get; }
-    public Color ScrapValueColor { get; }
-    public Color BaseValueColor { get; }
-    public Color WaveValueColor { get; }
-    public Color CardTextColor { get; }
-    public Color SecondaryInfoColor { get; }
-    public Color StatusTextColor { get; }
-    public Color NeutralNoticeColor { get; }
-    public Color PositiveNoticeColor { get; }
-    public Color SpendingNoticeColor { get; }
-    public Color WarningNoticeColor { get; }
-    public Color DangerNoticeColor { get; }
-    public Color DragPreviewInfoColor { get; }
-    public Color DragPreviewValidColor { get; }
-    public Color DragPreviewInvalidColor { get; }
-    public Vector4 CardLabelMargin { get; }
-    public float CardLabelCharacterSpacing { get; }
-    public float CardLabelLineSpacing { get; }
-    public Vector2 DragPreviewPanelOffset { get; }
+    public Color MetricLabelColor { get; } // 中文：指标标签颜色
+    public Color ScrapValueColor { get; } // 中文：废料Value颜色
+    public Color BaseValueColor { get; } // 中文：基础Value颜色
+    public Color WaveValueColor { get; } // 中文：波次Value颜色
+    public Color CardTextColor { get; } // 中文：卡片文本颜色
+    public Color SecondaryInfoColor { get; } // 中文：副Info颜色
+    public Color StatusTextColor { get; } // 中文：状态文本颜色
+    public Color NeutralNoticeColor { get; } // 中文：中性提示颜色
+    public Color PositiveNoticeColor { get; } // 中文：正向提示颜色
+    public Color SpendingNoticeColor { get; } // 中文：消耗提示颜色
+    public Color WarningNoticeColor { get; } // 中文：警告提示颜色
+    public Color DangerNoticeColor { get; } // 中文：危险提示颜色
+    public Color DragPreviewInfoColor { get; } // 中文：拖拽预览Info颜色
+    public Color DragPreviewValidColor { get; } // 中文：拖拽预览有效颜色
+    public Color DragPreviewInvalidColor { get; } // 中文：拖拽预览无效颜色
+    public Vector4 CardLabelMargin { get; } // 中文：卡片标签Margin
+    public float CardLabelCharacterSpacing { get; } // 中文：卡片标签Character间距
+    public float CardLabelLineSpacing { get; } // 中文：卡片标签线间距
+    public Vector2 DragPreviewPanelOffset { get; } // 中文：拖拽预览面板偏移
 
-    public static TowerDefenseHudTheme Default => new TowerDefenseHudTheme(
+    public static TowerDefenseHudTheme Default => new TowerDefenseHudTheme( // 中文：默认
         metricLabelColor: new Color(0.56f, 0.66f, 0.75f, 1f),
         scrapValueColor: new Color(1f, 0.71f, 0.4f, 1f),
         baseValueColor: new Color(0.45f, 0.91f, 1f, 1f),
@@ -302,31 +302,31 @@ public readonly struct TowerDefenseHudTheme
 /// </summary>
 public sealed class TowerDefenseHudPresenter
 {
-    private TowerDefenseHudTheme _theme = TowerDefenseHudTheme.Default;
-    private TowerDefenseHudCopyAsset _copyAsset;
+    private TowerDefenseHudTheme _theme = TowerDefenseHudTheme.Default; // 中文：主题
+    private TowerDefenseHudCopyAsset _copyAsset; // 中文：文案资产
 
-    private TMP_Text _scrapText;
-    private TMP_Text _baseHealthText;
-    private TMP_Text _waveText;
-    private TMP_Text _selectionText;
-    private TMP_Text _operationText;
-    private TMP_Text _liveStatusText;
-    private TMP_Text _powerGridText;
-    private TMP_Text _latestEventText;
-    private TMP_Text _recentLogText;
+    private TMP_Text _scrapText; // 中文：废料文本
+    private TMP_Text _baseHealthText; // 中文：基础生命文本
+    private TMP_Text _waveText; // 中文：波次文本
+    private TMP_Text _selectionText; // 中文：selection文本
+    private TMP_Text _operationText; // 中文：操作文本
+    private TMP_Text _liveStatusText; // 中文：实时状态文本
+    private TMP_Text _powerGridText; // 中文：供电电网文本
+    private TMP_Text _latestEventText; // 中文：最新事件文本
+    private TMP_Text _recentLogText; // 中文：近期日志文本
 
-    private TMP_Text _gameOverTitle;
-    private TMP_Text _gameOverHint;
-    private TMP_Text _clearSelectionButtonText;
-    private TMP_Text _dragPreviewLabel;
+    private TMP_Text _gameOverTitle; // 中文：游戏结束标题
+    private TMP_Text _gameOverHint; // 中文：游戏结束提示
+    private TMP_Text _clearSelectionButtonText; // 中文：清除Selection按钮文本
+    private TMP_Text _dragPreviewLabel; // 中文：拖拽预览标签
 
-    private Button _relayTowerButton;
-    private Button _defenseTowerButton;
-    private Button _slowFieldTowerButton;
-    private Button _bombardTowerButton;
-    private Button _clearSelectionButton;
-    private GameObject _gameOverPanel;
-    private GameObject _dragPreviewPanel;
+    private Button _relayTowerButton; // 中文：继电器塔按钮
+    private Button _defenseTowerButton; // 中文：防御塔按钮
+    private Button _slowFieldTowerButton; // 中文：减速区域塔按钮
+    private Button _bombardTowerButton; // 中文：炸弹塔按钮
+    private Button _clearSelectionButton; // 中文：清除Selection按钮
+    private GameObject _gameOverPanel; // 中文：游戏结束面板
+    private GameObject _dragPreviewPanel; // 中文：拖拽预览面板
 
     /// <summary>
     /// 由总控把 HUD 主题快照注入进来。
@@ -535,18 +535,18 @@ public sealed class TowerDefenseHudPresenter
     {
         if (_scrapText != null)
         {
-            _scrapText.text = BuildMetricText(GetCopyText(_copyAsset != null ? _copyAsset.ScrapMetricLabel : null, "SCRAP STOCK"), state.CurrentScrap.ToString(), _theme.ScrapValueColor);
+            _scrapText.text = BuildMetricText(GetCopyText(_copyAsset != null ? _copyAsset.ScrapMetricLabel : null, "废料储备"), state.CurrentScrap.ToString(), _theme.ScrapValueColor);
         }
 
         if (_baseHealthText != null)
         {
-            _baseHealthText.text = BuildMetricText(GetCopyText(_copyAsset != null ? _copyAsset.BaseMetricLabel : null, "BASE CORE"), state.CurrentBaseHealth.ToString(), _theme.BaseValueColor);
+            _baseHealthText.text = BuildMetricText(GetCopyText(_copyAsset != null ? _copyAsset.BaseMetricLabel : null, "基地核心"), state.CurrentBaseHealth.ToString(), _theme.BaseValueColor);
         }
 
         if (_waveText != null)
         {
             string waveDisplay = state.TotalWaves > 0 ? $"{state.CurrentWave}/{state.TotalWaves}" : "0/0";
-            _waveText.text = BuildMetricText(GetCopyText(_copyAsset != null ? _copyAsset.WaveMetricLabel : null, "WAVE CLOCK"), waveDisplay, _theme.WaveValueColor);
+            _waveText.text = BuildMetricText(GetCopyText(_copyAsset != null ? _copyAsset.WaveMetricLabel : null, "波次进度"), waveDisplay, _theme.WaveValueColor);
         }
 
         if (_selectionText != null)
@@ -998,16 +998,16 @@ public sealed class TowerDefenseHudPresenter
         string dangerHex = $"#{ColorUtility.ToHtmlStringRGB(_theme.DangerNoticeColor)}";
         if (definition.BuildCost <= 0)
         {
-            return $"<color={positiveHex}>{GetCopyText(_copyAsset != null ? _copyAsset.FreeDeployLine : null, "FREE deploy. Scrap remains unchanged.")}</color>";
+            return $"<color={positiveHex}>{GetCopyText(_copyAsset != null ? _copyAsset.FreeDeployLine : null, "免费部署，不消耗废料。")}</color>";
         }
 
         int remainingAfterBuild = currentScrap - definition.BuildCost;
         if (remainingAfterBuild >= 0)
         {
-            return $"<color={positiveHex}>{remainingAfterBuild} {GetCopyText(_copyAsset != null ? _copyAsset.ScrapLeftSuffix : null, "SCRAP left after deploy.")}</color>";
+            return $"<color={positiveHex}>{remainingAfterBuild} {GetCopyText(_copyAsset != null ? _copyAsset.ScrapLeftSuffix : null, "部署后剩余废料。")}</color>";
         }
 
-        return $"<color={dangerHex}>{GetCopyText(_copyAsset != null ? _copyAsset.NeedMoreScrapPrefix : null, "Need")} {-remainingAfterBuild} {GetCopyText(_copyAsset != null ? _copyAsset.NeedMoreScrapSuffix : null, "more SCRAP to deploy.")}</color>";
+        return $"<color={dangerHex}>{GetCopyText(_copyAsset != null ? _copyAsset.NeedMoreScrapPrefix : null, "还需要")} {-remainingAfterBuild} {GetCopyText(_copyAsset != null ? _copyAsset.NeedMoreScrapSuffix : null, "点废料才能部署。")}</color>";
     }
 
     /// <summary>

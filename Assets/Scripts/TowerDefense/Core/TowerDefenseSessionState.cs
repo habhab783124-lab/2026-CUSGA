@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 /// <summary>
 /// `TowerDefenseSessionState` 负责保存“这一局正在进行中的核心运行状态”。
@@ -35,33 +35,33 @@ public sealed class TowerDefenseSessionState
     /// <summary>
     /// 当前可用于建造和升级的废料。
     /// </summary>
-    public int CurrentScrap { get; private set; }
+    public int CurrentScrap { get; private set; } // 中文：当前废料
 
     /// <summary>
     /// `CurrentEnergy` 保留为兼容别名，避免旧链路在迁移过渡期断掉。
     /// 新玩法语义请统一使用 `CurrentScrap`。
     /// </summary>
-    public int CurrentEnergy => CurrentScrap;
+    public int CurrentEnergy => CurrentScrap; // 中文：当前Energy
 
     /// <summary>
     /// 当前基地剩余生命值。
     /// </summary>
-    public int CurrentBaseHealth { get; private set; }
+    public int CurrentBaseHealth { get; private set; } // 中文：当前基础生命
 
     /// <summary>
     /// 当前正在进行到第几波。
     /// </summary>
-    public int CurrentWave { get; private set; }
+    public int CurrentWave { get; private set; } // 中文：当前波次
 
     /// <summary>
     /// 本关总波次数。
     /// </summary>
-    public int TotalWaves { get; private set; }
+    public int TotalWaves { get; private set; } // 中文：总波次列表
 
     /// <summary>
     /// 当前这一局是否已经进入结算失败状态。
     /// </summary>
-    public bool IsGameOver { get; private set; }
+    public bool IsGameOver { get; private set; } // 中文：是否游戏结束
 
     /// <summary>
     /// 判断当前资源是否足够支付某次操作的成本。

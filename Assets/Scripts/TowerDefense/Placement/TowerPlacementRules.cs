@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 /// <summary>
@@ -21,14 +21,14 @@ using UnityEngine;
 /// </summary>
 public sealed class TowerPlacementRules
 {
-    private readonly Func<TowerType, float> _getPlacementRadius;
-    private readonly Func<TowerType, float> _getExpansionSquareSize;
-    private readonly Collider2D[] _placementValidationOverlapBuffer = new Collider2D[64];
+    private readonly Func<TowerType, float> _getPlacementRadius; // 中文：获取放置半径
+    private readonly Func<TowerType, float> _getExpansionSquareSize; // 中文：获取Expansion方格大小
+    private readonly Collider2D[] _placementValidationOverlapBuffer = new Collider2D[64]; // 中文：放置ValidationOverlapBuffer
 
-    private BuildZone _buildZone;
-    private Transform _placedTowerRoot;
-    private Vector2 _starterZoneCenter;
-    private float _starterZoneSize;
+    private BuildZone _buildZone; // 中文：建造区域
+    private Transform _placedTowerRoot; // 中文：已放置塔根节点
+    private Vector2 _starterZoneCenter; // 中文：起始区域中心
+    private float _starterZoneSize; // 中文：起始区域大小
 
     public TowerPlacementRules(
         Func<TowerType, float> getPlacementRadius,
@@ -81,13 +81,13 @@ public sealed class TowerPlacementRules
 
         if (_buildZone == null)
         {
-            invalidReason = "No BuildZone is configured in this level.";
+            invalidReason = "当前关卡没有配置 BuildZone。";
             return false;
         }
 
         if (!_buildZone.ContainsPoint(worldPosition))
         {
-            invalidReason = "Outside the level's buildable area.";
+            invalidReason = "超出当前关卡的可建造区域。";
             return false;
         }
 
@@ -119,7 +119,7 @@ public sealed class TowerPlacementRules
             if (belongsToPlacedTower
                 && (overlap.GetComponentInParent<DefenseTower>() != null || overlap.GetComponentInParent<RelayTower>() != null))
             {
-                invalidReason = "Too close to another structure. Move it a little.";
+                invalidReason = "离其他建筑太近了，请稍微挪开一点。";
                 return false;
             }
         }
@@ -189,7 +189,7 @@ public sealed class TowerPlacementRules
                 return true;
             }
 
-            invalidReason = "Your first structure must be placed in the starter zone.";
+            invalidReason = "你的第一座建筑必须放在起始区内。";
             return false;
         }
 
@@ -212,7 +212,7 @@ public sealed class TowerPlacementRules
             }
         }
 
-        invalidReason = "Place inside the current deployment network.";
+        invalidReason = "请放在当前部署网络范围内。";
         return false;
     }
 

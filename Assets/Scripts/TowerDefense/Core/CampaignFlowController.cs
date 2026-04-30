@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
@@ -15,16 +15,16 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public sealed class CampaignFlowController : MonoBehaviour
 {
-    private static CampaignFlowController s_instance;
+    private static CampaignFlowController s_instance; // 中文：实例
 
-    [SerializeField] private CampaignFlowAsset activeCampaignAsset;
-    [SerializeField] private int currentStepIndex = -1;
+    [SerializeField] private CampaignFlowAsset activeCampaignAsset; // 中文：激活战役资产
+    [SerializeField] private int currentStepIndex = -1; // 中文：当前步骤Index
 
-    public static bool HasActiveCampaign => s_instance != null && s_instance.activeCampaignAsset != null && s_instance.currentStepIndex >= 0;
+    public static bool HasActiveCampaign => s_instance != null && s_instance.activeCampaignAsset != null && s_instance.currentStepIndex >= 0; // 中文：是否有激活战役
 
-    public static CampaignFlowAsset ActiveCampaignAsset => s_instance != null ? s_instance.activeCampaignAsset : null;
+    public static CampaignFlowAsset ActiveCampaignAsset => s_instance != null ? s_instance.activeCampaignAsset : null; // 中文：激活战役资产
 
-    public static int CurrentStepIndex => s_instance != null ? s_instance.currentStepIndex : -1;
+    public static int CurrentStepIndex => s_instance != null ? s_instance.currentStepIndex : -1; // 中文：当前步骤Index
 
     public static bool TryGetCurrentStep(out CampaignFlowAsset.CampaignStep step)
     {
@@ -50,7 +50,7 @@ public sealed class CampaignFlowController : MonoBehaviour
     {
         return TryGetCurrentStep(out CampaignFlowAsset.CampaignStep step)
             ? step.ContinuePrompt
-            : "Press Enter / Space to continue.";
+            : "按 Enter / Space 继续。";
     }
 
     public static CampaignSegmentType GetCurrentStepType()
