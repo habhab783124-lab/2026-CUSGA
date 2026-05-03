@@ -14,35 +14,47 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   waves:
   - displayName: 第 01 波
-    designerNote: Level 2 opening wave. Faster lane pressure with wolves and small scavengers.
+    designerNote: 第二关开场波。先用狼和拾荒者测试双线分兵与第一批继电器扩张。
     spawnGroups:
     - enemyType: 2
       enemyCount: 4
       spawnInterval: 0.5
     - enemyType: 1
-      enemyCount: 4
-      spawnInterval: 0.8
+      enemyCount: 6
+      spawnInterval: 0.85
   - displayName: 第 02 波
-    designerNote: Level 2 support wave. Add banner shielding and mechanic repair pressure.
+    designerNote: 第二关支援波。加入旗帜怪，逼玩家开始重视中场交汇点火力。
     spawnGroups:
-    - enemyType: 3
-      enemyCount: 1
-      spawnInterval: 1.1
-    - enemyType: 4
-      enemyCount: 1
-      spawnInterval: 1.2
     - enemyType: 1
       enemyCount: 5
       spawnInterval: 0.8
+    - enemyType: 3
+      enemyCount: 1
+      spawnInterval: 1
+    - enemyType: 2
+      enemyCount: 3
+      spawnInterval: 0.45
   - displayName: 第 03 波
-    designerNote: Level 2 heavy push. Heavy armored machines lead while stealth stalkers slip through.
+    designerNote: 第二关重压波。机械师与重甲怪同时出现，逼玩家兼顾前线与续航。
     spawnGroups:
+    - enemyType: 4
+      enemyCount: 1
+      spawnInterval: 1.1
     - enemyType: 5
       enemyCount: 3
-      spawnInterval: 1.1
+      spawnInterval: 1
+    - enemyType: 1
+      enemyCount: 6
+      spawnInterval: 0.75
+  - displayName: 第 04 波
+    designerNote: 第二关收尾波。隐身人与狼群一起压进，检验双线到中场的联防是否成型。
+    spawnGroups:
     - enemyType: 6
       enemyCount: 3
-      spawnInterval: 0.7
+      spawnInterval: 0.65
     - enemyType: 2
-      enemyCount: 2
+      enemyCount: 4
       spawnInterval: 0.45
+    - enemyType: 3
+      enemyCount: 1
+      spawnInterval: 1.05

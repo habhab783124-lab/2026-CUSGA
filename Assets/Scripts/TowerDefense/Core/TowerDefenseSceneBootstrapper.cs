@@ -130,6 +130,8 @@ public readonly struct TowerDefenseSceneBootstrapResult
 /// </summary>
 public sealed class TowerDefenseSceneBootstrapper
 {
+    private const string PlacementPreviewRootName = "PlacementPreviewRoot"; // 中文：放置预览根节点名称
+
     /// <summary>
     /// 执行当前关卡启动所需的场景装配，并返回装配后的可用引用集合。
     /// </summary>
@@ -172,6 +174,11 @@ public sealed class TowerDefenseSceneBootstrapper
         Transform resolvedPlacedTowerRoot = placedTowerRootReference;
         Transform resolvedPlacementPreviewRoot = placementPreviewRootReference;
 
+        if (resolvedPlacementPreviewRoot == null)
+        {
+            resolvedPlacementPreviewRoot = ResolvePlacementPreviewRootFallback(resolvedPlacedTowerRoot);
+        }
+
         LogIfMissing(resolvedMainCamera, "Main Camera");
         LogIfMissing(resolvedBuildZone, "BuildZone");
         LogIfMissing(resolvedPlacedTowerRoot, "PlacedTowers Root");
@@ -196,5 +203,26 @@ public sealed class TowerDefenseSceneBootstrapper
         }
 
         Debug.LogError($"TowerDefenseSceneBootstrapper 缺少关键场景引用：{expectedName}。请在场景 Inspector 中显式补齐。");
+    }
+
+    private static Transform ResolvePlacementPreviewRootFallback(Transform placedTowerRoot)
+    {
+        Transform siblingRoot = null;
+        if (placedTowerRoot != null && placedTowerRoot.parent != null)
+        {
+            siblingRoot = placedTowerRoot.parent.Find(PlacementPreviewRootName);
+            if (siblingRoot != null)
+            {
+                return siblingRoot;
+            }
+        }
+
+        GameObject runtimeRoot = new GameObject(PlacementPreviewRootName);
+        if (placedTowerRoot != null && placedTowerRoot.parent != null)
+        {
+            runtimeRoot.transform.SetParent(placedTowerRoot.parent, false);
+        }
+
+        return runtimeRoot.transform;
     }
 }

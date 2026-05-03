@@ -370,7 +370,25 @@ public sealed class WaveSpawner : MonoBehaviour
             return false;
         }
 
-        GameObject enemyObject = Instantiate(enemyPrefab, spawnPath.GetSpawnPosition(), Quaternion.identity, _enemyRoot);
+        UnityEngine.Object spawnedObject = Instantiate(
+            (UnityEngine.Object)enemyPrefab,
+            spawnPath.GetSpawnPosition(),
+            Quaternion.identity,
+            _enemyRoot);
+        GameObject enemyObject = spawnedObject as GameObject;
+        if (enemyObject == null)
+        {
+            Debug.LogError(
+                $"WaveSpawner 实例化敌人失败：敌人类型 `{enemyType}` 对应的 prefab 未返回 GameObject。请检查 EnemyCatalog 的 RuntimePrefab 引用。",
+                this);
+
+            if (spawnedObject != null)
+            {
+                Destroy(spawnedObject);
+            }
+
+            return false;
+        }
         enemyObject.name = spawnGate != null
             ? $"{enemyDefinition.DisplayName}_{spawnGate.GateId}_W{waveNumber}_{enemyNumber}"
             : $"{enemyDefinition.DisplayName}_W{waveNumber}_{enemyNumber}";

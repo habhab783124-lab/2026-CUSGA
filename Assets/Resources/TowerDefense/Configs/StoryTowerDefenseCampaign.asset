@@ -16,10 +16,10 @@ MonoBehaviour:
   completionSceneName: MainMenu
   steps:
   - segmentType: 0
-    sceneName: StoryInterludePlaceholder
-    scenePath: Assets/Scenes/StoryInterludePlaceholder.unity
+    sceneName: Story_Intro_01
+    scenePath: Assets/Scenes/Story_Intro_01.unity
     displayName: 剧情序章
-    designerNote: 开场横板剧情段的占位场景。
+    designerNote: 第一段 2D 横板可交互剧情场景。
     continuePrompt: 按 Enter / Space 进入第一段塔防战斗。
   - segmentType: 1
     sceneName: SampleScene

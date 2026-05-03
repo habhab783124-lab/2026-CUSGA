@@ -14,32 +14,68 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   waves:
   - displayName: 第 01 波
-    designerNote: Level 4 breakthrough wave. Fast wolves and stealth stalkers force early reaction.
+    designerNote: 第四关突破波。高速狼与隐身人同时逼压，让你从开局就必须分配火力。
     spawnGroups:
     - enemyType: 2
-      enemyCount: 5
+      enemyCount: 6
       spawnInterval: 0.45
     - enemyType: 6
-      enemyCount: 3
-      spawnInterval: 0.7
+      enemyCount: 4
+      spawnInterval: 0.65
+    - enemyType: 1
+      enemyCount: 6
+      spawnInterval: 0.75
   - displayName: 第 02 波
-    designerNote: Level 4 support wall. Banner shielding and mechanics stabilize a heavy frontline.
+    designerNote: 第四关支援墙。旗帜怪、机械师和重甲怪共同推进，逼玩家处理持续硬压。
     spawnGroups:
     - enemyType: 3
       enemyCount: 2
       spawnInterval: 0.95
     - enemyType: 4
       enemyCount: 2
-      spawnInterval: 1.1
+      spawnInterval: 1.05
     - enemyType: 5
-      enemyCount: 3
-      spawnInterval: 0.95
+      enemyCount: 4
+      spawnInterval: 0.9
   - displayName: 第 03 波
-    designerNote: Level 4 boss-style wave. Abomination pressure plus split mini units and fast flankers.
+    designerNote: 第四关憎恶试压波。憎恶配合快狼和隐身人，开始逼你处理混编总攻。
+    spawnGroups:
+    - enemyType: 7
+      enemyCount: 1
+      spawnInterval: 1.5
+    - enemyType: 2
+      enemyCount: 5
+      spawnInterval: 0.45
+    - enemyType: 6
+      enemyCount: 3
+      spawnInterval: 0.65
+  - displayName: 第 04 波
+    designerNote: 第四关高压整备波。更多重甲与修理支援会持续拖长战线，考验电网容量与升级顺序。
+    spawnGroups:
+    - enemyType: 5
+      enemyCount: 4
+      spawnInterval: 0.9
+    - enemyType: 4
+      enemyCount: 2
+      spawnInterval: 1.05
+    - enemyType: 3
+      enemyCount: 1
+      spawnInterval: 1
+    - enemyType: 1
+      enemyCount: 8
+      spawnInterval: 0.7
+  - displayName: 第 05 波
+    designerNote: 第四关终局总攻。双憎恶、重甲、隐身与狼群混推，作为当前四关结构的阶段性高潮。
     spawnGroups:
     - enemyType: 7
       enemyCount: 2
-      spawnInterval: 1.5
-    - enemyType: 2
+      spawnInterval: 1.6
+    - enemyType: 6
       enemyCount: 4
-      spawnInterval: 0.45
+      spawnInterval: 0.6
+    - enemyType: 2
+      enemyCount: 6
+      spawnInterval: 0.4
+    - enemyType: 5
+      enemyCount: 3
+      spawnInterval: 0.95

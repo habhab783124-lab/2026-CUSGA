@@ -1375,7 +1375,9 @@ public class TowerDefenseGame : MonoBehaviour
         _buildZone = bootstrapResult.BuildZone;
         _placedTowerRoot = bootstrapResult.PlacedTowerRoot;
         _placementPreviewRoot = bootstrapResult.PlacementPreviewRoot;
-        _battlefieldMapDefinition = battlefieldMapReference;
+        _battlefieldMapDefinition = battlefieldMapReference != null
+            ? battlefieldMapReference
+            : ResolveBattlefieldMapFallback();
 
         mainCameraReference = _mainCamera;
         buildZoneReference = _buildZone;
@@ -1402,6 +1404,20 @@ public class TowerDefenseGame : MonoBehaviour
         {
             Debug.LogError("TowerDefenseGame 缺少 BuildZone / Runtime Root / BattlefieldMapDefinition 等关键场景引用。当前版本不再自动创建这些兜底对象。", this);
         }
+    }
+
+    private BattlefieldMapDefinition ResolveBattlefieldMapFallback()
+    {
+        BattlefieldMapDefinition[] discoveredMaps = FindObjectsByType<BattlefieldMapDefinition>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        if (discoveredMaps == null || discoveredMaps.Length == 0)
+        {
+            return null;
+        }
+
+        return discoveredMaps[0];
     }
 
     /// <summary>

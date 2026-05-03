@@ -14,35 +14,53 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   waves:
   - displayName: 第 01 波
-    designerNote: Level 3 attrition wave. Shielded scavengers and heavies arrive together.
+    designerNote: 第三关消耗波。旗帜怪和重甲怪一起出现，逼玩家正面处理高耐久前线。
     spawnGroups:
     - enemyType: 3
       enemyCount: 2
       spawnInterval: 1
     - enemyType: 5
       enemyCount: 2
-      spawnInterval: 1.05
+      spawnInterval: 1
+    - enemyType: 1
+      enemyCount: 5
+      spawnInterval: 0.75
   - displayName: 第 02 波
-    designerNote: Level 3 repair wave. Mechanics keep the armored front alive.
+    designerNote: 第三关维修波。机械师让前线更难被啃动，要求玩家具备更稳的穿甲伤害。
     spawnGroups:
     - enemyType: 4
       enemyCount: 2
-      spawnInterval: 1.15
+      spawnInterval: 1.1
     - enemyType: 5
       enemyCount: 3
-      spawnInterval: 1
-    - enemyType: 1
-      enemyCount: 4
-      spawnInterval: 0.75
+      spawnInterval: 0.95
+    - enemyType: 2
+      enemyCount: 3
+      spawnInterval: 0.5
   - displayName: 第 03 波
-    designerNote: Level 3 mixed climax. One abomination backed by stealth stalkers and wolves.
+    designerNote: 第三关隐袭波。隐身人和狼走副线，逼玩家不能只顾主战场。
     spawnGroups:
-    - enemyType: 7
-      enemyCount: 1
-      spawnInterval: 1.4
     - enemyType: 6
       enemyCount: 4
-      spawnInterval: 0.7
+      spawnInterval: 0.65
     - enemyType: 2
       enemyCount: 4
       spawnInterval: 0.45
+    - enemyType: 1
+      enemyCount: 6
+      spawnInterval: 0.75
+  - displayName: 第 04 波
+    designerNote: 第三关收尾波。憎恶带队，后方还有机械与隐身支援，检验整套供电与火力调度。
+    spawnGroups:
+    - enemyType: 7
+      enemyCount: 1
+      spawnInterval: 1.5
+    - enemyType: 5
+      enemyCount: 2
+      spawnInterval: 1
+    - enemyType: 4
+      enemyCount: 1
+      spawnInterval: 1.05
+    - enemyType: 6
+      enemyCount: 3
+      spawnInterval: 0.7
