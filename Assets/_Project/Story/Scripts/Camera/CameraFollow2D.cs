@@ -25,6 +25,13 @@ public sealed class CameraFollow2D : MonoBehaviour
     [SerializeField] private bool smooth = false;
     [SerializeField] [Min(0.001f)] private float smoothTime = 0.08f;
 
+    [Header("Level bounds (optional)")]
+    [Tooltip("Clamp camera so the view stays inside the background. Uses world Bounds of the Renderer (e.g. SpriteRenderer on your backdrop).")]
+    [SerializeField] private bool clampCameraToBackground = false;
+    [SerializeField] private Renderer backgroundForBounds;
+    [SerializeField] private bool clampHorizontal = true;
+    [SerializeField] private bool clampVertical = false;
+
     private Vector3 velocity;
     private Camera cam;
 
@@ -75,6 +82,7 @@ public sealed class CameraFollow2D : MonoBehaviour
         }
 
         Vector3 desired = new Vector3(x, y, p.z);
+        desired = ClampToBackground(desired);
 
         if (!smooth)
         {
@@ -83,6 +91,54 @@ public sealed class CameraFollow2D : MonoBehaviour
         }
 
         transform.position = Vector3.SmoothDamp(transform.position, desired, ref velocity, smoothTime);
+        transform.position = ClampToBackground(transform.position);
+    }
+
+    private Vector3 ClampToBackground(Vector3 worldPos)
+    {
+        if (!clampCameraToBackground || backgroundForBounds == null || cam == null || !cam.orthographic)
+        {
+            return worldPos;
+        }
+
+        Bounds b = backgroundForBounds.bounds;
+        float halfH = Mathf.Max(0.0001f, cam.orthographicSize);
+        float halfW = halfH * Mathf.Max(0.0001f, cam.aspect);
+
+        float cx = worldPos.x;
+        float cy = worldPos.y;
+
+        if (clampHorizontal)
+        {
+            float minCamX = b.min.x + halfW;
+            float maxCamX = b.max.x - halfW;
+            if (minCamX > maxCamX)
+            {
+                cx = (b.min.x + b.max.x) * 0.5f;
+            }
+            else
+            {
+                cx = Mathf.Clamp(cx, minCamX, maxCamX);
+            }
+        }
+
+        if (clampVertical)
+        {
+            float minCamY = b.min.y + halfH;
+            float maxCamY = b.max.y - halfH;
+            if (minCamY > maxCamY)
+            {
+                cy = (b.min.y + b.max.y) * 0.5f;
+            }
+            else
+            {
+                cy = Mathf.Clamp(cy, minCamY, maxCamY);
+            }
+        }
+
+        worldPos.x = cx;
+        worldPos.y = cy;
+        return worldPos;
     }
 }
 

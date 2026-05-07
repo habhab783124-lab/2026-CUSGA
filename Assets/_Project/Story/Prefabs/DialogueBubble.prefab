@@ -109,8 +109,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -0.000023246, y: -0.0000024401}
-  m_SizeDelta: {x: 2.9626, y: 0.5154}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0.8, y: 0.55}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &7233893796612566275
 CanvasRenderer:
@@ -237,7 +237,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
+  m_TextStyleHashCode: 0
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -303,7 +303,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1796044847893020471
 RectTransform:
   m_ObjectHideFlags: 0
@@ -321,8 +321,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.1453, y: -0.1824}
-  m_SizeDelta: {x: 3.0985, y: 0.8353}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 1, y: 1}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!223 &5678860699235607885
 Canvas:
@@ -369,7 +369,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 50
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!114 &4900870302483710290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -401,6 +401,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rootCanvas: {fileID: 5678860699235607885}
   bubbleFrame: {fileID: 7808989629658671518}
+  contentRoot: {fileID: 0}
   backgroundImage: {fileID: 5591760109601809400}
   tailRect: {fileID: 1243740062085462073}
   tailImage: {fileID: 6149584187587501130}
