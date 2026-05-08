@@ -10,6 +10,10 @@ public sealed class PlayerInteractor2D : MonoBehaviour
     [SerializeField] private LayerMask interactableLayers = ~0;
 
     [Header("Interaction Prompt (World Space)")]
+    [Tooltip("关闭后不再显示 [E] 提示（过场/特殊章节用）。")]
+    [SerializeField] private bool showInteractionPrompt = true;
+    [Tooltip("关闭后无法按交互键对话（过场中仍可不显示提示）。")]
+    [SerializeField] private bool interactionInputEnabled = true;
     [SerializeField] private InteractionPromptView promptPrefab;
     [Tooltip("Additional offset applied after the auto bounds anchor (if enabled).")]
     [SerializeField] private Vector3 promptWorldOffset = Vector3.zero;
@@ -35,6 +39,17 @@ public sealed class PlayerInteractor2D : MonoBehaviour
     public IInteractable CurrentTarget => currentTarget;
     public Transform CurrentTargetTransform => currentTargetTransform;
 
+    public void SetInteractionPromptVisible(bool visible)
+    {
+        showInteractionPrompt = visible;
+        UpdatePromptVisibility(forceHide: true);
+    }
+
+    public void SetInteractionInputEnabled(bool enabled)
+    {
+        interactionInputEnabled = enabled;
+    }
+
     private void Awake()
     {
         motor = GetComponent<PlayerMotor2D>();
@@ -52,7 +67,7 @@ public sealed class PlayerInteractor2D : MonoBehaviour
         if (motor != null && motor.MovementLocked)
         {
             // Safety: if something left the motor locked but dialogue isn't actually playing, unlock.
-            if (dialogueRunner == null || !dialogueRunner.IsPlaying)
+            if (!motor.CutsceneMovementHold && (dialogueRunner == null || !dialogueRunner.IsPlaying))
             {
                 motor.SetMovementLocked(false);
             }
@@ -67,6 +82,11 @@ public sealed class PlayerInteractor2D : MonoBehaviour
         currentTarget = FindNearestInteractable();
         currentTargetTransform = (currentTarget as Component) != null ? ((Component)currentTarget).transform : null;
         UpdatePromptVisibility();
+
+        if (!interactionInputEnabled)
+        {
+            return;
+        }
 
         if (!Input.GetKeyDown(interactKey))
         {
@@ -115,7 +135,8 @@ public sealed class PlayerInteractor2D : MonoBehaviour
 
         promptInstance.SetWorldOffset(promptWorldOffset);
 
-        if (forceHide || currentTarget == null || currentTargetTransform == null || !currentTarget.CanInteract)
+        if (!showInteractionPrompt || forceHide || currentTarget == null || currentTargetTransform == null ||
+            !currentTarget.CanInteract)
         {
             lastTarget = null;
             promptInstance.Show(false);

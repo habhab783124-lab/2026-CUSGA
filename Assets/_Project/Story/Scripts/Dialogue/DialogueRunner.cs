@@ -27,6 +27,8 @@ public sealed class DialogueRunner : MonoBehaviour
     [Header("输入")]
     [SerializeField] private int mouseButton = 0;
     [SerializeField] private KeyCode advanceKey = KeyCode.E;
+    [Tooltip("为 true 时仅鼠标推进下一句，忽略 advanceKey（仍可用 Escape 取消）。")]
+    [SerializeField] private bool mouseButtonOnlyAdvance;
     [SerializeField] private KeyCode cancelKey = KeyCode.Escape;
 
     [Header("运行状态")]
@@ -40,8 +42,11 @@ public sealed class DialogueRunner : MonoBehaviour
     private Transform playerAnchor;
     private Transform npcAnchor;
     private Action onConversationEnded;
+    private bool deferFirstLine;
+    private bool suppressBubbleHideOnComplete;
 
     public bool IsPlaying => isPlaying;
+    public DialogueBubbleView BubbleView => bubble;
 
     private void Awake()
     {
@@ -115,13 +120,26 @@ public sealed class DialogueRunner : MonoBehaviour
             return;
         }
 
+        if (deferFirstLine)
+        {
+            if (Input.GetKeyDown(cancelKey))
+            {
+                StopAll();
+            }
+
+            return;
+        }
+
         if (Input.GetKeyDown(cancelKey))
         {
             StopAll();
             return;
         }
 
-        if (!Input.GetMouseButtonDown(mouseButton) && !Input.GetKeyDown(advanceKey))
+        bool advance =
+            Input.GetMouseButtonDown(mouseButton)
+            || (!mouseButtonOnlyAdvance && Input.GetKeyDown(advanceKey));
+        if (!advance)
         {
             return;
         }
@@ -140,7 +158,10 @@ public sealed class DialogueRunner : MonoBehaviour
         Transform playerBubbleAnchor,
         Transform npcBubbleAnchor,
         IList<DialogueLine> dialogue,
-        Action onEnded = null)
+        Action onEnded = null,
+        Action<DialogueBubbleView> prepareBubble = null,
+        bool deferFirstLineUntilExternal = false,
+        bool suppressBubbleHideOnConversationEnd = false)
     {
         if (bubblePrefab == null)
         {
@@ -160,8 +181,11 @@ public sealed class DialogueRunner : MonoBehaviour
         lines.AddRange(dialogue);
         index = 0;
         onConversationEnded = onEnded;
+        deferFirstLine = deferFirstLineUntilExternal;
+        suppressBubbleHideOnComplete = suppressBubbleHideOnConversationEnd;
 
         EnsureRuntimeBubble();
+        prepareBubble?.Invoke(bubble);
         isPlaying = true;
 
         if (interactor != null && interactor.Motor != null)
@@ -169,7 +193,60 @@ public sealed class DialogueRunner : MonoBehaviour
             interactor.Motor.SetMovementLocked(true);
         }
 
-        ShowLine(lines[0]);
+        if (deferFirstLine)
+        {
+            ShowDeferredFirstLineLayoutOnly(lines[0]);
+        }
+        else
+        {
+            ShowLine(lines[0]);
+        }
+    }
+
+    /// <summary>与 deferFirstLine 配合：排好首句布局并显示空框后，由外部闪框再调用本方法开始打字。</summary>
+    public void PlayDeferredFirstLine()
+    {
+        if (!isPlaying || !deferFirstLine || lines.Count == 0 || bubble == null)
+        {
+            return;
+        }
+
+        deferFirstLine = false;
+        DialogueLine line = lines[0];
+        bubble.ClearText();
+        bubble.TypeLine(line.text, secondsPerChar, line.emphasis);
+    }
+
+    public void HideDialogueBubble()
+    {
+        if (bubble != null)
+        {
+            bubble.Show(false);
+        }
+    }
+
+    private void ShowDeferredFirstLineLayoutOnly(DialogueLine line)
+    {
+        if (line == null || bubble == null)
+        {
+            return;
+        }
+
+        Transform t = line.speaker == DialogueSpeaker.Player ? playerAnchor : npcAnchor;
+        if (t == null)
+        {
+            t = interactor != null ? interactor.transform : null;
+        }
+
+        if (t != null)
+        {
+            bubble.SetFollow(t);
+        }
+
+        active = bubble;
+        bubble.Show(true);
+        bubble.ApplyEmphasisFromRunner(line.emphasis, true);
+        bubble.PrepareLayoutEmptyText(line.text);
     }
 
     private void EnsureRuntimeBubble()
@@ -256,10 +333,14 @@ public sealed class DialogueRunner : MonoBehaviour
 
     private void StopAll()
     {
+        bool hideBubble = !suppressBubbleHideOnComplete;
+        deferFirstLine = false;
+        suppressBubbleHideOnComplete = false;
+
         isPlaying = false;
         index = 0;
         lines.Clear();
-        if (bubble != null)
+        if (bubble != null && hideBubble)
         {
             bubble.Show(false);
         }

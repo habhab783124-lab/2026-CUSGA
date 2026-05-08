@@ -20,22 +20,38 @@ public sealed class PlayerMotor2D : MonoBehaviour
     private Rigidbody2D body;
     private float moveInput;
     private bool movementLocked;
+    private bool cutsceneMovementHold;
     private float lastAxis;
 
     public bool MovementLocked => movementLocked;
+    public bool CutsceneMovementHold => cutsceneMovementHold;
 
     private void Awake()
     {
         body = GetComponent<Rigidbody2D>();
         body.gravityScale = 0f;
         body.freezeRotation = true;
-        movementLocked = false;
+        if (!cutsceneMovementHold)
+        {
+            movementLocked = false;
+        }
     }
 
     private void OnEnable()
     {
         // Safety: ensure we don't stay locked due to an interrupted dialogue/session.
-        movementLocked = false;
+        if (!cutsceneMovementHold)
+        {
+            movementLocked = false;
+        }
+    }
+
+    /// <summary>
+    /// 开场/过场：为 true 时 <see cref="PlayerInteractor2D"/> 不会在「无对话」时自动解锁移动。
+    /// </summary>
+    public void SetCutsceneMovementHold(bool hold)
+    {
+        cutsceneMovementHold = hold;
     }
 
     private void Update()

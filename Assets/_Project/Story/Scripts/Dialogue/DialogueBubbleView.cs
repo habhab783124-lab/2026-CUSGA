@@ -84,6 +84,128 @@ public sealed class DialogueBubbleView : MonoBehaviour
         }
     }
 
+    /// <summary>是否绘制尾巴（小三角）。关闭后仅保留矩形气泡与文本。</summary>
+    public void SetShowTail(bool visible)
+    {
+        showTail = visible;
+        if (tailRect != null)
+        {
+            ApplyTailSetup();
+        }
+    }
+
+    /// <summary>按完整文本排好气泡尺寸后清空可见文字（用于先闪框再打字）。</summary>
+    public void PrepareLayoutEmptyText(string fullContent)
+    {
+        BuildIfNeeded();
+        LayoutForFullString(fullContent ?? string.Empty);
+        if (lineText != null)
+        {
+            lineText.text = string.Empty;
+        }
+    }
+
+    /// <summary>对话气泡「出现」闪烁：框体从不透明渐显并略带脉冲（非全屏）。</summary>
+    public IEnumerator FlashAppearChromeRoutine(float halfDuration, float peakAlpha)
+    {
+        BuildIfNeeded();
+        if (bubbleFrame == null)
+        {
+            yield break;
+        }
+
+        CanvasGroup cg = EnsureChromeCanvasGroup();
+        float saved = cg.alpha;
+        cg.alpha = 0f;
+        float half = Mathf.Max(0.02f, halfDuration * 0.5f);
+        float peak = Mathf.Clamp01(peakAlpha);
+        yield return FadeCanvasGroupUnscaled(cg, 0f, peak, half);
+        yield return FadeCanvasGroupUnscaled(cg, peak, 1f, half);
+        cg.alpha = Mathf.Max(saved, cg.alpha);
+    }
+
+    /// <summary>对话气泡「关机」感：白闪几次后整体渐隐（仅气泡，非全屏）。</summary>
+    public IEnumerator ShutdownChromeRoutine(int whiteFlickerCount, float flickerSegmentDuration, float fadeOutDuration)
+    {
+        BuildIfNeeded();
+        if (bubbleFrame == null)
+        {
+            yield break;
+        }
+
+        CanvasGroup cg = EnsureChromeCanvasGroup();
+        Color bg0 = backgroundImage != null ? backgroundImage.color : Color.white;
+        float seg = Mathf.Max(0.01f, flickerSegmentDuration);
+        cg.alpha = Mathf.Max(0.01f, cg.alpha);
+
+        for (int i = 0; i < whiteFlickerCount; i++)
+        {
+            if (backgroundImage != null)
+            {
+                backgroundImage.color = Color.Lerp(bg0, Color.white, 0.88f);
+            }
+
+            yield return FadeCanvasGroupUnscaled(cg, cg.alpha, 1f, seg * 0.35f);
+            if (backgroundImage != null)
+            {
+                backgroundImage.color = bg0;
+            }
+
+            yield return FadeCanvasGroupUnscaled(cg, cg.alpha, 0.75f, seg * 0.35f);
+        }
+
+        if (backgroundImage != null)
+        {
+            backgroundImage.color = Color.black;
+        }
+
+        yield return FadeCanvasGroupUnscaled(cg, cg.alpha, 0f, Mathf.Max(0.04f, fadeOutDuration));
+        if (backgroundImage != null)
+        {
+            backgroundImage.color = bg0;
+        }
+    }
+
+    private CanvasGroup EnsureChromeCanvasGroup()
+    {
+        if (bubbleFrame == null)
+        {
+            return null;
+        }
+
+        var cg = bubbleFrame.GetComponent<CanvasGroup>();
+        if (cg == null)
+        {
+            cg = bubbleFrame.gameObject.AddComponent<CanvasGroup>();
+        }
+
+        return cg;
+    }
+
+    private static IEnumerator FadeCanvasGroupUnscaled(CanvasGroup cg, float from, float to, float duration)
+    {
+        if (cg == null)
+        {
+            yield break;
+        }
+
+        if (duration <= 0f)
+        {
+            cg.alpha = to;
+            yield break;
+        }
+
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.unscaledDeltaTime;
+            cg.alpha = Mathf.Lerp(from, to, Mathf.Clamp01(t / duration));
+            yield return null;
+        }
+
+        cg.alpha = to;
+    }
+
     /// <param name="maxWidth">单条气泡最大总宽度（含内边距）</param>
     public void SetLayout(
         Vector3 newWorldOffset,
@@ -215,6 +337,11 @@ public sealed class DialogueBubbleView : MonoBehaviour
         skipType = false;
         typeRoutine = null;
         ApplyEmphasis(em, false);
+    }
+
+    public void ApplyEmphasisFromRunner(DialogueEmphasis e, bool typing)
+    {
+        ApplyEmphasis(e, typing);
     }
 
     private void ApplyEmphasis(DialogueEmphasis e, bool typing)
