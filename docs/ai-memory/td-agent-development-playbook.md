@@ -1,63 +1,63 @@
 # Tower Defense Agent Development Playbook
-Version: 1.3.0
-Updated: 2026-04-23
+Version: 1.6.0
+Updated: 2026-05-09
 Audience: 后续继续开发本项目的人类维护者与智能体
 
 ## 开工前固定流程
 1. 先读 `AGENTS.md`
-2. 再读 `docs/ai-memory/td-memory-main.md`
-3. 如果任务涉及结构、装配、UI、Prefab、Scene 接线，再读 `docs/ai-memory/td-memory-architecture.md`
-4. 如果任务涉及历史、已知问题、验证状态或项目规则，再读 `docs/ai-memory/td-memory-rules-and-history.md`
-5. 如果任务涉及玩法规则，再读 `docs/gameplay-redesign-spec.md`
+2. 读 `docs/ai-memory/td-memory-main.md`
+3. 如任务涉及场景装配、地图结构、UI、拖拽放置，再读 `td-memory-architecture.md`
+4. 如任务涉及规范、历史、验收、路线图，再读 `td-memory-rules-and-history.md`
+5. 如任务涉及玩法规则，再读 `docs/gameplay-redesign-spec.md`
 6. 最后再读相关脚本、Prefab、Scene
 
-## 执行规则
-- 每次新需求先复述理解，等用户说“执行”再改文件。
-- 如果这是一个“大阶段”任务，只在阶段开始时确认一次。
-- 阶段内部可以自行分步推进，不要每个小步骤都停下来重新要确认。
-- 优先自己解决可确认的问题，不要把本可通过代码/文档查清的事情反复抛回给用户。
+## 每天开工前的仓库同步规则
+- 本项目采用 fork 工作流
+- 项目创建者自己的 `origin/main` 是权威主线
+- 每天开始做实质性工作前：
+  1. `fetch origin`
+  2. 刷新本地 `main`
+  3. 让本地 `main` 对齐 `origin/main`
+  4. 再从最新的本地 `main` 继续功能分支工作
+- 如果当前工作区不干净：
+  - 先留快照分支
+  - 或先征求用户确认
+- 不要默认从 `upstream/main` 做日常同步
 
-## 开发时必须一直遵守的长期约束
-1. 地图和关卡后续主要由用户自己在 Scene 视图里继续制作和调整。
-2. 当前美术资源只是原型资源，项目结构必须长期保持便于替换。
-3. 脚本、文档、注释中的中文都必须保持正常显示。
-4. 新脚本必须按合理目录分层，不允许散放。
-5. 显式引用优先，不依赖对象名查找承担主链装配职责。
+## 当前推荐开发顺序
+### 做一张新关卡
+1. `LevelTopologyEditorWindow`
+2. `EnemyPathAuthoringTool`
+3. `Map Development Toolkit > Path Check`
+4. `Map Development Toolkit > Road Build`
+5. `Map Development Toolkit > Zone Brush`
+6. `RoadArtAuthoringWindow`
+7. `Wave Preview`
+8. `LevelBalanceTuningWindow`
+9. `Health Check`
+10. `Export Level Design Report`
 
-## 代码与资源改动优先级
-1. 能通过 Scene 对象、Prefab、Inspector、ScriptableObject 解决的，优先不要改玩法算法。
-2. 能通过共享资产收口的，不要把参数重新写死回代码。
-3. 能通过 Prefab 组合解决的，不要优先复制出新的大脚本。
+### 大改已有路线骨架
+1. 留档
+2. `LevelRouteBlueprintApplier`
+3. `LevelTopologyEditorWindow`
+4. `Path Check`
+5. `Road Build`
+6. `RoadArtAuthoringWindow`
+7. `TowerDefenseValidationRunner`
 
-## 文档维护规则
-- 只要玩法规则、场景结构、Prefab 结构、脚本职责、UI 工作流、已知问题、验证状态发生实质变化，就更新 `docs/ai-memory/*`。
-- 只要 AI 协作方法、智能体准则、模板或技能组织方式变化，就更新 `docs/ai-workspace-bootstrap-methodology.md`。
-- 更新后刷新索引：
-  `powershell -ExecutionPolicy Bypass -File docs/ai-memory/tools/refresh-memory-index.ps1 -UpdateMainDoc`
+### 只做策划平衡
+1. `LevelBalanceTuningWindow`
+2. `Wave Preview`
+3. `Export Level Design Report`
 
-## 验证规则
-- 运行时代码优先做命令行编译检查。
-- 编辑器脚本优先在 Unity 内部实看 Inspector 结果。
-- 如果任务进入最终人工验证阶段，统一使用 `docs/manual-validation-checklist.md` 记录结果。
-- 用户把验证结果写回清单后，后续智能体应优先读取这份清单，再决定修复顺序。
+## 当前特殊提醒
+- 当前 `main` 的 Build Settings 还没有完全切到正式塔防关卡链，做场景相关任务时必须先确认“这个场景只是存在”还是“已经正式启用”。
+- `td-memory-main.md` 与 `td-memory-rules-and-history.md` 不能再丢失。
+- `docs/project-tech-learning-handbook.local.md` 是本地私有文件，默认不提交。
+- 第三关和第四关仍在持续打磨阶段，自动工具不能代替最终人工关卡判断。
 
-## Git 工作流
-- 当前远端 `main` 受保护，不能直接 push。
-- 需要远端留档时，优先：
-  - 推快照分支
-  - 或创建 PR
-- 做版本记录前，先确认当前工作区主题是否收口，不要把无关改动混进同一提交。
-
-## 当前建议开发顺序
-1. 先完成人工验证，确认敌人 prefab 与 Inspector 结果对齐。
-2. 再推进 `Level02` 到 `Level05` 的内容制作。
-3. 再推进故事横板实际内容并入。
-4. 同步推进正式美术替换和显式作者入口维护。
-## 2026-05-08 Tool Workflow Update
-Recommended order for large map authoring changes:
-1. Use `LevelTopologyEditorWindow` to wire spawn gates, enemy paths, and defense points.
-2. If the scene needs a major route redesign, run `LevelRouteBlueprintApplier` next.
-3. After topology or blueprint changes, run `TowerDefenseValidationRunner` before doing
-   detailed wave tuning or visual polishing.
-4. Only after the scene contract is stable should designers move to the balance console and
-   per-wave tuning tools.
+## Docs Preservation Rule
+- 在没有用户明确说“删除某个 docs 文件”之前，`docs/` 目录只允许新增和更新，不允许删除。
+- 这条规则同样约束仓库同步操作：同步到 `origin/main` 也不能导致 `docs/` 下的记忆文档、方法文档、手册或其他项目文档消失。
+- 如果同步目标与本地 `docs/` 冲突，先保全文档，再决定如何继续同步。
