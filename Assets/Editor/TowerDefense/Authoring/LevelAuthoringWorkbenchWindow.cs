@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -35,12 +36,19 @@ namespace TowerDefense.Editor
         [SerializeField] private BuildZone currentBuildZone;
         [SerializeField] private Camera currentCamera;
         [SerializeField] private Vector2 scrollPosition;
+        [SerializeField] private bool showSceneBootstrap = true;
         [SerializeField] private bool showSceneContext = true;
         [SerializeField] private bool showMapShell = true;
         [SerializeField] private bool showEconomyAndStarterZone = true;
         [SerializeField] private bool showWaveAuthoring = true;
         [SerializeField] private bool showEnemyCatalog = false;
+        [SerializeField] private bool showSmokeTest = true;
         [SerializeField] private bool showToolShortcuts = true;
+        [SerializeField] private bool replaceExistingShellRoots = true;
+        [SerializeField] private string latestSmokeSummary = "暂无烟测结果。";
+        [SerializeField] private string latestSmokeReport = string.Empty;
+        [SerializeField] private MessageType latestSmokeMessageType = MessageType.Info;
+        [SerializeField] private Vector2 smokeReportScrollPosition;
 
         [MenuItem("Tools/Tower Defense/Authoring/关卡开发工作台")]
         public static void OpenWindow()
@@ -54,6 +62,7 @@ namespace TowerDefense.Editor
         private void OnEnable()
         {
             AdoptCurrentSceneContext();
+            RefreshSmokeTestReport();
         }
 
         private void OnHierarchyChange()
@@ -71,6 +80,11 @@ namespace TowerDefense.Editor
             DrawHeader();
 
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+            showSceneBootstrap = EditorGUILayout.Foldout(showSceneBootstrap, "关卡壳层创建器", true);
+            if (showSceneBootstrap)
+            {
+                DrawSceneBootstrapSection();
+            }
             showSceneContext = EditorGUILayout.Foldout(showSceneContext, "当前场景上下文", true);
             if (showSceneContext)
             {
@@ -83,7 +97,7 @@ namespace TowerDefense.Editor
                 DrawMapShellSection();
             }
 
-            showEconomyAndStarterZone = EditorGUILayout.Foldout(showEconomyAndStarterZone, "开局资源与起手部署区", true);
+            showEconomyAndStarterZone = EditorGUILayout.Foldout(showEconomyAndStarterZone, "开局资源与放置规则", true);
             if (showEconomyAndStarterZone)
             {
                 DrawEconomyAndStarterZoneSection();
@@ -99,6 +113,12 @@ namespace TowerDefense.Editor
             if (showEnemyCatalog)
             {
                 DrawEnemyCatalogSection();
+            }
+
+            showSmokeTest = EditorGUILayout.Foldout(showSmokeTest, "运行态烟测", true);
+            if (showSmokeTest)
+            {
+                DrawSmokeTestSection();
             }
 
             showToolShortcuts = EditorGUILayout.Foldout(showToolShortcuts, "专项工具快捷入口", true);
@@ -155,6 +175,28 @@ namespace TowerDefense.Editor
                 $"当前地图：{(currentMap != null ? currentMap.name : "(未找到)")}\n" +
                 $"当前刷怪器：{(currentWaveSpawner != null ? currentWaveSpawner.name : "(未找到)")}",
                 MessageType.Info);
+        }
+
+        private void DrawSceneBootstrapSection()
+        {
+            EditorGUILayout.HelpBox(
+                "这个分区负责补上当前工具链里最缺的第一步：把一张空白 Scene 初始化成可继续编辑的塔防关卡壳层。初始化完成后，你就可以继续用拓扑、路径点、道路、波次和数值工具往下做。",
+                MessageType.Info);
+
+            replaceExistingShellRoots = EditorGUILayout.Toggle("重建同名共享壳层对象", replaceExistingShellRoots);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("把当前场景初始化成关卡壳层", GUILayout.Height(28f)))
+                {
+                    BootstrapCurrentSceneFromSample();
+                }
+
+                if (GUILayout.Button("新建空白关卡场景并注入壳层", GUILayout.Height(28f)))
+                {
+                    CreateNewSceneAndBootstrap();
+                }
+            }
         }
 
         private void DrawSceneContextSection()
@@ -253,9 +295,7 @@ namespace TowerDefense.Editor
             DrawPropertyField(serializedGame, "bombardTowerCost", "炸弹塔成本");
 
             EditorGUILayout.Space(6f);
-            EditorGUILayout.LabelField("起手部署区", EditorStyles.miniBoldLabel);
-            DrawPropertyField(serializedGame, "initialPlacementSquareCenter", "起手区中心");
-            DrawPropertyField(serializedGame, "initialPlacementSquareSize", "起手区边长");
+            EditorGUILayout.LabelField("放置扩张规则", EditorStyles.miniBoldLabel);
             DrawPropertyField(serializedGame, "relayExpansionSquareSize", "继电器扩张方格边长");
             DrawPropertyField(serializedGame, "defenseExpansionSquareSize", "战斗塔扩张方格边长");
             DrawPropertyField(serializedGame, "relayPlacementRadius", "继电器占地半径");
@@ -329,6 +369,48 @@ namespace TowerDefense.Editor
             EditorUtility.SetDirty(enemyCatalog);
         }
 
+        private void DrawSmokeTestSection()
+        {
+            EditorGUILayout.HelpBox(
+                "这一步专门验证当前关卡能不能真正开始玩。它会直接检查三件事：\n1. 任意可建造区里能不能放下第一座继电器。\n2. 放下继电器后，继电器覆盖区里能不能放下首座战斗塔。\n3. 第一波敌人能不能真正刷出来。\n建议每次新建关卡壳层、改完路径、改完 BuildZone 或波次后都点一次。",
+                MessageType.Info);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("运行当前关卡烟测", GUILayout.Height(28f)))
+                {
+                    LevelSceneSanityProbe.ProbeCurrentScene();
+                    RefreshSmokeTestReport();
+                }
+
+                if (GUILayout.Button("刷新烟测结果", GUILayout.Height(28f)))
+                {
+                    RefreshSmokeTestReport();
+                }
+
+                if (GUILayout.Button("复制报告路径", GUILayout.Height(28f)))
+                {
+                    EditorGUIUtility.systemCopyBuffer = LevelSceneSanityProbe.ReportFilePath;
+                }
+            }
+
+            EditorGUILayout.HelpBox(latestSmokeSummary, latestSmokeMessageType);
+
+            EditorGUILayout.LabelField("烟测报告路径", EditorStyles.miniBoldLabel);
+            EditorGUILayout.SelectableLabel(LevelSceneSanityProbe.ReportFilePath, EditorStyles.textField, GUILayout.Height(EditorGUIUtility.singleLineHeight + 6f));
+
+            EditorGUILayout.LabelField("详细报告", EditorStyles.miniBoldLabel);
+            using (var scroll = new EditorGUILayout.ScrollViewScope(smokeReportScrollPosition, GUILayout.MinHeight(180f)))
+            {
+                smokeReportScrollPosition = scroll.scrollPosition;
+                EditorGUILayout.TextArea(
+                    string.IsNullOrWhiteSpace(latestSmokeReport)
+                        ? "当前还没有烟测报告。先点击“运行当前关卡烟测”。"
+                        : latestSmokeReport,
+                    GUILayout.ExpandHeight(true));
+            }
+        }
+
         private void DrawToolShortcutsSection()
         {
             EditorGUILayout.HelpBox(
@@ -368,6 +450,87 @@ namespace TowerDefense.Editor
                     LevelBalanceTuningWindow.OpenWindow();
                 }
             }
+        }
+
+        private void RefreshSmokeTestReport()
+        {
+            if (!LevelSceneSanityProbe.TryBuildLatestSummary(out latestSmokeSummary, out latestSmokeMessageType))
+            {
+                latestSmokeReport = string.Empty;
+                return;
+            }
+
+            if (!LevelSceneSanityProbe.TryReadLatestReport(out latestSmokeReport))
+            {
+                latestSmokeReport = string.Empty;
+            }
+        }
+
+        private void BootstrapCurrentSceneFromSample()
+        {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            {
+                return;
+            }
+
+            Scene activeScene = SceneManager.GetActiveScene();
+            if (!activeScene.IsValid())
+            {
+                return;
+            }
+
+            Scene sampleScene = EditorSceneManager.OpenScene(TowerDefenseMapToolkitUtility.SampleScenePath, OpenSceneMode.Additive);
+            try
+            {
+                TowerDefenseMapToolkitUtility.BootstrapCombatSceneShellFromSample(sampleScene, activeScene, replaceExistingShellRoots);
+                EditorSceneManager.SaveScene(activeScene);
+            }
+            finally
+            {
+                EditorSceneManager.CloseScene(sampleScene, true);
+            }
+
+            if (!string.IsNullOrWhiteSpace(activeScene.path))
+            {
+                EditorSceneManager.OpenScene(activeScene.path, OpenSceneMode.Single);
+            }
+
+            AdoptCurrentSceneContext();
+        }
+
+        private void CreateNewSceneAndBootstrap()
+        {
+            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            {
+                return;
+            }
+
+            string scenePath = EditorUtility.SaveFilePanelInProject(
+                "创建新关卡场景",
+                "NewTowerDefenseLevel",
+                "unity",
+                "请选择新关卡场景的保存位置。");
+            if (string.IsNullOrWhiteSpace(scenePath))
+            {
+                return;
+            }
+
+            Scene newScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            EditorSceneManager.SaveScene(newScene, scenePath);
+
+            Scene sampleScene = EditorSceneManager.OpenScene(TowerDefenseMapToolkitUtility.SampleScenePath, OpenSceneMode.Additive);
+            try
+            {
+                TowerDefenseMapToolkitUtility.BootstrapCombatSceneShellFromSample(sampleScene, newScene, replaceExistingShellRoots);
+                EditorSceneManager.SaveScene(newScene);
+            }
+            finally
+            {
+                EditorSceneManager.CloseScene(sampleScene, true);
+            }
+
+            EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
+            AdoptCurrentSceneContext();
         }
 
         private void AdoptCurrentSceneContext()

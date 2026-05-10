@@ -383,7 +383,6 @@ public class TowerDefenseGame : MonoBehaviour
         InitializePlacementVisuals();
         _presentationCoordinator?.InitializePresentation("Place a relay on any empty ground, then deploy towers inside relay coverage. You can drag the deploy cards or use hotkeys 1 / 2 / 3 / 4.");
         _placementSupportCoordinator?.HidePlacementAreaOverlay();
-        _placementSupportCoordinator?.RunStarterPlacementSanityCheck();
         _powerGridCoordinator?.RecalculatePowerDistribution();
     }
 

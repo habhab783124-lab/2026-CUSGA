@@ -426,6 +426,79 @@ namespace TowerDefense.Editor
         }
 
         /// <summary>
+        /// Creates one new waypoint at the end of the current path.
+        ///
+        /// This is the smallest missing primitive for a fully tool-driven workflow:
+        /// until now the path tool could only reorder or collect existing points, but it could not
+        /// actually author a brand-new point into the scene.
+        /// </summary>
+        internal static Transform CreateWaypointAtEnd(EnemyPath enemyPath, Vector3 worldPosition, bool renameWaypoints)
+        {
+            if (enemyPath == null)
+            {
+                return null;
+            }
+
+            Transform waypointRoot = EnsureWaypointRoot(enemyPath);
+            if (waypointRoot == null)
+            {
+                return null;
+            }
+
+            List<Transform> currentWaypoints = GetWaypointChildren(enemyPath);
+            GameObject waypointObject = new GameObject("Waypoint_New");
+            Undo.RegisterCreatedObjectUndo(waypointObject, "创建路径点");
+            Transform newWaypoint = waypointObject.transform;
+            Undo.SetTransformParent(newWaypoint, waypointRoot, "把路径点收进 EnemyPath");
+            newWaypoint.position = worldPosition;
+
+            currentWaypoints.Add(newWaypoint);
+            ApplyWaypointOrder(enemyPath, currentWaypoints, renameWaypoints);
+            return newWaypoint;
+        }
+
+        /// <summary>
+        /// Creates one new waypoint immediately after an existing waypoint.
+        ///
+        /// This is the authoring-friendly version of "insert point here":
+        /// the user can keep editing the route in local order without rebuilding the whole chain.
+        /// </summary>
+        internal static Transform CreateWaypointAfter(
+            EnemyPath enemyPath,
+            Transform previousWaypoint,
+            Vector3 worldPosition,
+            bool renameWaypoints)
+        {
+            if (enemyPath == null || previousWaypoint == null)
+            {
+                return null;
+            }
+
+            Transform waypointRoot = EnsureWaypointRoot(enemyPath);
+            if (waypointRoot == null)
+            {
+                return null;
+            }
+
+            List<Transform> currentWaypoints = GetWaypointChildren(enemyPath);
+            int previousIndex = currentWaypoints.IndexOf(previousWaypoint);
+            if (previousIndex < 0)
+            {
+                return null;
+            }
+
+            GameObject waypointObject = new GameObject("Waypoint_New");
+            Undo.RegisterCreatedObjectUndo(waypointObject, "创建路径点");
+            Transform newWaypoint = waypointObject.transform;
+            Undo.SetTransformParent(newWaypoint, waypointRoot, "把路径点收进 EnemyPath");
+            newWaypoint.position = worldPosition;
+
+            currentWaypoints.Insert(previousIndex + 1, newWaypoint);
+            ApplyWaypointOrder(enemyPath, currentWaypoints, renameWaypoints);
+            return newWaypoint;
+        }
+
+        /// <summary>
         /// Moves one existing waypoint to the end of the path.
         ///
         /// Even though this sounds simple, it is a very common correction during route
@@ -621,6 +694,12 @@ namespace TowerDefense.Editor
 
         private ReorderableList _waypointList; // 中文：可拖拽重排列表
 
+        [SerializeField] private bool sceneClickPlacementMode; // 中文：是否启用 Scene 点击放点模式
+        [SerializeField] private bool insertCreatedPointAfterSelection = true; // 中文：新点优先插到当前选中点后面
+        [SerializeField] private bool frameCreatedWaypointAfterCreate = true; // 中文：创建后是否聚焦新点
+        [SerializeField] private float createdWaypointZ = 0f; // 中文：新点落在哪个 Z 平面
+        [SerializeField] private Vector2 createdWaypointOffset = new Vector2(4f, 0f); // 中文：在当前点后补点时的默认偏移
+
         [MenuItem("Tools/Tower Defense/路径点编辑工具")]
         public static void OpenWindow()
         {
@@ -643,6 +722,7 @@ namespace TowerDefense.Editor
         private void OnEnable()
         {
             Selection.selectionChanged += OnSelectionChanged;
+            SceneView.duringSceneGui += OnSceneViewGui;
             EnsureList();
             TryAdoptCurrentSelection();
         }
@@ -650,6 +730,7 @@ namespace TowerDefense.Editor
         private void OnDisable()
         {
             Selection.selectionChanged -= OnSelectionChanged;
+            SceneView.duringSceneGui -= OnSceneViewGui;
         }
 
         private void OnSelectionChanged()
@@ -661,6 +742,8 @@ namespace TowerDefense.Editor
         {
             EnsureList();
             DrawTargetPathSection();
+            EditorGUILayout.Space(10f);
+            DrawWaypointCreateSection();
             EditorGUILayout.Space(10f);
             DrawSelectionCollectSection();
             EditorGUILayout.Space(10f);
@@ -714,6 +797,47 @@ namespace TowerDefense.Editor
             }
 
             EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawWaypointCreateSection()
+        {
+            EditorGUILayout.LabelField("创建新路径点", EditorStyles.boldLabel);
+
+            if (targetPath == null)
+            {
+                EditorGUILayout.HelpBox("先指定一条 EnemyPath，路径点创建器才知道新点应该挂到哪条路径下面。", MessageType.Info);
+                return;
+            }
+
+            insertCreatedPointAfterSelection = EditorGUILayout.Toggle("优先插到当前选中点后面", insertCreatedPointAfterSelection);
+            frameCreatedWaypointAfterCreate = EditorGUILayout.Toggle("创建后聚焦并选中新点", frameCreatedWaypointAfterCreate);
+            createdWaypointZ = EditorGUILayout.FloatField("创建点所在 Z 平面", createdWaypointZ);
+            createdWaypointOffset = EditorGUILayout.Vector2Field("补点默认偏移", createdWaypointOffset);
+
+            EditorGUILayout.HelpBox(
+                "这里补上了从零做路径时缺的那一步：你现在可以直接创建新路径点，而不必先手工在 Hierarchy 里建空物体。\n- 在 Scene 视图中心创建：适合快速落一个新点。\n- 在当前点后按偏移创建：适合顺着路线往前补点。\n- Scene 点击放点模式：开启后直接在 Scene 里左键点一下就会落点，Esc 退出。",
+                MessageType.None);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("在 Scene 视图中心创建"))
+                {
+                    CreateWaypointAtSceneViewPivot();
+                }
+
+                if (GUILayout.Button("在当前点后按偏移创建"))
+                {
+                    CreateWaypointAfterCurrentSelectionWithOffset();
+                }
+            }
+
+            string toggleLabel = sceneClickPlacementMode ? "关闭 Scene 点击放点模式" : "开启 Scene 点击放点模式";
+            if (GUILayout.Button(toggleLabel))
+            {
+                sceneClickPlacementMode = !sceneClickPlacementMode;
+                SceneView.RepaintAll();
+                Repaint();
+            }
         }
 
         private void DrawQuickFixSection()
@@ -934,6 +1058,111 @@ namespace TowerDefense.Editor
             }
 
             EditorGUILayout.EndHorizontal();
+        }
+
+        private void OnSceneViewGui(SceneView sceneView)
+        {
+            if (!sceneClickPlacementMode || targetPath == null)
+            {
+                return;
+            }
+
+            Handles.BeginGUI();
+            GUILayout.BeginArea(new Rect(12f, 12f, 320f, 64f), EditorStyles.helpBox);
+            GUILayout.Label("路径点放置模式已开启", EditorStyles.boldLabel);
+            GUILayout.Label("左键点击 Scene 直接放点，Esc 退出。", EditorStyles.wordWrappedMiniLabel);
+            GUILayout.EndArea();
+            Handles.EndGUI();
+
+            Event currentEvent = Event.current;
+            if (currentEvent == null)
+            {
+                return;
+            }
+
+            if (currentEvent.type == EventType.KeyDown && currentEvent.keyCode == KeyCode.Escape)
+            {
+                sceneClickPlacementMode = false;
+                currentEvent.Use();
+                Repaint();
+                SceneView.RepaintAll();
+                return;
+            }
+
+            if (currentEvent.type != EventType.MouseDown || currentEvent.button != 0 || currentEvent.alt)
+            {
+                return;
+            }
+
+            Plane authoringPlane = new Plane(Vector3.forward, new Vector3(0f, 0f, createdWaypointZ));
+            Ray mouseRay = HandleUtility.GUIPointToWorldRay(currentEvent.mousePosition);
+            if (!authoringPlane.Raycast(mouseRay, out float enter))
+            {
+                return;
+            }
+
+            Vector3 worldPoint = mouseRay.GetPoint(enter);
+            CreateWaypointAtWorldPosition(worldPoint);
+            currentEvent.Use();
+        }
+
+        private void CreateWaypointAtSceneViewPivot()
+        {
+            SceneView sceneView = SceneView.lastActiveSceneView;
+            Vector3 pivot = sceneView != null ? sceneView.pivot : Vector3.zero;
+            CreateWaypointAtWorldPosition(new Vector3(pivot.x, pivot.y, createdWaypointZ));
+        }
+
+        private void CreateWaypointAfterCurrentSelectionWithOffset()
+        {
+            if (targetPath == null)
+            {
+                return;
+            }
+
+            List<Transform> currentWaypoints = EnemyPathAuthoringUtility.GetWaypointChildren(targetPath);
+            Transform activeWaypoint = Selection.activeTransform != null && currentWaypoints.Contains(Selection.activeTransform)
+                ? Selection.activeTransform
+                : currentWaypoints.LastOrDefault();
+            if (activeWaypoint == null)
+            {
+                CreateWaypointAtWorldPosition(new Vector3(createdWaypointOffset.x, createdWaypointOffset.y, createdWaypointZ));
+                return;
+            }
+
+            Vector3 worldPosition = activeWaypoint.position + new Vector3(createdWaypointOffset.x, createdWaypointOffset.y, 0f);
+            worldPosition.z = createdWaypointZ;
+            CreateWaypointAtWorldPosition(worldPosition, activeWaypoint);
+        }
+
+        private void CreateWaypointAtWorldPosition(Vector3 worldPosition, Transform preferredAnchor = null)
+        {
+            if (targetPath == null)
+            {
+                return;
+            }
+
+            List<Transform> currentWaypoints = EnemyPathAuthoringUtility.GetWaypointChildren(targetPath);
+            Transform selectedWaypoint = Selection.activeTransform != null && currentWaypoints.Contains(Selection.activeTransform)
+                ? Selection.activeTransform
+                : null;
+            Transform anchorWaypoint = preferredAnchor != null ? preferredAnchor : selectedWaypoint;
+
+            Transform createdWaypoint = insertCreatedPointAfterSelection && anchorWaypoint != null
+                ? EnemyPathAuthoringUtility.CreateWaypointAfter(targetPath, anchorWaypoint, worldPosition, renameWaypointsOnApply)
+                : EnemyPathAuthoringUtility.CreateWaypointAtEnd(targetPath, worldPosition, renameWaypointsOnApply);
+            if (createdWaypoint == null)
+            {
+                return;
+            }
+
+            RefreshWaypointBufferFromScene();
+            Selection.activeTransform = createdWaypoint;
+
+            if (frameCreatedWaypointAfterCreate && SceneView.lastActiveSceneView != null)
+            {
+                SceneView.FrameLastActiveSceneView();
+            }
         }
 
         private void EnsureList()

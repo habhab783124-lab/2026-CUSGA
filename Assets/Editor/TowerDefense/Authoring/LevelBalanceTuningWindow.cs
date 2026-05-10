@@ -302,8 +302,6 @@ namespace TowerDefense.Editor
             DrawPropertyField(serializedGame, "defensePlacementRadius");
             DrawPropertyField(serializedGame, "relayExpansionSquareSize");
             DrawPropertyField(serializedGame, "defenseExpansionSquareSize");
-            DrawPropertyField(serializedGame, "initialPlacementSquareCenter");
-            DrawPropertyField(serializedGame, "initialPlacementSquareSize");
 
             serializedGame.ApplyModifiedProperties();
             EditorUtility.SetDirty(currentGame);

@@ -757,6 +757,74 @@ namespace TowerDefense.Editor
         }
 
         /// <summary>
+        /// Bootstraps a brand-new combat-scene shell by cloning the minimum shared roots from
+        /// `SampleScene`, then rebinding all scene references onto the cloned copy.
+        ///
+        /// Why this exists:
+        /// - the user wants to start from a fresh scene without hand-adding runtime shell objects
+        /// - later authoring tools assume these shell objects already exist
+        /// - a one-click shell bootstrap keeps the workflow inside the toolchain instead of
+        ///   forcing authors back into manual hierarchy surgery
+        ///
+        /// Scope:
+        /// - clone shared shell roots
+        /// - optionally replace same-name roots in the target scene
+        /// - then run the existing SampleScene sync pass so cross-root references get rebound
+        ///
+        /// Non-goals:
+        /// - this does not redesign the target map
+        /// - this does not invent a new blank gameplay shell from code
+        /// - it intentionally starts from the known-good SampleScene runtime shell
+        /// </summary>
+        internal static void BootstrapCombatSceneShellFromSample(Scene sampleScene, Scene targetScene, bool replaceExistingRoots)
+        {
+            HashSet<GameObject> rootsToClone = new HashSet<GameObject>();
+
+            TryAddComponentRoot<TowerDefenseGame>(sampleScene, rootsToClone);
+            TryAddComponentRoot<WaveSpawner>(sampleScene, rootsToClone);
+            TryAddComponentRoot<BattlefieldMapDefinition>(sampleScene, rootsToClone);
+            TryAddComponentRoot<BuildZone>(sampleScene, rootsToClone);
+
+            TryAddNamedRoot(sampleScene, rootsToClone, "Main Camera");
+            TryAddNamedRoot(sampleScene, rootsToClone, "HUDCanvas");
+            TryAddNamedRoot(sampleScene, rootsToClone, "PlacedTowers");
+            TryAddNamedRoot(sampleScene, rootsToClone, "PlacementPreviewRoot");
+            TryAddNamedRoot(sampleScene, rootsToClone, "EnemiesRoot");
+            TryAddNamedRoot(sampleScene, rootsToClone, "EventSystem");
+            TryAddNamedRoot(sampleScene, rootsToClone, "PathVisuals");
+
+            foreach (GameObject sourceRoot in rootsToClone)
+            {
+                if (sourceRoot == null)
+                {
+                    continue;
+                }
+
+                GameObject existingRoot = FindRootObjectByName(targetScene, sourceRoot.name);
+                if (existingRoot != null)
+                {
+                    if (!replaceExistingRoots)
+                    {
+                        continue;
+                    }
+
+                    Undo.DestroyObjectImmediate(existingRoot);
+                }
+
+                GameObject clonedRoot = Object.Instantiate(sourceRoot);
+                clonedRoot.name = sourceRoot.name;
+                SceneManager.MoveGameObjectToScene(clonedRoot, targetScene);
+                Undo.RegisterCreatedObjectUndo(clonedRoot, $"创建共享壳层对象 {sourceRoot.name}");
+            }
+
+            ClearAuthoredMapContentForFreshScene(targetScene);
+            EnsureNamedRoot(targetScene, "BattlefieldDecor");
+            EnsureNamedRoot(targetScene, "PathVisuals");
+            SyncSceneFromSample(sampleScene, targetScene);
+            EditorSceneManager.MarkSceneDirty(targetScene);
+        }
+
+        /// <summary>
         /// Compares the current scene HUD against SampleScene using object-name matching.
         ///
         /// This stays intentionally narrow: it only compares a set of well-known, author-facing
@@ -943,6 +1011,82 @@ namespace TowerDefense.Editor
             }
 
             return rows;
+        }
+
+        private static void TryAddComponentRoot<T>(Scene scene, ISet<GameObject> roots) where T : Component
+        {
+            T component = FindFirstComponentInScene<T>(scene);
+            if (component != null && component.transform.root != null)
+            {
+                roots.Add(component.transform.root.gameObject);
+            }
+        }
+
+        private static void TryAddNamedRoot(Scene scene, ISet<GameObject> roots, string rootName)
+        {
+            GameObject rootObject = FindRootObjectByName(scene, rootName);
+            if (rootObject != null)
+            {
+                roots.Add(rootObject);
+            }
+        }
+
+        private static GameObject FindRootObjectByName(Scene scene, string rootName)
+        {
+            return scene.GetRootGameObjects().FirstOrDefault(rootObject => rootObject != null && rootObject.name == rootName);
+        }
+
+        private static void ClearAuthoredMapContentForFreshScene(Scene targetScene)
+        {
+            foreach (EnemySpawnGate spawnGate in targetScene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<EnemySpawnGate>(true)).ToList())
+            {
+                if (spawnGate != null)
+                {
+                    Undo.DestroyObjectImmediate(spawnGate.gameObject);
+                }
+            }
+
+            foreach (DefensePointFlag defensePoint in targetScene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<DefensePointFlag>(true)).ToList())
+            {
+                if (defensePoint != null)
+                {
+                    Undo.DestroyObjectImmediate(defensePoint.gameObject);
+                }
+            }
+
+            foreach (EnemyPath enemyPath in targetScene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<EnemyPath>(true)).ToList())
+            {
+                if (enemyPath != null)
+                {
+                    Undo.DestroyObjectImmediate(enemyPath.gameObject);
+                }
+            }
+
+            foreach (GameObject pathSegment in EnumerateSceneObjects(targetScene)
+                         .Where(sceneObject => sceneObject != null && sceneObject.name.StartsWith("PathSegment_", StringComparison.Ordinal))
+                         .ToList())
+            {
+                Undo.DestroyObjectImmediate(pathSegment);
+            }
+
+            BuildZone buildZone = FindFirstComponentInScene<BuildZone>(targetScene);
+            if (buildZone != null)
+            {
+                Transform zoneShapeRoot = EnsureZoneShapeRoot(buildZone);
+                if (zoneShapeRoot != null)
+                {
+                    foreach (Transform child in zoneShapeRoot.Cast<Transform>().ToList())
+                    {
+                        if (child != null)
+                        {
+                            Undo.DestroyObjectImmediate(child.gameObject);
+                        }
+                    }
+                }
+
+                buildZone.CollectZoneShapeColliders();
+                EditorUtility.SetDirty(buildZone);
+            }
         }
 
         internal static TMP_Text FindTextByName(Scene scene, string objectName)

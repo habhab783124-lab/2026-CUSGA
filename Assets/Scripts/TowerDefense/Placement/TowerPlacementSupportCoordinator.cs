@@ -101,7 +101,6 @@ public sealed class TowerPlacementSupportCoordinator
         }
 
         placementRules.BindSceneReferences(_buildZoneQuery != null ? _buildZoneQuery() : null, _placedTowerRootQuery != null ? _placedTowerRootQuery() : null);
-        placementRules.ConfigureStarterZone(_initialPlacementSquareCenter, _initialPlacementSquareSize);
     }
 
     /// <summary>
@@ -291,8 +290,9 @@ public sealed class TowerPlacementSupportCoordinator
             return;
         }
 
-        Bounds starterBounds = GetStarterZoneBounds();
-        placementVisualController.RefreshStarterZoneMarker(!(_isGameOverQuery != null && _isGameOverQuery()) && ShouldShowStarterZoneMarker(), starterBounds);
+        // 最新规则已经取消了“首塔起手区”概念。
+        // 因此这里统一强制隐藏这类历史标记，避免作者和玩家继续被旧视觉提示误导。
+        placementVisualController.RefreshStarterZoneMarker(false, new Bounds(Vector3.zero, Vector3.zero));
     }
 
     /// <summary>
@@ -301,13 +301,7 @@ public sealed class TowerPlacementSupportCoordinator
     /// </summary>
     public bool ShouldShowStarterZoneMarker()
     {
-        if (_isGameOverQuery != null && _isGameOverQuery())
-        {
-            return false;
-        }
-
-        Transform placedTowerRoot = _placedTowerRootQuery != null ? _placedTowerRootQuery() : null;
-        return placedTowerRoot == null || placedTowerRoot.childCount == 0;
+        return false;
     }
 
     /// <summary>
@@ -316,10 +310,7 @@ public sealed class TowerPlacementSupportCoordinator
     /// </summary>
     public Bounds GetStarterZoneBounds()
     {
-        TowerPlacementRules placementRules = _placementRulesQuery != null ? _placementRulesQuery() : null;
-        return placementRules != null
-            ? placementRules.GetStarterZoneBounds()
-            : TowerPlacementRules.CreateSquareBounds(_initialPlacementSquareCenter, _initialPlacementSquareSize);
+        return new Bounds(Vector3.zero, Vector3.zero);
     }
 
     /// <summary>
@@ -328,19 +319,7 @@ public sealed class TowerPlacementSupportCoordinator
     /// </summary>
     public void DrawStarterZoneGizmo()
     {
-        Vector3 center = new Vector3(_initialPlacementSquareCenter.x, _initialPlacementSquareCenter.y, 0f);
-        Vector3 size = new Vector3(_initialPlacementSquareSize, _initialPlacementSquareSize, 0.01f);
-
-        Color fillColor = _starterZoneMarkerFillColor;
-        fillColor.a = Mathf.Max(fillColor.a, 0.3f);
-        Gizmos.color = fillColor;
-        Gizmos.DrawCube(center, size);
-
-        Color edgeColor = _starterZoneMarkerEdgeColor;
-        edgeColor.a = 1f;
-        Gizmos.color = edgeColor;
-        Gizmos.DrawWireCube(center, size);
-        Gizmos.DrawWireCube(center, size * 1.04f);
+        // 历史起手区 Gizmo 已经废弃，不再绘制。
     }
 
     /// <summary>
@@ -349,17 +328,9 @@ public sealed class TowerPlacementSupportCoordinator
     /// </summary>
     public void RunStarterPlacementSanityCheck()
     {
-        if (_isGameOverQuery != null && _isGameOverQuery())
-        {
-            return;
-        }
-
-        Vector3 samplePosition = new Vector3(_initialPlacementSquareCenter.x, _initialPlacementSquareCenter.y, 0f);
-        bool relayValid = ValidatePlacementPosition(samplePosition, TowerType.Relay, out string relayReason);
-        bool defenseValid = ValidatePlacementPosition(samplePosition, TowerType.SingleTarget, out string defenseReason);
-
-        _logPlacementDiagnostic?.Invoke(
-            $"Phase-two placement sanity check: sample={samplePosition} relayValid={relayValid} relayReason={relayReason} defenseValid={defenseValid} defenseReason={defenseReason}");
+        // 历史的“起手区自检”已失去意义。
+        // 新规则下，初始继电器允许在任意可放置区域落点，
+        // 真正的最小可玩性检查统一交给编辑器侧的运行态烟测工具处理。
     }
 
     /// <summary>

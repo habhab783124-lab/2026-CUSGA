@@ -27,8 +27,6 @@ public sealed class TowerPlacementRules
 
     private BuildZone _buildZone;
     private Transform _placedTowerRoot;
-    private Vector2 _starterZoneCenter;
-    private float _starterZoneSize;
 
     public TowerPlacementRules(
         Func<TowerType, float> getPlacementRadius,
@@ -55,8 +53,9 @@ public sealed class TowerPlacementRules
     /// </summary>
     public void ConfigureStarterZone(Vector2 starterZoneCenter, float starterZoneSize)
     {
-        _starterZoneCenter = starterZoneCenter;
-        _starterZoneSize = starterZoneSize;
+        // 起手区规则已经废弃。
+        // 这里保留空实现，只是为了兼容旧的调用点和旧场景序列化数据，
+        // 避免在这轮规则切换时引入额外的装配层回归。
     }
 
     /// <summary>
@@ -141,20 +140,7 @@ public sealed class TowerPlacementRules
             return new Bounds(Vector3.zero, Vector3.zero);
         }
 
-        Bounds buildBounds = _buildZone.WorldBounds;
-
-        if (_placedTowerRoot == null || _placedTowerRoot.childCount == 0)
-        {
-            Bounds initialBounds = CreateSquareBounds(_starterZoneCenter, _starterZoneSize);
-            return IntersectBounds(buildBounds, initialBounds);
-        }
-
-        if (!TryBuildPlacementNetworkBounds(out Bounds networkBounds))
-        {
-            return buildBounds;
-        }
-
-        return IntersectBounds(buildBounds, networkBounds);
+        return _buildZone.WorldBounds;
     }
 
     /// <summary>
@@ -162,7 +148,7 @@ public sealed class TowerPlacementRules
     /// </summary>
     public Bounds GetStarterZoneBounds()
     {
-        return CreateSquareBounds(_starterZoneCenter, _starterZoneSize);
+        return new Bounds(Vector3.zero, Vector3.zero);
     }
 
     /// <summary>
@@ -170,7 +156,7 @@ public sealed class TowerPlacementRules
     /// </summary>
     public bool ShouldShowStarterZoneMarker()
     {
-        return _placedTowerRoot == null || _placedTowerRoot.childCount == 0;
+        return false;
     }
 
     /// <summary>
@@ -181,39 +167,7 @@ public sealed class TowerPlacementRules
     private bool IsWithinPlacementNetwork(Vector3 worldPosition, out string invalidReason)
     {
         invalidReason = string.Empty;
-
-        if (_placedTowerRoot == null || _placedTowerRoot.childCount == 0)
-        {
-            if (IsInsideSquare(worldPosition, _starterZoneCenter, _starterZoneSize))
-            {
-                return true;
-            }
-
-            invalidReason = "Your first structure must be placed in the starter zone.";
-            return false;
-        }
-
-        for (int i = 0; i < _placedTowerRoot.childCount; i++)
-        {
-            Transform placedTower = _placedTowerRoot.GetChild(i);
-            if (placedTower == null || !placedTower.gameObject.activeInHierarchy)
-            {
-                continue;
-            }
-
-            if (!TryGetPlacedTowerType(placedTower, out TowerType placedTowerType))
-            {
-                continue;
-            }
-
-            if (IsInsideSquare(worldPosition, placedTower.position, _getExpansionSquareSize(placedTowerType)))
-            {
-                return true;
-            }
-        }
-
-        invalidReason = "Place inside the current deployment network.";
-        return false;
+        return true;
     }
 
     private bool TryBuildPlacementNetworkBounds(out Bounds bounds)

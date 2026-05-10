@@ -44,7 +44,7 @@ public class TowerShopCard : MonoBehaviour,
     /// - 当前卡片代表什么建筑。
     /// - 拖拽后会看到什么反馈。
     /// </summary>
-    [SerializeField] private string hoverHint = "Drag the card to preview exact legal areas. Your first structure starts in the starter zone.";
+    [SerializeField] private string hoverHint = "Drag the card to preview exact legal areas. Relays can be placed on any valid buildable ground, and combat towers require relay coverage.";
 
     [Header("Card Visual Refs")]
 
