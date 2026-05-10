@@ -9950,7 +9950,7 @@ MonoBehaviour:
   defensePlacementRadius: 0.58
   relayExpansionSquareSize: 4.5
   defenseExpansionSquareSize: 4.5
-  initialPlacementSquareCenter: {x: -6.5, y: -2.25}
+  initialPlacementSquareCenter: {x: -7, y: -2}
   initialPlacementSquareSize: 3
   validPreviewColor: {r: 0.26, g: 0.95, b: 0.78, a: 0.72}
   invalidPreviewColor: {r: 1, g: 0.32, b: 0.38, a: 0.72}

@@ -160,6 +160,7 @@ public sealed class WaveSpawner : MonoBehaviour
         enemyRootReference = _enemyRoot;
 
         BuildRuntimeWaves();
+        EnsureRuntimeWaveSourceIsUsable();
         CacheRoutePreviewPaths();
 
         if (_battlefieldMap != null)
@@ -438,7 +439,7 @@ public sealed class WaveSpawner : MonoBehaviour
             return false;
         }
 
-        GameObject prototype = runtimeGroup.RuntimePrefab != null ? runtimeGroup.RuntimePrefab : _enemyPrototype;
+        GameObject prototype = ResolveUsableEnemyPrototype(runtimeGroup);
         if (prototype == null)
         {
             Debug.LogWarning("WaveSpawner could not resolve a runtime enemy prefab for the next spawn.", this);
@@ -470,6 +471,107 @@ public sealed class WaveSpawner : MonoBehaviour
         return true;
     }
 
+    /// <summary>
+    /// Keeps authored catalog scenes playable even if part of the catalog wiring is incomplete.
+    ///
+    /// The planner-facing asset workflow is the preferred path, but gameplay should not fully
+    /// collapse just because one level still has a stale prefab or an empty path reference.
+    /// If the asset-built runtime waves cannot actually be used, we fall back to the older scene
+    /// array so the level at least remains testable.
+    /// </summary>
+    private void EnsureRuntimeWaveSourceIsUsable()
+    {
+        if (_runtimeWaves.Count == 0)
+        {
+            return;
+        }
+
+        if (CanUseCurrentRuntimeWaves())
+        {
+            return;
+        }
+
+        Debug.LogWarning("WaveSpawner detected an unusable primary wave source and is falling back to scene-local waves.", this);
+        _runtimeWaves.Clear();
+        BuildRuntimeWavesFromFallbackSceneData();
+    }
+
+    private bool CanUseCurrentRuntimeWaves()
+    {
+        for (int waveIndex = 0; waveIndex < _runtimeWaves.Count; waveIndex++)
+        {
+            RuntimeWave runtimeWave = _runtimeWaves[waveIndex];
+            if (runtimeWave == null || runtimeWave.Groups.Count == 0)
+            {
+                continue;
+            }
+
+            RuntimeSpawnGroup firstGroup = runtimeWave.Groups[0];
+            if (ResolveUsableEnemyPrototype(firstGroup) == null)
+            {
+                return false;
+            }
+
+            EnemyPath probePath = ResolveFirstUsableSpawnPath();
+            if (probePath == null)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private GameObject ResolveUsableEnemyPrototype(RuntimeSpawnGroup runtimeGroup)
+    {
+        if (runtimeGroup != null && TryGetUsableEnemyPrototype(runtimeGroup.RuntimePrefab, out GameObject groupPrototype))
+        {
+            return groupPrototype;
+        }
+
+        if (TryGetUsableEnemyPrototype(_enemyPrototype, out GameObject fallbackPrototype))
+        {
+            return fallbackPrototype;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Validates whether a candidate prefab reference is still safe to use for spawning.
+    ///
+    /// This extra wrapper is important because Unity object references can enter an awkward state
+    /// where the backing object has already been destroyed, but an old serialized wrapper still
+    /// exists long enough for direct member access such as `GetComponent<T>()` to throw
+    /// `MissingReferenceException`.
+    ///
+    /// Instead of letting that exception tear down the whole wave system for the level, we treat
+    /// that candidate as unusable and cleanly fall back to the next available prototype source.
+    /// </summary>
+    private static bool TryGetUsableEnemyPrototype(GameObject candidate, out GameObject usablePrototype)
+    {
+        usablePrototype = null;
+        if (candidate == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            if (candidate.GetComponent<Enemy>() == null)
+            {
+                return false;
+            }
+
+            usablePrototype = candidate;
+            return true;
+        }
+        catch (MissingReferenceException)
+        {
+            return false;
+        }
+    }
+
     private bool HasAnySpawnSource()
     {
         return (_battlefieldMap != null && _battlefieldMap.HasAnyValidSpawnGate()) || _fallbackEnemyPath != null;
@@ -482,10 +584,40 @@ public sealed class WaveSpawner : MonoBehaviour
         if (_battlefieldMap != null && _battlefieldMap.TryGetSpawnGateBySequence(_spawnGateSequence, out spawnGate))
         {
             _spawnGateSequence++;
-            return spawnGate != null ? spawnGate.EnemyPath : null;
+            EnemyPath gatePath = spawnGate != null ? spawnGate.EnemyPath : null;
+            if (IsUsablePath(gatePath))
+            {
+                return gatePath;
+            }
         }
 
-        return _fallbackEnemyPath;
+        if (IsUsablePath(_fallbackEnemyPath))
+        {
+            return _fallbackEnemyPath;
+        }
+
+        return ResolveFirstUsableSpawnPath();
+    }
+
+    private EnemyPath ResolveFirstUsableSpawnPath()
+    {
+        if (_battlefieldMap != null && _battlefieldMap.HasAnyValidSpawnGate())
+        {
+            for (int gateIndex = 0; gateIndex < _battlefieldMap.SpawnGateCount; gateIndex++)
+            {
+                if (_battlefieldMap.TryGetSpawnGateBySequence(gateIndex, out EnemySpawnGate spawnGate) && spawnGate != null && IsUsablePath(spawnGate.EnemyPath))
+                {
+                    return spawnGate.EnemyPath;
+                }
+            }
+        }
+
+        return IsUsablePath(_fallbackEnemyPath) ? _fallbackEnemyPath : null;
+    }
+
+    private static bool IsUsablePath(EnemyPath enemyPath)
+    {
+        return enemyPath != null && enemyPath.WaypointCount > 0;
     }
 
     private void CacheRoutePreviewPaths()

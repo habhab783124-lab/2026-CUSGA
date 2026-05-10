@@ -153,6 +153,9 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private Color starterZoneMarkerEdgeColor = new Color(0.9f, 1f, 0.98f, 1f);
     [SerializeField] private int starterZoneMarkerSortingOrder = 10;
 
+    [Header("Diagnostics")]
+    [SerializeField] private bool enablePlacementDiagnostics;
+
     [Header("Tower Presentation")]
     [SerializeField] private TowerPresentationAuthoring relayPresentation = new TowerPresentationAuthoring
     {
@@ -669,6 +672,11 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private void LogPlacementDiagnostic(string message)
     {
+        if (!enablePlacementDiagnostics)
+        {
+            return;
+        }
+
         Debug.Log($"[PlacementDebug] {message}", this);
     }
 

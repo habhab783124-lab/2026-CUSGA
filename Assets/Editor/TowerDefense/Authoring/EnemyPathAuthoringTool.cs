@@ -621,10 +621,10 @@ namespace TowerDefense.Editor
 
         private ReorderableList _waypointList; // 中文：可拖拽重排列表
 
-        [MenuItem("Tools/Tower Defense/Enemy Path Authoring Tool")]
+        [MenuItem("Tools/Tower Defense/路径点编辑工具")]
         public static void OpenWindow()
         {
-            EnemyPathAuthoringTool window = GetWindow<EnemyPathAuthoringTool>("Enemy Path Tool");
+            EnemyPathAuthoringTool window = GetWindow<EnemyPathAuthoringTool>("路径点工具");
             window.minSize = new Vector2(480f, 380f);
             window.TryAdoptCurrentSelection();
             window.EnsureList();
@@ -632,7 +632,7 @@ namespace TowerDefense.Editor
 
         internal static void OpenWindow(EnemyPath enemyPath)
         {
-            EnemyPathAuthoringTool window = GetWindow<EnemyPathAuthoringTool>("Enemy Path Tool");
+            EnemyPathAuthoringTool window = GetWindow<EnemyPathAuthoringTool>("路径点工具");
             window.minSize = new Vector2(480f, 380f);
             window.targetPath = enemyPath;
             window.RefreshWaypointBufferFromScene();
@@ -673,10 +673,10 @@ namespace TowerDefense.Editor
 
         private void DrawTargetPathSection()
         {
-            EditorGUILayout.LabelField("Current Path", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("当前路径", EditorStyles.boldLabel);
 
             EditorGUI.BeginChangeCheck();
-            targetPath = (EnemyPath)EditorGUILayout.ObjectField("Enemy Path", targetPath, typeof(EnemyPath), true);
+            targetPath = (EnemyPath)EditorGUILayout.ObjectField("EnemyPath 对象", targetPath, typeof(EnemyPath), true);
             if (EditorGUI.EndChangeCheck())
             {
                 RefreshWaypointBufferFromScene();
@@ -689,7 +689,7 @@ namespace TowerDefense.Editor
             }
 
             List<Transform> currentWaypoints = EnemyPathAuthoringUtility.GetWaypointChildren(targetPath);
-            string waypointRootName = targetPath.WaypointRoot != null ? targetPath.WaypointRoot.name : "(Direct Children)";
+            string waypointRootName = targetPath.WaypointRoot != null ? targetPath.WaypointRoot.name : "(直接子节点)";
             EditorGUILayout.HelpBox(
                 $"当前路径：{targetPath.name}\n当前路径点数量：{currentWaypoints.Count}\n路径点根节点：{waypointRootName}",
                 MessageType.None);
@@ -718,7 +718,7 @@ namespace TowerDefense.Editor
 
         private void DrawQuickFixSection()
         {
-            EditorGUILayout.LabelField("Quick Fix", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("快速修正", EditorStyles.boldLabel);
 
             if (targetPath == null)
             {
@@ -802,7 +802,7 @@ namespace TowerDefense.Editor
 
         private void DrawSelectionCollectSection()
         {
-            EditorGUILayout.LabelField("Collect Selected Points", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("收集当前选中点", EditorStyles.boldLabel);
 
             List<Transform> selectedPoints = targetPath != null
                 ? EnemyPathAuthoringUtility.GetSelectedCandidatePoints(targetPath)
@@ -862,7 +862,7 @@ namespace TowerDefense.Editor
 
         private void DrawWaypointListSection()
         {
-            EditorGUILayout.LabelField("Waypoint Order", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("路径点顺序", EditorStyles.boldLabel);
 
             if (targetPath == null)
             {
@@ -916,7 +916,7 @@ namespace TowerDefense.Editor
                 return;
             }
 
-            EditorGUILayout.LabelField("Apply", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("应用到场景", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
                 "列表里的顺序只是编辑缓冲。点击下面的按钮后，工具才会真正把层级顺序改回 Scene，运行时也才会按这个顺序走。",
                 MessageType.Info);
@@ -967,7 +967,7 @@ namespace TowerDefense.Editor
 
                 string positionSummary = waypoint != null
                     ? $"{waypoint.position.x:0.0}, {waypoint.position.y:0.0}"
-                    : "Missing";
+                    : "缺失";
                 EditorGUI.LabelField(positionRect, positionSummary, EditorStyles.miniLabel);
             };
             _waypointList.onReorderCallback = _ =>

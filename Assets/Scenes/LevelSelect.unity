@@ -398,8 +398,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: SECOND FRONT
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -679,8 +679,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: FINAL CIRCUIT
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -888,8 +888,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: LEVEL 05
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1022,8 +1022,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: EDIT READY
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1156,8 +1156,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: EDIT READY
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1290,8 +1290,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: CURRENT TEST ROUTE
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1425,8 +1425,8 @@ MonoBehaviour:
   m_text: A new mission scene prepared for your next map. You can open it directly
     in the editor and start rebuilding terrain, routes, and decoration.
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1559,8 +1559,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: RETURN TO MAIN MENU
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1694,8 +1694,8 @@ MonoBehaviour:
   m_text: Reserved for the fourth mission layout. Treat this as another fully editable
     gameplay scene slot.
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2179,8 +2179,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: OPEN
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2388,8 +2388,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: LEVEL 01
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3174,8 +3174,8 @@ MonoBehaviour:
   m_text: Reserved for the third mission layout. The gameplay skeleton is copied
     over so you can focus on map authoring first.
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3455,8 +3455,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: EDIT READY
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3589,8 +3589,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: LEVEL 04
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3724,8 +3724,8 @@ MonoBehaviour:
   m_text: The first mission is the current sample scene. The extra four scenes are
     prepared so you can continue building later maps directly in the Unity editor.
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -3933,8 +3933,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Back
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4215,8 +4215,8 @@ MonoBehaviour:
   m_text: Reserved for the fifth mission layout. Keep this one for your later, more
     advanced battlefield ideas.
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4424,8 +4424,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: OUTER GRID
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4633,8 +4633,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: EDIT READY
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -4945,8 +4945,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: LEVEL 03
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5079,8 +5079,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: RELAY BREAK
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5213,8 +5213,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: MISSION SELECT
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5348,8 +5348,8 @@ MonoBehaviour:
   m_text: The current playable sample battlefield. Use this as the base mission while
     the later scenes are still being authored.
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5482,8 +5482,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: LEVEL 02
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -5738,8 +5738,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Choose a battlefield scene to edit or play
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

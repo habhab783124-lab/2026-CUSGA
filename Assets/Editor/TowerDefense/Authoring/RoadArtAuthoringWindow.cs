@@ -45,10 +45,10 @@ namespace TowerDefense.Editor
         [SerializeField] private string roadArtRootName = "RoadArt";
         [SerializeField] private string roadArtSegmentPrefix = "RoadArt";
 
-        [MenuItem("Tools/Tower Defense/Authoring/Road Art Authoring Tool")]
+        [MenuItem("Tools/Tower Defense/Authoring/道路美术铺设工具")]
         public static void OpenWindow()
         {
-            RoadArtAuthoringWindow window = GetWindow<RoadArtAuthoringWindow>("Road Art");
+            RoadArtAuthoringWindow window = GetWindow<RoadArtAuthoringWindow>("道路美术");
             window.minSize = new Vector2(520f, 360f);
             window.Show();
         }
@@ -66,42 +66,41 @@ namespace TowerDefense.Editor
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("Road Art Authoring Tool", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("道路美术铺设工具", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
-                "Generate decorative road strips on top of authored enemy paths. " +
-                "This tool only creates visual objects and does not touch gameplay blockers.",
+                "在正式路径上铺设独立的道路美术层。这个工具只生成视觉对象，不会改动功能性 PathSegment、碰撞或禁建逻辑。",
                 MessageType.Info);
 
-            targetPath = (EnemyPath)EditorGUILayout.ObjectField("Target EnemyPath", targetPath, typeof(EnemyPath), true);
-            roadArtRootOverride = (Transform)EditorGUILayout.ObjectField("Road Art Root Override", roadArtRootOverride, typeof(Transform), true);
-            straightRoadArtTemplate = (GameObject)EditorGUILayout.ObjectField("Straight Template", straightRoadArtTemplate, typeof(GameObject), false);
-            cornerRoadArtTemplate = (GameObject)EditorGUILayout.ObjectField("Corner Template", cornerRoadArtTemplate, typeof(GameObject), false);
-            endCapRoadArtTemplate = (GameObject)EditorGUILayout.ObjectField("End Cap Template", endCapRoadArtTemplate, typeof(GameObject), false);
-            clearExistingRoadArt = EditorGUILayout.Toggle("Clear Existing Generated Art", clearExistingRoadArt);
-            groupRoadArtByPath = EditorGUILayout.Toggle("Group By Path", groupRoadArtByPath);
-            createCornerMarkers = EditorGUILayout.Toggle("Create Corner Markers", createCornerMarkers);
-            createEndCaps = EditorGUILayout.Toggle("Create End Caps", createEndCaps);
-            defaultRoadArtThickness = EditorGUILayout.FloatField("Default Art Thickness", defaultRoadArtThickness);
-            roadArtRootName = EditorGUILayout.TextField("Road Art Root Name", roadArtRootName);
-            roadArtSegmentPrefix = EditorGUILayout.TextField("Object Prefix", roadArtSegmentPrefix);
+            targetPath = (EnemyPath)EditorGUILayout.ObjectField("目标 EnemyPath", targetPath, typeof(EnemyPath), true);
+            roadArtRootOverride = (Transform)EditorGUILayout.ObjectField("道路美术根覆盖", roadArtRootOverride, typeof(Transform), true);
+            straightRoadArtTemplate = (GameObject)EditorGUILayout.ObjectField("直线路面模板", straightRoadArtTemplate, typeof(GameObject), false);
+            cornerRoadArtTemplate = (GameObject)EditorGUILayout.ObjectField("拐角模板", cornerRoadArtTemplate, typeof(GameObject), false);
+            endCapRoadArtTemplate = (GameObject)EditorGUILayout.ObjectField("端点模板", endCapRoadArtTemplate, typeof(GameObject), false);
+            clearExistingRoadArt = EditorGUILayout.Toggle("生成前清空旧美术层", clearExistingRoadArt);
+            groupRoadArtByPath = EditorGUILayout.Toggle("按路径分组", groupRoadArtByPath);
+            createCornerMarkers = EditorGUILayout.Toggle("生成拐角标记", createCornerMarkers);
+            createEndCaps = EditorGUILayout.Toggle("生成起终点盖板", createEndCaps);
+            defaultRoadArtThickness = EditorGUILayout.FloatField("默认路面厚度", defaultRoadArtThickness);
+            roadArtRootName = EditorGUILayout.TextField("道路美术根名称", roadArtRootName);
+            roadArtSegmentPrefix = EditorGUILayout.TextField("对象名前缀", roadArtSegmentPrefix);
 
             using (new EditorGUILayout.HorizontalScope())
             {
                 using (new EditorGUI.DisabledScope(targetPath == null))
                 {
-                    if (GUILayout.Button("Generate From Selected EnemyPath"))
+                    if (GUILayout.Button("为当前路径生成"))
                     {
                         GenerateForPath(targetPath);
                     }
                 }
 
-                if (GUILayout.Button("Generate For All Scene EnemyPaths"))
+                if (GUILayout.Button("为当前场景全部路径生成"))
                 {
                     GenerateForAllPathsInActiveScene();
                 }
             }
 
-            if (GUILayout.Button("Clear Generated Road Art In Active Scene"))
+            if (GUILayout.Button("清空当前场景已生成道路美术"))
             {
                 ClearGeneratedRoadArtInActiveScene();
             }

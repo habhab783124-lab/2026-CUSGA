@@ -32,10 +32,10 @@ namespace TowerDefense.Editor
         [SerializeField] private bool showPathSummaries = true;
         [SerializeField] private bool showTargetUsageMatrix = true;
 
-        [MenuItem("Tools/Tower Defense/Authoring/Level Topology Editor")]
+        [MenuItem("Tools/Tower Defense/Authoring/关卡拓扑编辑器")]
         public static void OpenWindow()
         {
-            LevelTopologyEditorWindow window = GetWindow<LevelTopologyEditorWindow>("Level Topology");
+            LevelTopologyEditorWindow window = GetWindow<LevelTopologyEditorWindow>("关卡拓扑");
             window.minSize = new Vector2(560f, 420f);
             window.Show();
         }
@@ -67,7 +67,7 @@ namespace TowerDefense.Editor
             if (targetMap == null)
             {
                 EditorGUILayout.HelpBox(
-                    "No BattlefieldMapDefinition is currently targeted. Open a level scene or assign the map root manually.",
+                    "当前还没有接管 BattlefieldMapDefinition。请先打开关卡场景，或手动指定地图入口对象。",
                     MessageType.Info);
                 return;
             }
@@ -75,7 +75,7 @@ namespace TowerDefense.Editor
             Scene scene = targetMap.gameObject.scene;
             if (!scene.IsValid())
             {
-                EditorGUILayout.HelpBox("The selected BattlefieldMapDefinition does not belong to a valid scene.", MessageType.Warning);
+                EditorGUILayout.HelpBox("当前指定的 BattlefieldMapDefinition 不属于有效场景。", MessageType.Warning);
                 return;
             }
 
@@ -106,26 +106,26 @@ namespace TowerDefense.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Scene Ownership", EditorStyles.boldLabel);
-                targetMap = (BattlefieldMapDefinition)EditorGUILayout.ObjectField("Target Map", targetMap, typeof(BattlefieldMapDefinition), true);
-                autoAdoptActiveScene = EditorGUILayout.Toggle("Auto Adopt Active Scene", autoAdoptActiveScene);
-                sortEntriesByName = EditorGUILayout.Toggle("Sort Entries By Name", sortEntriesByName);
-                showPathSummaries = EditorGUILayout.Toggle("Show Path Summaries", showPathSummaries);
-                showTargetUsageMatrix = EditorGUILayout.Toggle("Show Target Usage Matrix", showTargetUsageMatrix);
+                EditorGUILayout.LabelField("场景归属", EditorStyles.boldLabel);
+                targetMap = (BattlefieldMapDefinition)EditorGUILayout.ObjectField("目标地图", targetMap, typeof(BattlefieldMapDefinition), true);
+                autoAdoptActiveScene = EditorGUILayout.Toggle("自动接管当前场景", autoAdoptActiveScene);
+                sortEntriesByName = EditorGUILayout.Toggle("按名称排序", sortEntriesByName);
+                showPathSummaries = EditorGUILayout.Toggle("显示路径摘要", showPathSummaries);
+                showTargetUsageMatrix = EditorGUILayout.Toggle("显示目标压力矩阵", showTargetUsageMatrix);
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button("Adopt Active Scene"))
+                    if (GUILayout.Button("接管当前场景"))
                     {
                         TryAdoptActiveSceneMap(force: true);
                     }
 
-                    if (GUILayout.Button("Collect Scene References"))
+                    if (GUILayout.Button("收集场景引用"))
                     {
                         CollectSceneReferencesOnTargetMap();
                     }
 
-                    if (GUILayout.Button("Ping Map Root") && targetMap != null)
+                    if (GUILayout.Button("定位地图根") && targetMap != null)
                     {
                         Selection.activeObject = targetMap.gameObject;
                         EditorGUIUtility.PingObject(targetMap.gameObject);
@@ -138,13 +138,13 @@ namespace TowerDefense.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Topology Summary", EditorStyles.boldLabel);
-                EditorGUILayout.LabelField("Scene", string.IsNullOrWhiteSpace(scene.name) ? "(Unnamed Scene)" : scene.name);
-                EditorGUILayout.LabelField("Scene Path", string.IsNullOrWhiteSpace(scene.path) ? "(Unsaved)" : scene.path);
-                EditorGUILayout.LabelField("Spawn Gates", spawnGates.Count.ToString());
-                EditorGUILayout.LabelField("Defense Points", defensePoints.Count.ToString());
-                EditorGUILayout.LabelField("Enemy Paths", enemyPaths.Count.ToString());
-                EditorGUILayout.LabelField("Configured Gates", spawnGates.Count(gate => gate != null && gate.IsConfigured).ToString());
+                EditorGUILayout.LabelField("拓扑摘要", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("场景名", string.IsNullOrWhiteSpace(scene.name) ? "(未命名场景)" : scene.name);
+                EditorGUILayout.LabelField("场景路径", string.IsNullOrWhiteSpace(scene.path) ? "(未保存)" : scene.path);
+                EditorGUILayout.LabelField("出怪口数量", spawnGates.Count.ToString());
+                EditorGUILayout.LabelField("防御点数量", defensePoints.Count.ToString());
+                EditorGUILayout.LabelField("敌人路径数量", enemyPaths.Count.ToString());
+                EditorGUILayout.LabelField("已配置出怪口", spawnGates.Count(gate => gate != null && gate.IsConfigured).ToString());
             }
         }
 
@@ -152,23 +152,23 @@ namespace TowerDefense.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Topology Actions", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("拓扑操作", EditorStyles.boldLabel);
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button("Apply Current Gate Order To Map"))
+                    if (GUILayout.Button("按当前顺序写回地图"))
                     {
                         ApplyMapArrays(spawnGates, defensePoints);
                     }
 
-                    if (GUILayout.Button("Sort Gates By Name + Apply"))
+                    if (GUILayout.Button("按名称排序出怪口并写回"))
                     {
                         ApplyMapArrays(
                             spawnGates.OrderBy(gate => gate.name, StringComparer.Ordinal).ToList(),
                             defensePoints);
                     }
 
-                    if (GUILayout.Button("Sort Defense Points By Name + Apply"))
+                    if (GUILayout.Button("按名称排序防御点并写回"))
                     {
                         ApplyMapArrays(
                             spawnGates,
@@ -178,17 +178,17 @@ namespace TowerDefense.Editor
 
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    if (GUILayout.Button("Create Spawn Gate"))
+                    if (GUILayout.Button("创建出怪口"))
                     {
                         CreateSpawnGate(scene);
                     }
 
-                    if (GUILayout.Button("Create Defense Point"))
+                    if (GUILayout.Button("创建防御点"))
                     {
                         CreateDefensePoint(scene);
                     }
 
-                    if (GUILayout.Button("Create Enemy Path"))
+                    if (GUILayout.Button("创建敌人路径"))
                     {
                         CreateEnemyPath(scene);
                     }
@@ -200,7 +200,7 @@ namespace TowerDefense.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Defense Points", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("防御点", EditorStyles.boldLabel);
 
                 foreach (DefensePointFlag defensePoint in SortIfNeeded(defensePoints))
                 {
@@ -215,17 +215,17 @@ namespace TowerDefense.Editor
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            EditorGUILayout.ObjectField("Scene Object", defensePoint, typeof(DefensePointFlag), true);
+                            EditorGUILayout.ObjectField("场景对象", defensePoint, typeof(DefensePointFlag), true);
                             DrawSelectAndPingButtons(defensePoint.gameObject);
                         }
 
                         SerializedObject serializedDefensePoint = new SerializedObject(defensePoint);
-                        DrawStringProperty(serializedDefensePoint, "pointId", "Point Id");
-                        DrawStringProperty(serializedDefensePoint, "displayName", "Display Name");
+                        DrawStringProperty(serializedDefensePoint, "pointId", "点位编号");
+                        DrawStringProperty(serializedDefensePoint, "displayName", "显示名称");
                         serializedDefensePoint.ApplyModifiedPropertiesWithoutUndo();
 
-                        EditorGUILayout.LabelField("Inbound Gates", inboundGateCount.ToString());
-                        EditorGUILayout.Vector3Field("World Position", defensePoint.WorldPosition);
+                        EditorGUILayout.LabelField("承压出怪口数量", inboundGateCount.ToString());
+                        EditorGUILayout.Vector3Field("世界坐标", defensePoint.WorldPosition);
                     }
                 }
             }
@@ -235,7 +235,7 @@ namespace TowerDefense.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Spawn Gates", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("出怪口", EditorStyles.boldLabel);
 
                 foreach (EnemySpawnGate spawnGate in SortIfNeeded(spawnGates))
                 {
@@ -248,31 +248,31 @@ namespace TowerDefense.Editor
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            EditorGUILayout.ObjectField("Scene Object", spawnGate, typeof(EnemySpawnGate), true);
+                            EditorGUILayout.ObjectField("场景对象", spawnGate, typeof(EnemySpawnGate), true);
                             DrawSelectAndPingButtons(spawnGate.gameObject);
                         }
 
                         SerializedObject serializedGate = new SerializedObject(spawnGate);
-                        DrawStringProperty(serializedGate, "gateId", "Gate Id");
-                        DrawStringProperty(serializedGate, "displayName", "Display Name");
-                        DrawObjectProperty(serializedGate, "enemyPathReference", "Enemy Path", typeof(EnemyPath));
-                        DrawObjectProperty(serializedGate, "targetDefensePointReference", "Target Defense Point", typeof(DefensePointFlag));
+                        DrawStringProperty(serializedGate, "gateId", "出怪口编号");
+                        DrawStringProperty(serializedGate, "displayName", "显示名称");
+                        DrawObjectProperty(serializedGate, "enemyPathReference", "敌人路径", typeof(EnemyPath));
+                        DrawObjectProperty(serializedGate, "targetDefensePointReference", "目标防御点", typeof(DefensePointFlag));
                         serializedGate.ApplyModifiedPropertiesWithoutUndo();
 
                         EnemyPath connectedPath = spawnGate.EnemyPath;
                         DefensePointFlag targetDefense = spawnGate.TargetDefensePoint;
-                        EditorGUILayout.LabelField("Configured", spawnGate.IsConfigured ? "Yes" : "No");
-                        EditorGUILayout.LabelField("Path Waypoint Count", connectedPath != null ? EnemyPathAuthoringUtility.GetWaypointChildren(connectedPath).Count.ToString() : "0");
-                        EditorGUILayout.LabelField("Target Core", targetDefense != null ? targetDefense.DisplayName : "(None)");
+                        EditorGUILayout.LabelField("是否已配置", spawnGate.IsConfigured ? "是" : "否");
+                        EditorGUILayout.LabelField("路径点数量", connectedPath != null ? EnemyPathAuthoringUtility.GetWaypointChildren(connectedPath).Count.ToString() : "0");
+                        EditorGUILayout.LabelField("目标防御点", targetDefense != null ? targetDefense.DisplayName : "(无)");
 
                         if (connectedPath != null && !enemyPaths.Contains(connectedPath))
                         {
-                            EditorGUILayout.HelpBox("This gate points at a path that is not part of the current scene path set.", MessageType.Warning);
+                            EditorGUILayout.HelpBox("这个出怪口指向的 EnemyPath 不在当前场景路径集合里。", MessageType.Warning);
                         }
 
                         if (targetDefense != null && !defensePoints.Contains(targetDefense))
                         {
-                            EditorGUILayout.HelpBox("This gate points at a defense point that is not part of the current scene defense-point set.", MessageType.Warning);
+                            EditorGUILayout.HelpBox("这个出怪口指向的防御点不在当前场景防御点集合里。", MessageType.Warning);
                         }
                     }
                 }
@@ -283,7 +283,7 @@ namespace TowerDefense.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Enemy Paths", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("敌人路径", EditorStyles.boldLabel);
 
                 foreach (EnemyPath enemyPath in SortIfNeeded(enemyPaths))
                 {
@@ -301,17 +301,17 @@ namespace TowerDefense.Editor
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            EditorGUILayout.ObjectField("Scene Object", enemyPath, typeof(EnemyPath), true);
+                            EditorGUILayout.ObjectField("场景对象", enemyPath, typeof(EnemyPath), true);
                             DrawSelectAndPingButtons(enemyPath.gameObject);
                         }
 
-                        EditorGUILayout.LabelField("Waypoint Count", waypoints.Count.ToString());
-                        EditorGUILayout.LabelField("Used By Gates", string.IsNullOrWhiteSpace(gateNames) ? "(None)" : gateNames);
+                        EditorGUILayout.LabelField("路径点数量", waypoints.Count.ToString());
+                        EditorGUILayout.LabelField("被哪些出怪口使用", string.IsNullOrWhiteSpace(gateNames) ? "(无)" : gateNames);
 
                         if (waypoints.Count > 0)
                         {
-                            EditorGUILayout.Vector3Field("Start", waypoints[0].position);
-                            EditorGUILayout.Vector3Field("End", waypoints[waypoints.Count - 1].position);
+                            EditorGUILayout.Vector3Field("起点", waypoints[0].position);
+                            EditorGUILayout.Vector3Field("终点", waypoints[waypoints.Count - 1].position);
                         }
                     }
                 }
@@ -322,7 +322,7 @@ namespace TowerDefense.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-                EditorGUILayout.LabelField("Target Usage Matrix", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField("目标压力矩阵", EditorStyles.boldLabel);
 
                 foreach (DefensePointFlag defensePoint in SortIfNeeded(defensePoints))
                 {
@@ -337,7 +337,7 @@ namespace TowerDefense.Editor
 
                     EditorGUILayout.LabelField(
                         defensePoint.DisplayName,
-                        string.IsNullOrWhiteSpace(gateSummary) ? "(No gates currently target this point)" : gateSummary);
+                        string.IsNullOrWhiteSpace(gateSummary) ? "(当前没有出怪口攻击这个点)" : gateSummary);
                 }
             }
         }
@@ -349,7 +349,7 @@ namespace TowerDefense.Editor
                 return;
             }
 
-            Undo.RecordObject(targetMap, "Collect Map Scene References");
+            Undo.RecordObject(targetMap, "收集地图场景引用");
             targetMap.CollectSceneReferences();
             EditorUtility.SetDirty(targetMap);
             EditorSceneManager.MarkSceneDirty(targetMap.gameObject.scene);
@@ -392,7 +392,7 @@ namespace TowerDefense.Editor
         private void CreateSpawnGate(Scene scene)
         {
             GameObject gateObject = new GameObject(BuildNextIndexedName(scene, "SpawnGate_"));
-            Undo.RegisterCreatedObjectUndo(gateObject, "Create Spawn Gate");
+            Undo.RegisterCreatedObjectUndo(gateObject, "创建出怪口");
             SceneManager.MoveGameObjectToScene(gateObject, scene);
             gateObject.transform.SetParent(targetMap != null ? targetMap.transform : null, false);
             gateObject.transform.position = targetMap != null ? targetMap.transform.position : Vector3.zero;
@@ -416,7 +416,7 @@ namespace TowerDefense.Editor
         private void CreateDefensePoint(Scene scene)
         {
             GameObject defenseObject = new GameObject(BuildNextIndexedName(scene, "DefensePoint_"));
-            Undo.RegisterCreatedObjectUndo(defenseObject, "Create Defense Point");
+            Undo.RegisterCreatedObjectUndo(defenseObject, "创建防御点");
             SceneManager.MoveGameObjectToScene(defenseObject, scene);
             defenseObject.transform.SetParent(targetMap != null ? targetMap.transform : null, false);
             defenseObject.transform.position = targetMap != null ? targetMap.transform.position : Vector3.zero;
@@ -435,7 +435,7 @@ namespace TowerDefense.Editor
         private void CreateEnemyPath(Scene scene)
         {
             GameObject pathObject = new GameObject(BuildNextIndexedName(scene, "EnemyPath_"));
-            Undo.RegisterCreatedObjectUndo(pathObject, "Create Enemy Path");
+            Undo.RegisterCreatedObjectUndo(pathObject, "创建敌人路径");
             SceneManager.MoveGameObjectToScene(pathObject, scene);
             pathObject.transform.SetParent(targetMap != null ? targetMap.transform : null, false);
             pathObject.transform.position = targetMap != null ? targetMap.transform.position : Vector3.zero;
@@ -516,12 +516,12 @@ namespace TowerDefense.Editor
                 return;
             }
 
-            if (GUILayout.Button("Select", GUILayout.Width(62f)))
+            if (GUILayout.Button("选中", GUILayout.Width(62f)))
             {
                 Selection.activeObject = gameObject;
             }
 
-            if (GUILayout.Button("Ping", GUILayout.Width(52f)))
+            if (GUILayout.Button("定位", GUILayout.Width(52f)))
             {
                 EditorGUIUtility.PingObject(gameObject);
             }

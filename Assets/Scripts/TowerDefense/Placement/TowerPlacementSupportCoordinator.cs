@@ -301,7 +301,13 @@ public sealed class TowerPlacementSupportCoordinator
     /// </summary>
     public bool ShouldShowStarterZoneMarker()
     {
-        return false;
+        if (_isGameOverQuery != null && _isGameOverQuery())
+        {
+            return false;
+        }
+
+        Transform placedTowerRoot = _placedTowerRootQuery != null ? _placedTowerRootQuery() : null;
+        return placedTowerRoot == null || placedTowerRoot.childCount == 0;
     }
 
     /// <summary>
@@ -348,8 +354,7 @@ public sealed class TowerPlacementSupportCoordinator
             return;
         }
 
-        BuildZone buildZone = _buildZoneQuery != null ? _buildZoneQuery() : null;
-        Vector3 samplePosition = buildZone != null ? buildZone.WorldBounds.center : new Vector3(_initialPlacementSquareCenter.x, _initialPlacementSquareCenter.y, 0f);
+        Vector3 samplePosition = new Vector3(_initialPlacementSquareCenter.x, _initialPlacementSquareCenter.y, 0f);
         bool relayValid = ValidatePlacementPosition(samplePosition, TowerType.Relay, out string relayReason);
         bool defenseValid = ValidatePlacementPosition(samplePosition, TowerType.SingleTarget, out string defenseReason);
 
