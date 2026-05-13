@@ -1,63 +1,153 @@
-# Tower Defense Agent Development Playbook
-Version: 1.6.0
-Updated: 2026-05-09
-Audience: 后续继续开发本项目的人类维护者与智能体
+# 塔防开发智能体执行手册
+Version: 2.0.0
+Updated: 2026-05-12
+
+## 目的
+这份手册定义当前项目里智能体的默认执行顺序，目标是：
+- 避免任务漂移；
+- 避免“做到一半跳去别的任务”；
+- 避免在未对齐范围时直接改文件或改场景；
+- 让后续协作者和智能体都能沿着同一套流程工作。
 
 ## 开工前固定流程
 1. 先读 `AGENTS.md`
-2. 读 `docs/ai-memory/td-memory-main.md`
-3. 如任务涉及场景装配、地图结构、UI、拖拽放置，再读 `td-memory-architecture.md`
-4. 如任务涉及规范、历史、验收、路线图，再读 `td-memory-rules-and-history.md`
-5. 如任务涉及玩法规则，再读 `docs/gameplay-redesign-spec.md`
-6. 最后再读相关脚本、Prefab、Scene
+2. 再读 `docs/ai-memory/td-memory-main.md`
+3. 如果任务涉及场景装配、UI、地图结构、放置规则，再读 `td-memory-architecture.md`
+4. 如果任务涉及历史、规则、已知问题、路线图，再读 `td-memory-rules-and-history.md`
+5. 如果任务涉及玩法规则，再读 `docs/gameplay-redesign-spec.md`
+6. 如果任务涉及接单、范围确认、执行边界，再读 `docs/ai-memory/td-agent-task-intake-protocol.md`
+7. 如果任务涉及记忆管理、清理、压缩、历史检索，再读 `docs/ai-memory/td-memory-hygiene-and-lifecycle.md`
+8. 最后再读相关脚本、Prefab、Scene
+9. 进入执行前，更新 `docs/current-task-card.md`
 
 ## 每天开工前的仓库同步规则
-- 本项目采用 fork 工作流
-- 项目创建者自己的 `origin/main` 是权威主线
-- 每天开始做实质性工作前：
+- 本项目采用 fork 工作流。
+- 用户自己的 `origin/main` 是权威主线。
+- 每天开始实质性工作前：
   1. `fetch origin`
   2. 刷新本地 `main`
   3. 让本地 `main` 对齐 `origin/main`
-  4. 再从最新的本地 `main` 继续功能分支工作
-- 如果当前工作区不干净：
-  - 先留快照分支
-  - 或先征求用户确认
-- 不要默认从 `upstream/main` 做日常同步
+  4. 再从最新的本地 `main` 继续当前功能分支工作
+- 如果工作区不干净：
+  - 不做盲目 destructive sync
+  - 先留快照分支，或先征求用户确认
 
-## 当前推荐开发顺序
+## 默认执行模式
+### 一、探索
+- 只读查看当前状态
+- 识别真正的目标文件、场景、Prefab、配置资产
+- 确认用户这次要解决的是哪一个任务，不把上一次建议的“下一步”误当成当前任务
+
+### 二、规划
+- 用自己的话复述理解
+- 明确：
+  - 本次只做什么
+  - 本次不做什么
+  - 预计会改哪些文件、场景或系统
+- 等待用户回复 `执行` 或等价确认
+- 固定回复模板：
+  - `我的理解`
+  - `本次只做`
+  - `本次不做`
+  - `预计会动到`
+- 如果用户引用了历史文本，先判断那段引用是：
+  - 当前任务本体
+  - 补充上下文
+  - 还是纠错依据
+
+### 任务来源优先级
+1. 用户当前这条最新请求里真正表达的任务
+2. 用户选中的引用内容
+3. 当前任务卡
+4. 助手上一条自己提出的“下一步建议”
+
+### 三、行动
+- 用户确认后再开始写操作
+- 执行中保持单任务锁定
+- 不擅自扩展到相邻任务、旧任务或“顺手想做”的内容
+
+## 当前任务卡规则
+- 每轮非平凡任务开始前，先更新 `docs/current-task-card.md`
+- 只写本轮：
+  - 当前任务
+  - 本轮要做
+  - 本轮明确不做
+  - 完成标准
+  - 直接相关文件
+  - 风险与注意事项
+- 还必须勾完“执行前强制检查”里的所有项
+- 只要任务卡仍是旧任务内容，就视为当前轮还没有完成接单
+- 必须写清楚“本轮任务来源于哪条用户请求”
+- 任务结束后更新状态，避免旧任务卡污染下一轮
+
+## 推荐开发顺序
 ### 做一张新关卡
-1. `LevelTopologyEditorWindow`
-2. `EnemyPathAuthoringTool`
-3. `Map Development Toolkit > Path Check`
-4. `Map Development Toolkit > Road Build`
-5. `Map Development Toolkit > Zone Brush`
-6. `RoadArtAuthoringWindow`
-7. `Wave Preview`
-8. `LevelBalanceTuningWindow`
-9. `Health Check`
-10. `Export Level Design Report`
+1. `关卡开发工作台`
+2. `关卡拓扑编辑器`
+3. `路径点编辑工具`
+4. `地图开发工具箱 > 路径校验`
+5. `地图开发工具箱 > 道路生成`
+6. `地图开发工具箱 > 区域画笔`
+7. `道路美术铺设工具`
+8. `关卡数值调参台`
+9. `地图开发工具箱 > 健康检查`
+10. `地图开发工具箱 > 导出关卡报告`
+11. `运行当前关卡烟测`
 
 ### 大改已有路线骨架
-1. 留档
+1. 留快照
 2. `LevelRouteBlueprintApplier`
-3. `LevelTopologyEditorWindow`
-4. `Path Check`
-5. `Road Build`
-6. `RoadArtAuthoringWindow`
+3. `关卡拓扑编辑器`
+4. `路径校验`
+5. `道路生成`
+6. `道路美术铺设工具`
 7. `TowerDefenseValidationRunner`
 
-### 只做策划平衡
-1. `LevelBalanceTuningWindow`
-2. `Wave Preview`
-3. `Export Level Design Report`
+### 只做数值平衡
+1. `关卡数值调参台`
+2. `波次预览`
+3. `导出关卡报告`
 
-## 当前特殊提醒
-- 当前 `main` 的 Build Settings 还没有完全切到正式塔防关卡链，做场景相关任务时必须先确认“这个场景只是存在”还是“已经正式启用”。
-- `td-memory-main.md` 与 `td-memory-rules-and-history.md` 不能再丢失。
+## 风险动作默认规则
+### 低风险
+- 只读检查
+- 解释现状
+- 汇总问题
+
+### 中风险
+- 更新文档
+- 调整编辑器工具
+- 改非关键配置
+
+### 高风险
+- 改场景
+- 改玩法规则
+- 批量重构
+- git 同步
+- 删除文件
+
+### 默认动作
+- 低风险：可直接做
+- 中风险：先复述范围，再执行
+- 高风险：必须先复述理解并等待用户确认
+
+## 单用途 workflow skill
+当前优先沉淀这些高频高风险流程：
+- `origin-main-sync-skill`
+- `scene-restore-to-commit-skill`
+- `level-playability-check-skill`
+
+原则：
+- 能写成 skill 的高频长流程，不继续依赖临时命令链
+- skill 优先承载：适用场景、标准步骤、不要做的事、成功判定
+
+## 当前特别提醒
+- 当前 `main` 的 Build Settings 还没有完全切到正式塔防关卡链。
+- `td-memory-main.md`、`td-memory-rules-and-history.md`、`td-agent-development-playbook.md` 不能再丢失。
 - `docs/project-tech-learning-handbook.local.md` 是本地私有文件，默认不提交。
-- 第三关和第四关仍在持续打磨阶段，自动工具不能代替最终人工关卡判断。
+- 第三关和第四关仍在持续打磨阶段，自动工具不能替代最终人工关卡判断。
 
-## Docs Preservation Rule
+## 文档保全规则
 - 在没有用户明确说“删除某个 docs 文件”之前，`docs/` 目录只允许新增和更新，不允许删除。
-- 这条规则同样约束仓库同步操作：同步到 `origin/main` 也不能导致 `docs/` 下的记忆文档、方法文档、手册或其他项目文档消失。
+- 这条规则同样约束同步到 `origin/main` 的过程。
 - 如果同步目标与本地 `docs/` 冲突，先保全文档，再决定如何继续同步。
