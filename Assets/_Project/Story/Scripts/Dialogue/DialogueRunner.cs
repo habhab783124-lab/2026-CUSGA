@@ -43,7 +43,8 @@ public sealed class DialogueRunner : MonoBehaviour
 
     private readonly List<DialogueLine> lines = new List<DialogueLine>();
     private int index;
-    private DialogueBubbleView bubble;
+    private DialogueBubbleView playerBubble;
+    private DialogueBubbleView npcBubble;
     private DialogueBubbleView active;
     private PlayerInteractor2D interactor;
     private Transform playerAnchor;
@@ -53,7 +54,15 @@ public sealed class DialogueRunner : MonoBehaviour
     private bool suppressBubbleHideOnComplete;
 
     public bool IsPlaying => isPlaying;
-    public DialogueBubbleView BubbleView => bubble;
+    public DialogueBubbleView BubbleView => active;
+
+    public void SetBubblePrefab(DialogueBubbleView prefab)
+    {
+        if (prefab != null)
+        {
+            bubblePrefab = prefab;
+        }
+    }
 
     private void Awake()
     {
@@ -237,7 +246,8 @@ public sealed class DialogueRunner : MonoBehaviour
         suppressBubbleHideOnComplete = suppressBubbleHideOnConversationEnd;
 
         EnsureRuntimeBubble();
-        prepareBubble?.Invoke(bubble);
+        prepareBubble?.Invoke(playerBubble);
+        prepareBubble?.Invoke(npcBubble);
         isPlaying = true;
 
         if (interactor != null && interactor.Motor != null)
@@ -257,23 +267,35 @@ public sealed class DialogueRunner : MonoBehaviour
 
     public void HideDialogueBubble()
     {
-        if (bubble != null)
+        if (playerBubble != null)
         {
-            bubble.Show(false);
+            playerBubble.Show(false);
+        }
+
+        if (npcBubble != null)
+        {
+            npcBubble.Show(false);
         }
     }
 
     public void PlayDeferredFirstLine()
     {
-        if (!isPlaying || !deferFirstLine || lines.Count == 0 || bubble == null)
+        if (!isPlaying || !deferFirstLine || lines.Count == 0)
+        {
+            return;
+        }
+
+        DialogueLine line = lines[0];
+        DialogueBubbleView targetBubble = ResolveBubble(line);
+        if (targetBubble == null)
         {
             return;
         }
 
         deferFirstLine = false;
-        DialogueLine line = lines[0];
-        bubble.ClearText();
-        bubble.TypeLine(line.text, secondsPerChar, line.emphasis);
+        ShowOnly(targetBubble);
+        targetBubble.ClearText();
+        targetBubble.TypeLine(line.text, secondsPerChar, line.emphasis);
     }
 
     public void ConfigureBottomLayout(bool enabled, Vector2 size, Vector2 offset, float alpha, bool hideTail)
@@ -284,15 +306,21 @@ public sealed class DialogueRunner : MonoBehaviour
         bottomBubbleAlpha = Mathf.Clamp01(alpha);
         hideBubbleTailInBottomLayout = hideTail;
 
-        if (bubble != null)
+        if (playerBubble != null)
         {
-            ApplyBubbleConfig();
+            ApplyBubbleConfig(playerBubble);
+        }
+
+        if (npcBubble != null)
+        {
+            ApplyBubbleConfig(npcBubble);
         }
     }
 
     private void ShowDeferredFirstLineLayoutOnly(DialogueLine line)
     {
-        if (line == null || bubble == null)
+        DialogueBubbleView targetBubble = ResolveBubble(line);
+        if (line == null || targetBubble == null)
         {
             return;
         }
@@ -300,66 +328,54 @@ public sealed class DialogueRunner : MonoBehaviour
         Transform t = ResolveAnchor(line);
         if (t != null)
         {
-            bubble.SetFollow(t);
+            targetBubble.SetFollow(t);
         }
 
-        active = bubble;
-        bubble.Show(true);
-        bubble.ApplyEmphasisFromRunner(line.emphasis, true);
-        bubble.PrepareLayoutEmptyText(line.text);
+        active = targetBubble;
+        ShowOnly(targetBubble);
+        targetBubble.ApplyEmphasisFromRunner(line.emphasis, true);
+        targetBubble.PrepareLayoutEmptyText(line.text);
     }
 
     private void EnsureRuntimeBubble()
     {
-        if (bubble != null)
-        {
-            ApplyBubbleConfig();
-            return;
-        }
+        EnsureRuntimeBubble(ref playerBubble, "PlayerDialogueBubble");
+        EnsureRuntimeBubble(ref npcBubble, "NpcDialogueBubble");
+        active = null;
+    }
 
-        var existing = GetComponentsInChildren<DialogueBubbleView>(includeInactive: true);
-        if (existing.Length > 0)
+    private void EnsureRuntimeBubble(ref DialogueBubbleView targetBubble, string bubbleName)
+    {
+        if (targetBubble == null)
         {
-            bubble = existing[0];
-            for (int i = 1; i < existing.Length; i++)
-            {
-                if (existing[i] != null)
-                {
-                    Destroy(existing[i].gameObject);
-                }
-            }
-        }
-        else
-        {
-            var go = Instantiate(bubblePrefab, transform);
-            go.name = "DialogueBubble";
-            bubble = go.GetComponent<DialogueBubbleView>();
+            targetBubble = Instantiate(bubblePrefab, transform);
+            targetBubble.name = bubbleName;
         }
 
         if (dialogueFontAsset != null)
         {
-            bubble.SetFont(dialogueFontAsset);
+            targetBubble.SetFont(dialogueFontAsset);
         }
 
-        ApplyBubbleConfig();
-        bubble.Show(false);
+        ApplyBubbleConfig(targetBubble);
+        targetBubble.Show(false);
     }
 
-    private void ApplyBubbleConfig()
+    private void ApplyBubbleConfig(DialogueBubbleView targetBubble)
     {
-        if (bubble == null)
+        if (targetBubble == null)
         {
             return;
         }
 
-        bubble.SetLayout(
+        targetBubble.SetLayout(
             bubbleWorldOffset,
             bubbleContentPadding,
             bubbleMaxWidth,
             bubbleMinWidth,
             bubbleMinHeight);
 
-        bubble.SetBottomScreenLayout(
+        targetBubble.SetBottomScreenLayout(
             useScreenBottomLayout,
             bottomBubbleSize,
             bottomBubbleOffset,
@@ -369,7 +385,8 @@ public sealed class DialogueRunner : MonoBehaviour
 
     private void ShowLine(DialogueLine line)
     {
-        if (line == null || bubble == null)
+        DialogueBubbleView targetBubble = ResolveBubble(line);
+        if (line == null || targetBubble == null)
         {
             return;
         }
@@ -377,13 +394,36 @@ public sealed class DialogueRunner : MonoBehaviour
         Transform t = ResolveAnchor(line);
         if (t != null)
         {
-            bubble.SetFollow(t);
+            targetBubble.SetFollow(t);
         }
 
-        active = bubble;
-        bubble.Show(true);
-        bubble.ClearText();
-        bubble.TypeLine(line.text, secondsPerChar, line.emphasis);
+        active = targetBubble;
+        ShowOnly(targetBubble);
+        targetBubble.ClearText();
+        targetBubble.TypeLine(line.text, secondsPerChar, line.emphasis);
+    }
+
+    private DialogueBubbleView ResolveBubble(DialogueLine line)
+    {
+        if (line == null)
+        {
+            return null;
+        }
+
+        return line.speaker == DialogueSpeaker.Player ? playerBubble : npcBubble;
+    }
+
+    private void ShowOnly(DialogueBubbleView targetBubble)
+    {
+        if (playerBubble != null)
+        {
+            playerBubble.Show(playerBubble == targetBubble);
+        }
+
+        if (npcBubble != null)
+        {
+            npcBubble.Show(npcBubble == targetBubble);
+        }
     }
 
     private Transform ResolveAnchor(DialogueLine line)
@@ -423,9 +463,9 @@ public sealed class DialogueRunner : MonoBehaviour
         isPlaying = false;
         index = 0;
         lines.Clear();
-        if (bubble != null && hideBubble)
+        if (hideBubble)
         {
-            bubble.Show(false);
+            HideDialogueBubble();
         }
 
         active = null;

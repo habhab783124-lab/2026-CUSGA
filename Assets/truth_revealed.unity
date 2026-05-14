@@ -134,6 +134,7 @@ GameObject:
   - component: {fileID: 204800002}
   - component: {fileID: 204800003}
   - component: {fileID: 204800004}
+  - component: {fileID: 204800005}
   m_Layer: 0
   m_Name: TruthRevealedSceneController
   m_TagString: Untagged
@@ -256,7 +257,7 @@ MonoBehaviour:
       scaleMultiplier: 0
       shakeMagnitude: 0
   - speaker: 1
-    text: "\u5982\u679C\u6E05\u7406\u8005\u77E5\u9053\u81EA\u5DF1\u6740\u7684\u662F\u540C\u80DE\uFF0C\u6218\u540E\u521B\u4F24\u4F1A\u6467\u6BC1\u4ED6\u4EEC\u3002\u800C\u4F0A\u7538\u9700\u8981\u4ED6\u4EEC\u50CF\u673A\u5668\u4E00\u6837\u8FD0\u8F6C\uFF0C\u5FC3\u65E0\u6742\u5FF5\u5730\u6740\u654C\u3002"
+    text: "\u56E0\u4E3A\u5982\u679C\u6E05\u7406\u8005\u77E5\u9053\u81EA\u5DF1\u6740\u7684\u662F\u540C\u80DE\uFF0C\u6218\u540E\u521B\u4F24\u4F1A\u6467\u6BC1\u4ED6\u4EEC\u3002\u800C\u4F0A\u7538\u9700\u8981\u4ED6\u4EEC\u50CF\u673A\u5668\u4E00\u6837\u8FD0\u8F6C\uFF0C\u5FC3\u65E0\u6742\u5FF5\u5730\u6740\u654C\u3002"
     emphasis:
       enabled: 0
       scaleMultiplier: 0
@@ -394,10 +395,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f7d1c4c8a8b47f0a90f17bc3a9d6e21, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  resourcePath: StoryAudio/BGM/4. Frostbound
+  resourcePath: StoryAudio/BGM/TruthRevealedBGM
   volume: 1
   loop: 1
   playOnStart: 1
+--- !u!114 &204800005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 204800000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a53c2ef2c1c4f79aa3d917f303ce6a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  truthRevealed: {fileID: 204800002}
+  nextSceneName: chapter10
+  mouseButton: 0
+  fadeOutToBlackDuration: 1
+  fadeInFromBlackDuration: 2
 --- !u!1 &1072304327
 GameObject:
   m_ObjectHideFlags: 0
@@ -560,8 +578,8 @@ Transform:
   m_GameObject: {fileID: 1283517386}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.07, y: 1.07, z: 1}
+  m_LocalPosition: {x: 0.15, y: 0.28, z: 0}
+  m_LocalScale: {x: 1.1, y: 1.1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}

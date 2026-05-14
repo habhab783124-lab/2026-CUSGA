@@ -22,7 +22,7 @@ public sealed class TruthRevealed : MonoBehaviour
         new DialogueLine { speaker = DialogueSpeaker.NPC, text = "所以他们攻击城墙。他们要活下去。这是人类最本能的求生反应。" },
         new DialogueLine { speaker = DialogueSpeaker.NPC, text = "而城内的人，为了保护自己，为了保护“文明的种子”，开始杀戮。" },
         new DialogueLine { speaker = DialogueSpeaker.NPC, text = "决策者给清理者装上认知滤镜，让他们以为自己在杀怪物。" },
-        new DialogueLine { speaker = DialogueSpeaker.NPC, text = "如果清理者知道自己杀的是同胞，战后创伤会摧毁他们。而伊甸需要他们像机器一样运转，心无杂念地杀敌。" },
+        new DialogueLine { speaker = DialogueSpeaker.NPC, text = "因为如果清理者知道自己杀的是同胞，战后创伤会摧毁他们。而伊甸需要他们像机器一样运转，心无杂念地杀敌。" },
         new DialogueLine { speaker = DialogueSpeaker.NPC, text = "城内与城外。秩序与生存。理性与本能。" },
         new DialogueLine { speaker = DialogueSpeaker.NPC, text = "没有对错。只有选择。" }
     };
@@ -62,6 +62,9 @@ public sealed class TruthRevealed : MonoBehaviour
     private int currentLineIndex;
     private bool isTyping;
     private bool skipTyping;
+
+    public bool IsTyping => isTyping;
+    public bool HasReachedConversationEnd => lines != null && lines.Count > 0 && currentLineIndex >= lines.Count - 1;
 
     private void Awake()
     {

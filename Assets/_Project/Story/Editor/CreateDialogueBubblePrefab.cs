@@ -9,7 +9,6 @@ using UnityEngine.UI;
 public static class CreateDialogueBubblePrefab
 {
     private const string PrefabPath = "Assets/_Project/Story/Prefabs/DialogueBubble.prefab";
-    private const string TailSpritePath = "Assets/_Project/Story/Sprites/UI/DialogueBubbleTail_Triangle.png";
 
     [MenuItem("Tools/Story/Create Dialogue Bubble Prefab")]
     public static void Create()
@@ -38,8 +37,17 @@ public static class CreateDialogueBubblePrefab
         bubbleRt.anchoredPosition = Vector2.zero;
         bubbleRt.sizeDelta = new Vector2(4f, 1.5f);
 
+        var contentRt = new GameObject("Content", typeof(RectTransform)).GetComponent<RectTransform>();
+        contentRt.SetParent(bubbleRt, false);
+        contentRt.anchorMin = Vector2.zero;
+        contentRt.anchorMax = Vector2.one;
+        contentRt.pivot = new Vector2(0.5f, 0.5f);
+        contentRt.anchoredPosition3D = Vector3.zero;
+        contentRt.offsetMin = Vector2.zero;
+        contentRt.offsetMax = Vector2.zero;
+
         var bgRt = new GameObject("Background", typeof(RectTransform)).GetComponent<RectTransform>();
-        bgRt.SetParent(bubbleRt, false);
+        bgRt.SetParent(contentRt, false);
         bgRt.anchorMin = Vector2.zero;
         bgRt.anchorMax = Vector2.one;
         bgRt.offsetMin = Vector2.zero;
@@ -52,7 +60,7 @@ public static class CreateDialogueBubblePrefab
         bg.color = Color.white;
 
         var textRt = new GameObject("Text", typeof(RectTransform)).GetComponent<RectTransform>();
-        textRt.SetParent(bubbleRt, false);
+        textRt.SetParent(contentRt, false);
         textRt.anchorMin = Vector2.zero;
         textRt.anchorMax = Vector2.one;
         textRt.offsetMin = Vector2.zero;
@@ -64,7 +72,6 @@ public static class CreateDialogueBubblePrefab
         tmp.raycastTarget = false;
         tmp.overflowMode = TextOverflowModes.Overflow;
 
-        // Tail (triangle) - Image + generated sprite (so it's easy to tweak in prefab).
         var tailRt = new GameObject("Tail", typeof(RectTransform)).GetComponent<RectTransform>();
         tailRt.SetParent(bubbleRt, false);
         tailRt.anchorMin = new Vector2(0.5f, 0f);
@@ -72,25 +79,26 @@ public static class CreateDialogueBubblePrefab
         tailRt.pivot = new Vector2(0.5f, 1f);
         tailRt.anchoredPosition = Vector2.zero;
         tailRt.sizeDelta = new Vector2(0.8f, 0.55f);
+
         var tailImg = tailRt.gameObject.AddComponent<Image>();
+        tailImg.enabled = false;
         tailImg.raycastTarget = false;
         tailImg.type = Image.Type.Simple;
         tailImg.preserveAspect = true;
         tailImg.color = Color.white;
 
-        // Try load generated triangle sprite if it exists.
-        var tailSprite = AssetDatabase.LoadAssetAtPath<Sprite>(TailSpritePath);
-        if (tailSprite != null)
-        {
-            tailImg.sprite = tailSprite;
-        }
+        var tailGraphic = tailRt.gameObject.AddComponent<DialogueBubbleTailGraphic>();
+        tailGraphic.raycastTarget = false;
+        tailGraphic.color = Color.white;
 
         var view = root.AddComponent<DialogueBubbleView>();
         Wire(view, "rootCanvas", canvas);
         Wire(view, "bubbleFrame", bubbleRt);
+        Wire(view, "contentRoot", contentRt);
         Wire(view, "backgroundImage", bg);
         Wire(view, "tailRect", tailRt);
         Wire(view, "tailImage", tailImg);
+        Wire(view, "tailGraphic", tailGraphic);
         Wire(view, "lineText", tmp);
 
         canvas.gameObject.SetActive(false);
