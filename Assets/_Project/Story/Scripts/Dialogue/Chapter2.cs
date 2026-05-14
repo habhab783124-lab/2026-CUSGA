@@ -22,7 +22,7 @@ public static class Chapter2
             Npc("战果评估：东区外围变异体清剿完成。"),
             Npc("清理者凌，你的执勤窗口已关闭，请返回住宿区，准备参加明天的表彰大会。"),
             Npc("通话结束。"),
-            Player("为了伊甸。", Strong()),
+            Player("收到！"),
         };
     }
 

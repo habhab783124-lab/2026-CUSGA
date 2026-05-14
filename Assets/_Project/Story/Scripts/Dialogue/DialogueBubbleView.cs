@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -38,6 +40,7 @@ public sealed class DialogueBubbleView : MonoBehaviour
 
     [Header("尾巴（倒三角 tail）")]
     [SerializeField] private bool showTail = true;
+    private bool hideTailInCurrentBottomLayout;
     [Tooltip("尾巴的宽高（世界空间单位，随 Canvas 缩放）。")]
     [SerializeField] private Vector2 tailSize = new Vector2(0.8f, 0.55f);
     [Tooltip("尾巴相对气泡底部中心的偏移。X: 左右；Y: 往下（正数表示更向下）。")]
@@ -51,20 +54,47 @@ public sealed class DialogueBubbleView : MonoBehaviour
 
     [Header("字体（可空，由 Runner 设置）")]
     [SerializeField] private TMP_FontAsset fontOverride;
+    [SerializeField] private float fontSizeOverride = -1f;
 
     private Transform follow;
     private Coroutine typeRoutine;
     private bool isTyping;
     private bool skipType;
+    private bool isPaused;
+    private bool wasPausedByControlTag;
+    private float currentSecondsPerChar;
+    private List<CharAnimationData> charAnimations;
+    private HashSet<int> pauseAtCharIndex;
     private Vector3 bubbleBaseLocalScale = Vector3.one;
     private float shakeMag;
     private Vector3 shake;
     private Vector3 contentBaseLocalPos = Vector3.zero;
+    private bool useScreenBottomLayout;
+    private Vector2 screenBottomSize = new Vector2(1280f, 220f);
+    private Vector2 screenBottomOffset = new Vector2(0f, 120f);
+    private float screenBottomAlpha = 0.6f;
 
     private bool _built;
     private Coroutine _imageRefreshRoutine;
 
     public bool IsTyping => isTyping;
+    public bool IsPaused => isPaused;
+    public bool WasPausedByControlTag => wasPausedByControlTag;
+
+    [System.Serializable]
+    public sealed class CharAnimationData
+    {
+        public int charIndex;
+        public float fontSizeScale = 1f;
+        public float speedMultiplier = 1f;
+
+        public CharAnimationData(int index, float sizeScale, float speedMult)
+        {
+            charIndex = index;
+            fontSizeScale = sizeScale;
+            speedMultiplier = speedMult;
+        }
+    }
 
     private void OnDisable()
     {
@@ -82,6 +112,32 @@ public sealed class DialogueBubbleView : MonoBehaviour
         {
             lineText.font = f;
         }
+    }
+
+    public void SetFontSizeOverride(float size)
+    {
+        fontSizeOverride = size;
+        if (lineText != null && size > 0f)
+        {
+            lineText.fontSize = size;
+        }
+    }
+
+    public void SetBottomScreenLayout(bool enabled, Vector2 size, Vector2 offset, float alpha, bool hideTail)
+    {
+        useScreenBottomLayout = enabled;
+        screenBottomSize = size;
+        screenBottomOffset = offset;
+        screenBottomAlpha = Mathf.Clamp01(alpha);
+        hideTailInCurrentBottomLayout = hideTail;
+
+        if (!_built)
+        {
+            return;
+        }
+
+        ApplyBottomScreenLayout();
+        ApplyTailLayout();
     }
 
     /// <summary>是否绘制尾巴（小三角）。关闭后仅保留矩形气泡与文本。</summary>
@@ -224,7 +280,7 @@ public sealed class DialogueBubbleView : MonoBehaviour
     public void SetFollow(Transform t)
     {
         follow = t;
-        if (enabled && follow != null)
+        if (enabled && follow != null && !useScreenBottomLayout)
         {
             UpdateFollowPosition();
         }
@@ -255,10 +311,20 @@ public sealed class DialogueBubbleView : MonoBehaviour
             lineText.font = fontOverride;
         }
 
+        if (fontSizeOverride > 0f)
+        {
+            lineText.fontSize = fontSizeOverride;
+        }
+
         EnsureContentRoot();
         ApplyBackgroundFill();
         ApplyImageSlicedSettings();
+        if (!useScreenBottomLayout)
+        {
+            hideTailInCurrentBottomLayout = false;
+        }
         ApplyTailSetup();
+        ApplyBottomScreenLayout();
         bubbleBaseLocalScale = bubbleFrame != null ? bubbleFrame.localScale : Vector3.one;
         _built = true;
     }
@@ -289,6 +355,55 @@ public sealed class DialogueBubbleView : MonoBehaviour
         }
     }
 
+    public void SetPaused(bool paused)
+    {
+        isPaused = paused;
+        if (!paused)
+        {
+            wasPausedByControlTag = false;
+        }
+    }
+
+    public void ResumeTyping()
+    {
+        if (isPaused)
+        {
+            isPaused = false;
+            wasPausedByControlTag = false;
+        }
+    }
+
+    public void SetTypingSpeed(float secondsPerChar)
+    {
+        currentSecondsPerChar = Mathf.Max(0f, secondsPerChar);
+    }
+
+    public void ShowInstantLine(string content, DialogueEmphasis emphasis)
+    {
+        BuildIfNeeded();
+        if (lineText == null)
+        {
+            return;
+        }
+
+        if (typeRoutine != null)
+        {
+            StopCoroutine(typeRoutine);
+            typeRoutine = null;
+        }
+
+        ApplyEmphasis(emphasis, true);
+        string raw = content ?? string.Empty;
+        string display = StripControlTags(raw);
+        LayoutForFullString(display);
+        lineText.richText = true;
+        lineText.text = display;
+        lineText.maxVisibleCharacters = int.MaxValue;
+        isTyping = false;
+        skipType = false;
+        isPaused = false;
+    }
+
     public void TypeLine(string content, float secondsPerChar, DialogueEmphasis emphasis)
     {
         BuildIfNeeded();
@@ -304,39 +419,391 @@ public sealed class DialogueBubbleView : MonoBehaviour
         }
 
         ApplyEmphasis(emphasis, true);
-        LayoutForFullString(content ?? string.Empty);
-        typeRoutine = StartCoroutine(TypeRoutine(content ?? string.Empty, secondsPerChar, emphasis));
+        string raw = content ?? string.Empty;
+        string display = StripControlTags(raw);
+
+        charAnimations = ParseCharAnimations(raw);
+        pauseAtCharIndex = ParsePausePoints(raw);
+
+        LayoutForFullString(display);
+        typeRoutine = StartCoroutine(TypeRoutine(raw, display, secondsPerChar, emphasis));
     }
 
-    private IEnumerator TypeRoutine(string full, float secPer, DialogueEmphasis em)
-    {
-        isTyping = true;
-        skipType = false;
-        lineText.text = string.Empty;
+    
+private IEnumerator TypeRoutine(string raw, string display, float secPer, DialogueEmphasis em)
+{
+    isTyping = true;
+    skipType = false;
+    isPaused = false;
 
-        if (string.IsNullOrEmpty(full))
+    float currentSecPer = Mathf.Max(0f, secPer);
+
+    lineText.richText = true;
+    lineText.text = display ?? string.Empty;
+    lineText.maxVisibleCharacters = 0;
+    lineText.ForceMeshUpdate();
+
+    if (string.IsNullOrEmpty(raw))
+    {
+        isTyping = false;
+        ApplyEmphasis(em, false);
+        yield break;
+    }
+
+    int visible = 0;
+    int rawIndex = 0;
+
+    while (rawIndex < raw.Length)
+    {
+        // 点击跳过整句
+        if (skipType)
         {
-            isTyping = false;
-            ApplyEmphasis(em, false);
+            lineText.maxVisibleCharacters = int.MaxValue;
+            break;
+        }
+
+        // pause 状态
+        if (isPaused)
+        {
+            yield return null;
+            continue;
+        }
+
+        // =========================
+        // [pause]
+        // =========================
+        if (MatchLiteral(raw, rawIndex, "[pause]"))
+        {
+            rawIndex += "[pause]".Length;
+            isPaused = true;
+            continue;
+        }
+
+        // =========================
+        // [speed=0.01]
+        // =========================
+        if (MatchLiteral(raw, rawIndex, "[speed="))
+        {
+            int end = raw.IndexOf(']', rawIndex);
+
+            if (end != -1)
+            {
+                string num = raw.Substring(rawIndex + 7, end - rawIndex - 7);
+
+                if (float.TryParse(
+                    num,
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out float sp))
+                {
+                    currentSecPer = Mathf.Max(0f, sp);
+                }
+
+                rawIndex = end + 1;
+                continue;
+            }
+        }
+
+        // =========================
+        // TMP RichText 标签
+        // <size=150%>
+        // <color=red>
+        // </size>
+        // =========================
+        if (raw[rawIndex] == '<')
+        {
+            int end = raw.IndexOf('>', rawIndex);
+
+            if (end != -1)
+            {
+                rawIndex = end + 1;
+                continue;
+            }
+        }
+
+        // =========================
+        // 普通字符
+        // =========================
+        visible++;
+        lineText.maxVisibleCharacters = visible;
+
+        rawIndex++;
+
+        if (currentSecPer > 0f)
+        {
+            yield return new WaitForSeconds(currentSecPer);
+        }
+        else
+        {
+            yield return null;
+        }
+    }
+
+    lineText.maxVisibleCharacters = int.MaxValue;
+
+    isTyping = false;
+    skipType = false;
+    isPaused = false;
+    typeRoutine = null;
+
+    ApplyEmphasis(em, false);
+}
+
+
+    private static YieldInstruction WaitSecondsScaled(float seconds)
+    {
+        return seconds <= 0f ? null : new WaitForSeconds(seconds);
+    }
+
+    private static string StripControlTags(string s)
+    {
+        if (string.IsNullOrEmpty(s))
+        {
+            return string.Empty;
+        }
+
+        string result = s;
+        result = Regex.Replace(result, @"\[/?pause\]", "", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"\[/?resume\]", "", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"\[speed=[^\]]*\]", "", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"\[size=[^\]]*\]", "", RegexOptions.IgnoreCase);
+        return result;
+    }
+
+    private static bool MatchLiteral(string s, int index, string lit)
+    {
+        if (index + lit.Length > s.Length)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < lit.Length; i++)
+        {
+            if (s[index + i] != lit[i])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static HashSet<int> ParsePausePoints(string raw)
+    {
+        var pauses = new HashSet<int>();
+        if (string.IsNullOrEmpty(raw))
+        {
+            return pauses;
+        }
+
+        int rawIndex = 0;
+        int displayIndex = 0;
+        while (rawIndex < raw.Length)
+        {
+            if (raw[rawIndex] == '[')
+            {
+                if (MatchLiteral(raw, rawIndex, "[pause]") || MatchLiteral(raw, rawIndex, "[PAUSE]"))
+                {
+                    pauses.Add(displayIndex);
+                    rawIndex += 7;
+                    continue;
+                }
+
+                if (MatchLiteral(raw, rawIndex, "[resume]") || MatchLiteral(raw, rawIndex, "[RESUME]"))
+                {
+                    rawIndex += 8;
+                    continue;
+                }
+
+                if (MatchLiteral(raw, rawIndex, "[speed=") || MatchLiteral(raw, rawIndex, "[SPEED="))
+                {
+                    int start = rawIndex + 7;
+                    int end = raw.IndexOf(']', start);
+                    if (end > start)
+                    {
+                        rawIndex = end + 1;
+                        continue;
+                    }
+                }
+
+                if (MatchLiteral(raw, rawIndex, "[size=") || MatchLiteral(raw, rawIndex, "[SIZE="))
+                {
+                    int start = rawIndex + 6;
+                    int end = raw.IndexOf(']', start);
+                    if (end > start)
+                    {
+                        rawIndex = end + 1;
+                        continue;
+                    }
+                }
+            }
+
+            if (raw[rawIndex] != '[')
+            {
+                displayIndex++;
+            }
+
+            rawIndex++;
+        }
+
+        return pauses;
+    }
+
+    // Back-compat with requested signature; parsing is precomputed in ParsePausePoints/ParseCharAnimations.
+    private bool TryProcessControlTags(string raw, ref int index, ref float secondsPerChar, int currentVisibleCount)
+    {
+        index = string.IsNullOrEmpty(raw) ? 0 : raw.Length;
+        secondsPerChar = currentSecondsPerChar;
+        return false;
+    }
+
+    private static List<CharAnimationData> ParseCharAnimations(string raw)
+    {
+        var animations = new List<CharAnimationData>();
+        if (string.IsNullOrEmpty(raw))
+        {
+            return animations;
+        }
+
+        int rawIndex = 0;
+        int displayCharCount = 0;
+        float currentSizeScale = 1f;
+        float currentSpeedMult = 1f;
+
+        while (rawIndex < raw.Length)
+        {
+            if (raw[rawIndex] == '[')
+            {
+                if (MatchLiteral(raw, rawIndex, "[size=") || MatchLiteral(raw, rawIndex, "[SIZE="))
+                {
+                    int start = rawIndex + 6;
+                    int end = raw.IndexOf(']', start);
+                    if (end > start)
+                    {
+                        string num = raw.Substring(start, end - start);
+                        if (float.TryParse(
+                                num,
+                                System.Globalization.NumberStyles.Float,
+                                System.Globalization.CultureInfo.InvariantCulture,
+                                out float sizeScale))
+                        {
+                            currentSizeScale = sizeScale;
+                        }
+
+                        rawIndex = end + 1;
+                        continue;
+                    }
+                }
+                else if (MatchLiteral(raw, rawIndex, "[speed=") || MatchLiteral(raw, rawIndex, "[SPEED="))
+                {
+                    int start = rawIndex + 7;
+                    int end = raw.IndexOf(']', start);
+                    if (end > start)
+                    {
+                        string num = raw.Substring(start, end - start);
+                        if (float.TryParse(
+                                num,
+                                System.Globalization.NumberStyles.Float,
+                                System.Globalization.CultureInfo.InvariantCulture,
+                                out float speedMult))
+                        {
+                            currentSpeedMult = speedMult;
+                        }
+
+                        rawIndex = end + 1;
+                        continue;
+                    }
+                }
+                else if (MatchLiteral(raw, rawIndex, "[pause]") || MatchLiteral(raw, rawIndex, "[PAUSE]"))
+                {
+                    rawIndex += 7;
+                    continue;
+                }
+                else if (MatchLiteral(raw, rawIndex, "[resume]") || MatchLiteral(raw, rawIndex, "[RESUME]"))
+                {
+                    rawIndex += 8;
+                    continue;
+                }
+            }
+
+            if (raw[rawIndex] != '[')
+            {
+                animations.Add(new CharAnimationData(displayCharCount, currentSizeScale, currentSpeedMult));
+                displayCharCount++;
+            }
+
+            rawIndex++;
+        }
+
+        return animations;
+    }
+
+    private CharAnimationData GetCharAnimation(int charIndex)
+    {
+        if (charAnimations == null || charIndex < 0 || charIndex >= charAnimations.Count)
+        {
+            return null;
+        }
+
+        return charAnimations[charIndex];
+    }
+
+    private IEnumerator AnimateCharSize(int charIndex, float targetScale)
+    {
+        if (lineText == null || lineText.textInfo == null)
+        {
             yield break;
         }
 
-        for (int i = 0; i < full.Length; i++)
+        if (charIndex >= lineText.textInfo.characterCount)
         {
-            if (skipType)
-            {
-                lineText.text = full;
-                break;
-            }
-
-            lineText.text += full[i];
-            yield return new WaitForSeconds(secPer);
+            yield break;
         }
 
-        isTyping = false;
-        skipType = false;
-        typeRoutine = null;
-        ApplyEmphasis(em, false);
+        // We need valid mesh data for this character.
+        lineText.ForceMeshUpdate();
+
+        TMP_CharacterInfo charInfo = lineText.textInfo.characterInfo[charIndex];
+        if (!charInfo.isVisible)
+        {
+            yield break;
+        }
+
+        int materialIndex = charInfo.materialReferenceIndex;
+        int vertexIndex = charInfo.vertexIndex;
+
+        Vector3[] vertices = lineText.textInfo.meshInfo[materialIndex].vertices;
+        Vector3 originalCenter = (vertices[vertexIndex + 0] + vertices[vertexIndex + 2]) / 2f;
+
+        float duration = 0.1f;
+        float elapsed = 0f;
+        float startScale = 1f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = duration <= 0f ? 1f : elapsed / duration;
+            float currentScale = Mathf.Lerp(startScale, targetScale, t);
+
+            for (int i = 0; i < 4; i++)
+            {
+                Vector3 vertex = vertices[vertexIndex + i];
+                Vector3 dir = vertex - originalCenter;
+                vertices[vertexIndex + i] = originalCenter + dir * currentScale;
+            }
+
+            lineText.UpdateVertexData(TMP_VertexDataUpdateFlags.Vertices);
+            yield return null;
+        }
+
+        for (int i = 0; i < 4; i++)
+        {
+            Vector3 vertex = vertices[vertexIndex + i];
+            Vector3 dir = vertex - originalCenter;
+            vertices[vertexIndex + i] = originalCenter + dir * targetScale;
+        }
+
+        lineText.UpdateVertexData(TMP_VertexDataUpdateFlags.Vertices);
     }
 
     public void ApplyEmphasisFromRunner(DialogueEmphasis e, bool typing)
@@ -362,12 +829,9 @@ public sealed class DialogueBubbleView : MonoBehaviour
             return;
         }
 
-        // 需求：取消放大效果；仅让背景+文本轻微震动。
-        bubbleFrame.localScale = bubbleBaseLocalScale;
-
-        // Reduce shake intensity to be subtler than authored values.
-        const float shakeMultiplier = 0.35f;
-        shakeMag = typing ? Mathf.Max(0f, e.shakeMagnitude) * shakeMultiplier : 0f;
+        float scale = typing ? Mathf.Max(1f, e.scaleMultiplier) : 1f;
+        bubbleFrame.localScale = bubbleBaseLocalScale * scale;
+        shakeMag = typing ? Mathf.Max(0f, e.shakeMagnitude) : 0f;
     }
 
     private void LayoutForFullString(string full)
@@ -377,24 +841,31 @@ public sealed class DialogueBubbleView : MonoBehaviour
             return;
         }
 
-        float innerW = Mathf.Max(0.1f, maxBubbleWidth - contentPadding.x * 2f);
-        Vector2 pref = lineText.GetPreferredValues(full, innerW, 0f);
-        float requiredMinW = minBubbleWidth;
-        float requiredMinH = minBubbleHeight;
-        if (backgroundImageType == Image.Type.Sliced && backgroundImage != null && backgroundImage.sprite != null)
+        if (useScreenBottomLayout)
         {
-            // Sliced 时，Rect 不能小于 Border 四边之和，否则中心区为负，可能直接不绘制。
-            Vector4 b = backgroundImage.sprite.border; // L,B,R,T (pixels)
-            float effPpu = Mathf.Max(0.01f, backgroundImage.sprite.pixelsPerUnit * Mathf.Max(0.01f, imagePixelsPerUnitMultiplier));
-            float minWFromBorder = (b.x + b.z) / effPpu + 0.01f;
-            float minHFromBorder = (b.y + b.w) / effPpu + 0.01f;
-            requiredMinW = Mathf.Max(requiredMinW, minWFromBorder);
-            requiredMinH = Mathf.Max(requiredMinH, minHFromBorder);
+            bubbleFrame.sizeDelta = screenBottomSize;
         }
+        else
+        {
+            float innerW = Mathf.Max(0.1f, maxBubbleWidth - contentPadding.x * 2f);
+            Vector2 pref = lineText.GetPreferredValues(full, innerW, 0f);
+            float requiredMinW = minBubbleWidth;
+            float requiredMinH = minBubbleHeight;
+            if (backgroundImageType == Image.Type.Sliced && backgroundImage != null && backgroundImage.sprite != null)
+            {
+                // Sliced 时，Rect 不能小于 Border 四边之和，否则中心区为负，可能直接不绘制。
+                Vector4 b = backgroundImage.sprite.border; // L,B,R,T (pixels)
+                float effPpu = Mathf.Max(0.01f, backgroundImage.sprite.pixelsPerUnit * Mathf.Max(0.01f, imagePixelsPerUnitMultiplier));
+                float minWFromBorder = (b.x + b.z) / effPpu + 0.01f;
+                float minHFromBorder = (b.y + b.w) / effPpu + 0.01f;
+                requiredMinW = Mathf.Max(requiredMinW, minWFromBorder);
+                requiredMinH = Mathf.Max(requiredMinH, minHFromBorder);
+            }
 
-        float w = Mathf.Clamp(pref.x + contentPadding.x * 2f, requiredMinW, maxBubbleWidth);
-        float h = Mathf.Max(pref.y + contentPadding.y * 2f, requiredMinH);
-        bubbleFrame.sizeDelta = new Vector2(w, h);
+            float w = Mathf.Clamp(pref.x + contentPadding.x * 2f, requiredMinW, maxBubbleWidth);
+            float h = Mathf.Max(pref.y + contentPadding.y * 2f, requiredMinH);
+            bubbleFrame.sizeDelta = new Vector2(w, h);
+        }
 
         var tr = lineText.rectTransform;
         tr.offsetMin = new Vector2(contentPadding.x, contentPadding.y);
@@ -402,6 +873,7 @@ public sealed class DialogueBubbleView : MonoBehaviour
 
         ApplyBackgroundFill();
         ApplyImageSlicedSettings();
+        ApplyBottomScreenLayout();
         ApplyTailLayout();
         LayoutRebuilder.ForceRebuildLayoutImmediate(bubbleFrame);
         if (rootCanvas != null)
@@ -465,6 +937,13 @@ public sealed class DialogueBubbleView : MonoBehaviour
         bg.offsetMin = Vector2.zero;
         bg.offsetMax = Vector2.zero;
         bg.sizeDelta = Vector2.zero;
+
+        Color color = backgroundImage.color;
+        if (useScreenBottomLayout)
+        {
+            color.a = screenBottomAlpha;
+            backgroundImage.color = color;
+        }
     }
 
     /// <summary>
@@ -584,13 +1063,16 @@ public sealed class DialogueBubbleView : MonoBehaviour
             return;
         }
 
-        bool hasSprite = tailImage != null && (tailSpriteOverride != null || tailImage.sprite != null);
-        bool useProcedural = !hasSprite && tailGraphic != null;
-        bool visible = showTail && (hasSprite || useProcedural);
+        bool useImage = tailImage != null;
+        bool useProcedural = !useImage && tailGraphic != null;
+        bool hiddenByBottomLayout = useScreenBottomLayout && hideTailInCurrentBottomLayout;
+        bool visible = showTail && !hiddenByBottomLayout && (useImage || useProcedural);
+
+        tailRect.gameObject.SetActive(visible);
 
         if (tailImage != null)
         {
-            tailImage.enabled = visible && hasSprite;
+            tailImage.enabled = visible;
         }
 
         if (tailGraphic != null)
@@ -603,6 +1085,12 @@ public sealed class DialogueBubbleView : MonoBehaviour
             return;
         }
 
+        if (tailImage != null && tailSpriteOverride != null)
+        {
+            tailImage.sprite = tailSpriteOverride;
+        }
+
+        tailRect.SetAsLastSibling();
         tailRect.anchorMin = new Vector2(0.5f, 0f);
         tailRect.anchorMax = new Vector2(0.5f, 0f);
         tailRect.pivot = new Vector2(0.5f, 1f);
@@ -619,7 +1107,7 @@ public sealed class DialogueBubbleView : MonoBehaviour
 
     private void ApplyTailScaleCompensation()
     {
-        if (tailRect == null || bubbleFrame == null)
+        if (tailRect == null || bubbleFrame == null || useScreenBottomLayout)
         {
             return;
         }
@@ -636,7 +1124,7 @@ public sealed class DialogueBubbleView : MonoBehaviour
 
     private void LateUpdate()
     {
-        if (follow == null || rootCanvas == null || !rootCanvas.gameObject.activeInHierarchy)
+        if (rootCanvas == null || !rootCanvas.gameObject.activeInHierarchy)
         {
             return;
         }
@@ -653,19 +1141,61 @@ public sealed class DialogueBubbleView : MonoBehaviour
             shake = Vector3.zero;
         }
 
-        UpdateFollowPosition();
-        ApplyTailScaleCompensation();
+        if (useScreenBottomLayout)
+        {
+            ApplyBottomScreenLayout();
+        }
+        else
+        {
+            if (follow == null)
+            {
+                return;
+            }
 
-        // 需求：只有 background + text 震动，tail 不震动。
+            UpdateFollowPosition();
+            ApplyTailScaleCompensation();
+
+            if (clampToScreen)
+            {
+                ClampToSafeArea();
+            }
+        }
+
         if (contentRoot != null)
         {
             contentRoot.localPosition = contentBaseLocalPos + shake;
         }
+    }
 
-        if (clampToScreen)
+    private void ApplyBottomScreenLayout()
+    {
+        if (!useScreenBottomLayout || rootCanvas == null || bubbleFrame == null)
         {
-            ClampToSafeArea();
+            return;
         }
+
+        if (rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+        {
+            rootCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            rootCanvas.worldCamera = null;
+        }
+
+        RectTransform rootRect = rootCanvas.GetComponent<RectTransform>();
+        if (rootRect != null)
+        {
+            rootRect.anchorMin = Vector2.zero;
+            rootRect.anchorMax = Vector2.one;
+            rootRect.offsetMin = Vector2.zero;
+            rootRect.offsetMax = Vector2.zero;
+        }
+
+        bubbleFrame.anchorMin = new Vector2(0.5f, 0f);
+        bubbleFrame.anchorMax = new Vector2(0.5f, 0f);
+        bubbleFrame.pivot = new Vector2(0.5f, 0.5f);
+        bubbleFrame.anchoredPosition = screenBottomOffset;
+        bubbleFrame.sizeDelta = screenBottomSize;
+        bubbleFrame.localRotation = Quaternion.identity;
+        bubbleFrame.localScale = bubbleBaseLocalScale;
     }
 
     private void UpdateFollowPosition()

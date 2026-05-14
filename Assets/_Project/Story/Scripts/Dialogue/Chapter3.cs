@@ -32,7 +32,7 @@ public static class Chapter3
             Npc("为了伊甸。说得好。"),
             Npc("这是东区防御委员会颁发的“坚盾勋章”。授予在清剿行动中表现卓越的清理者。"),
             Npc("你是第三小队今年第一个获此荣誉的人。希望你戒骄戒躁，继续努力。"),
-            Player("明白。",Strong()),
+            Player("明白。"),
             Npc("很好。"),
             Npc("今天下午休息。明天六时，第四防御单元集合。有新的任务。"),
 
@@ -68,7 +68,7 @@ private static DialogueLine Npc(
         return new DialogueEmphasis { enabled = false, scaleMultiplier = 1.25f, shakeMagnitude = 0.08f };
     }
 
-    private static DialogueEmphasis Strong(float scaleMultiplier = 2.0f, float shakeMagnitude = 0.2f)
+    private static DialogueEmphasis Strong(float scaleMultiplier = 1.6f, float shakeMagnitude = 0.2f)
     {
         return new DialogueEmphasis { enabled = true, scaleMultiplier = scaleMultiplier, shakeMagnitude = shakeMagnitude };
     }
