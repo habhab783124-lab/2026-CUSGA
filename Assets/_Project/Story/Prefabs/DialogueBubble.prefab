@@ -428,7 +428,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 50
-  m_PresetInfoIsWorld: 1
+  m_PresetInfoIsWorld: 0
 --- !u!114 &4900870302483710290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -480,6 +480,7 @@ MonoBehaviour:
   clampToScreen: 1
   screenEdgePadding: 8
   fontOverride: {fileID: 0}
+  fontSizeOverride: -1
   typingAudioSource: {fileID: 0}
   typingSfxPool:
   - {fileID: 8300000, guid: cc80f847ce489f94dbcde4f7afd9edf9, type: 3}

@@ -18,7 +18,7 @@ public static class Chapter2
     {
         return new List<DialogueLine>
         {
-            Npc("第三小队，任务报告已确认。"),
+            Npc("第三小队，[pause]任务报告已确认。"),
             Npc("战果评估：东区外围变异体清剿完成。"),
             Npc("清理者凌，你的执勤窗口已关闭，请返回住宿区，准备参加明天的表彰大会。"),
             Npc("通话结束。"),
@@ -48,11 +48,11 @@ public static class Chapter2
 
     private static DialogueEmphasis Normal()
     {
-        return new DialogueEmphasis { enabled = false, scaleMultiplier = 1.25f, shakeMagnitude = 0.08f };
+        return DialogueBubbleView.CreateNormalEmphasis();
     }
 
     private static DialogueEmphasis Strong(float scaleMultiplier = 1.35f, float shakeMagnitude = 0.12f)
     {
-        return new DialogueEmphasis { enabled = true, scaleMultiplier = scaleMultiplier, shakeMagnitude = shakeMagnitude };
+        return DialogueBubbleView.CreateStrongEmphasis(scaleMultiplier, shakeMagnitude);
     }
 }

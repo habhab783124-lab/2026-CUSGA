@@ -65,23 +65,17 @@ private static DialogueLine Npc(
 
     private static DialogueEmphasis Normal()
     {
-        return new DialogueEmphasis { enabled = false, scaleMultiplier = 1.25f, shakeMagnitude = 0.08f };
+        return DialogueBubbleView.CreateNormalEmphasis();
     }
 
-    private static DialogueEmphasis Strong(float scaleMultiplier = 1.6f, float shakeMagnitude = 0.2f)
+    private static DialogueEmphasis Strong(float scaleMultiplier = 1.0f, float shakeMagnitude = 0.15f)
     {
-        return new DialogueEmphasis { enabled = true, scaleMultiplier = scaleMultiplier, shakeMagnitude = shakeMagnitude };
+        return DialogueBubbleView.CreateStrongEmphasis(scaleMultiplier, shakeMagnitude);
     }
 
     private static DialogueEmphasis Pulse(float scaleMultiplier = 0.92f, float shakeMagnitude = 0.1f)
     {
-        return new DialogueEmphasis
-        {
-            enabled = true,
-            scaleMultiplier = scaleMultiplier,
-            shakeMagnitude = shakeMagnitude
-        };
+        return DialogueBubbleView.CreatePulseEmphasis(scaleMultiplier, shakeMagnitude);
     }
 }
-
 

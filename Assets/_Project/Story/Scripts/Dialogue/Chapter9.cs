@@ -35,6 +35,7 @@ public sealed class Chapter9 : MonoBehaviour
     [SerializeField] private bool playOnStart = true;
     [Header("气泡对白")]
     [SerializeField] private DialogueRunner dialogueRunner;
+    [SerializeField] private DialogueBubbleView typingSfxReferenceBubble;
     [SerializeField] private Transform playerBubbleAnchor;
     [SerializeField] private Transform npcBubbleAnchor;
     [SerializeField] private int bubbleDialogueStartIndex = 0;
@@ -49,11 +50,15 @@ public sealed class Chapter9 : MonoBehaviour
     private Coroutine typingRoutine;
     private int currentLineIndex;
     private bool isTyping;
+    private bool isTypingPaused;
     private bool skipTyping;
     private PlaybackState state;
     private AudioSource audioSource;
+    private AudioSource introTypingAudioSource;
+    private DialogueBubbleView.ExternalTypingSfxPlayer introTypingSfxPlayer;
     private bool hasStartedSequence;
     private Action onSequenceComplete;
+    private DialogueInlineEffects.ParsedLine currentParsedLine;
 
     private void Awake()
     {
@@ -61,6 +66,7 @@ public sealed class Chapter9 : MonoBehaviour
         EnsureVisuals();
         EnsureAudioSource();
         EnsureDialogueRunner();
+        EnsureIntroTypingSfxSupport();
         ApplyStyle();
     }
 
@@ -94,6 +100,12 @@ public sealed class Chapter9 : MonoBehaviour
 
         if (isTyping)
         {
+            if (isTypingPaused)
+            {
+                isTypingPaused = false;
+                return;
+            }
+
             skipTyping = true;
             return;
         }
@@ -246,6 +258,7 @@ public sealed class Chapter9 : MonoBehaviour
             dialogueText.enableAutoSizing = true;
             dialogueText.fontSizeMin = minFontSize;
             dialogueText.fontSizeMax = maxFontSize;
+            dialogueText.richText = true;
             dialogueText.enableWordWrapping = true;
             dialogueText.alignment = TextAlignmentOptions.MidlineLeft;
             dialogueText.raycastTarget = false;
@@ -274,23 +287,80 @@ public sealed class Chapter9 : MonoBehaviour
         if (lineIndex >= lines.Count) return;
         currentLineIndex = Mathf.Max(0, lineIndex);
         if (typingRoutine != null) StopCoroutine(typingRoutine);
+        currentParsedLine = DialogueInlineEffects.Parse(
+            lines[currentLineIndex]?.text ?? string.Empty,
+            secondsPerChar,
+            dialogueText != null && dialogueText.fontSize > 0f ? dialogueText.fontSize : maxFontSize);
+        introTypingSfxPlayer?.Reset();
         typingRoutine = StartCoroutine(TypeLineRoutine(lines[currentLineIndex]?.text ?? string.Empty));
     }
 
     private IEnumerator TypeLineRoutine(string fullText)
     {
         isTyping = true;
+        isTypingPaused = false;
         skipTyping = false;
         if (dialogueText == null) yield break;
-        dialogueText.text = string.Empty;
-        for (int i = 0; i < fullText.Length; i++)
+        dialogueText.richText = true;
+        dialogueText.text = currentParsedLine != null ? currentParsedLine.DisplayText : string.Empty;
+        dialogueText.maxVisibleCharacters = 0;
+        dialogueText.ForceMeshUpdate();
+
+        List<DialogueInlineEffects.VisibleCharacter> visibleCharacters =
+            currentParsedLine != null ? currentParsedLine.VisibleCharacters : null;
+        if (visibleCharacters == null || visibleCharacters.Count == 0)
         {
-            if (skipTyping) { dialogueText.text = fullText; break; }
-            dialogueText.text += fullText[i];
-            yield return new WaitForSeconds(secondsPerChar);
+            dialogueText.maxVisibleCharacters = int.MaxValue;
+            isTyping = false;
+            isTypingPaused = false;
+            skipTyping = false;
+            typingRoutine = null;
+            yield break;
         }
-        dialogueText.text = fullText;
+
+        int visible = 0;
+        int lastPauseIndex = -1;
+        while (visible < visibleCharacters.Count)
+        {
+            if (skipTyping)
+            {
+                dialogueText.maxVisibleCharacters = int.MaxValue;
+                break;
+            }
+
+            if (isTypingPaused)
+            {
+                yield return null;
+                continue;
+            }
+
+            DialogueInlineEffects.VisibleCharacter visibleCharacter = visibleCharacters[visible];
+            if (visibleCharacter.PauseBefore && lastPauseIndex != visible)
+            {
+                isTypingPaused = true;
+                lastPauseIndex = visible;
+                continue;
+            }
+
+            visible++;
+            dialogueText.maxVisibleCharacters = visible;
+            introTypingSfxPlayer?.ApplyPool(visibleCharacter.TypingSfxPoolId);
+            introTypingSfxPlayer?.Play(dialogueText, visible - 1, visibleCharacter.FontSizeScale);
+            float delay = Mathf.Max(0f, visibleCharacter.SecondsPerCharacter);
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+            else
+            {
+                yield return null;
+            }
+        }
+
+        dialogueText.text = currentParsedLine != null ? currentParsedLine.DisplayText : string.Empty;
+        dialogueText.maxVisibleCharacters = int.MaxValue;
         isTyping = false;
+        isTypingPaused = false;
         skipTyping = false;
         typingRoutine = null;
     }
@@ -350,7 +420,20 @@ public sealed class Chapter9 : MonoBehaviour
     {
         if (dialogueText == null || lines == null || lines.Count == 0) return;
         int clampedIndex = Mathf.Clamp(currentLineIndex, 0, lines.Count - 1);
-        dialogueText.text = lines[clampedIndex]?.text ?? string.Empty;
+        string raw = lines[clampedIndex]?.text ?? string.Empty;
+        dialogueText.richText = true;
+        dialogueText.text = DialogueInlineEffects.Parse(
+            raw,
+            secondsPerChar,
+            dialogueText.fontSize > 0f ? dialogueText.fontSize : maxFontSize).DisplayText;
+        dialogueText.maxVisibleCharacters = int.MaxValue;
+    }
+
+    private void EnsureIntroTypingSfxSupport()
+    {
+        typingSfxReferenceBubble = DialogueBubbleView.ResolveTypingSfxReference(typingSfxReferenceBubble);
+        introTypingAudioSource = DialogueBubbleView.EnsureExternalTypingAudioSource(this, "Chapter9IntroTypingSfx");
+        introTypingSfxPlayer = DialogueBubbleView.CreateExternalTypingSfxPlayer(typingSfxReferenceBubble, introTypingAudioSource);
     }
 
     private static TMP_FontAsset TryLoadDialogueFont()
@@ -467,21 +550,16 @@ public sealed class Chapter9 : MonoBehaviour
 
     private static DialogueEmphasis Normal()
     {
-        return new DialogueEmphasis { enabled = false, scaleMultiplier = 1.25f, shakeMagnitude = 0.08f };
+        return DialogueBubbleView.CreateNormalEmphasis();
     }
 
-    private static DialogueEmphasis Strong(float scaleMultiplier = 2.0f, float shakeMagnitude = 0.2f)
+    private static DialogueEmphasis Strong(float scaleMultiplier = 1.0f, float shakeMagnitude = 0.15f)
     {
-        return new DialogueEmphasis { enabled = true, scaleMultiplier = scaleMultiplier, shakeMagnitude = shakeMagnitude };
+        return DialogueBubbleView.CreateStrongEmphasis(scaleMultiplier, shakeMagnitude);
     }
 
     private static DialogueEmphasis Pulse(float scaleMultiplier = 0.92f, float shakeMagnitude = 0.1f)
     {
-        return new DialogueEmphasis
-        {
-            enabled = true,
-            scaleMultiplier = scaleMultiplier,
-            shakeMagnitude = shakeMagnitude
-        };
+        return DialogueBubbleView.CreatePulseEmphasis(scaleMultiplier, shakeMagnitude);
     }
 }

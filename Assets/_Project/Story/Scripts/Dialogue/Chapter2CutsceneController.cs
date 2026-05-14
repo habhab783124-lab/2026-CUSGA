@@ -90,6 +90,12 @@ public sealed class Chapter2CutsceneController : MonoBehaviour
 
         if (centerBubbleController != null && centerBubbleController.IsTyping)
         {
+            if (centerBubbleController.IsPaused)
+            {
+                centerBubbleController.ResumeTyping();
+                return;
+            }
+
             centerBubbleController.CompleteTyping();
             return;
         }
@@ -141,12 +147,15 @@ public sealed class Chapter2CutsceneController : MonoBehaviour
 
     private void ResolveCenterBubbleController()
     {
-        if (centerBubbleController != null)
+        if (centerBubbleController == null)
         {
-            return;
+            centerBubbleController = FindObjectOfType<Chapter2CenterBubbleController>(true);
         }
 
-        centerBubbleController = FindObjectOfType<Chapter2CenterBubbleController>(true);
+        if (centerBubbleController != null)
+        {
+            centerBubbleController.SetTypingSfxReferenceBubble(playerBubblePrefab);
+        }
     }
 
     private Transform CreateChildAnchor(string anchorName)

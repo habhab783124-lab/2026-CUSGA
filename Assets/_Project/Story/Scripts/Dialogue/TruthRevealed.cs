@@ -47,6 +47,7 @@ public sealed class TruthRevealed : MonoBehaviour
     [Header("打字机")]
     [SerializeField] private float secondsPerChar = 0.03f;
     [SerializeField] private int mouseButton = 0;
+    [SerializeField] private DialogueBubbleView typingSfxReferenceBubble;
 
     [Header("过场")]
     [SerializeField] private SpriteRenderer background1;
@@ -61,7 +62,11 @@ public sealed class TruthRevealed : MonoBehaviour
     private Coroutine backgroundFadeRoutine;
     private int currentLineIndex;
     private bool isTyping;
+    private bool isTypingPaused;
     private bool skipTyping;
+    private DialogueInlineEffects.ParsedLine currentParsedLine;
+    private AudioSource typingAudioSource;
+    private DialogueBubbleView.ExternalTypingSfxPlayer typingSfxPlayer;
 
     public bool IsTyping => isTyping;
     public bool HasReachedConversationEnd => lines != null && lines.Count > 0 && currentLineIndex >= lines.Count - 1;
@@ -71,6 +76,7 @@ public sealed class TruthRevealed : MonoBehaviour
         ApplyDefaultLinesIfNeeded();
         EnsureVisuals();
         TryResolveSceneReferences();
+        EnsureTypingSfxSupport();
         ApplyStyle();
     }
 
@@ -101,6 +107,12 @@ public sealed class TruthRevealed : MonoBehaviour
 
         if (isTyping)
         {
+            if (isTypingPaused)
+            {
+                isTypingPaused = false;
+                return;
+            }
+
             skipTyping = true;
             return;
         }
@@ -247,6 +259,7 @@ public sealed class TruthRevealed : MonoBehaviour
             dialogueText.enableAutoSizing = true;
             dialogueText.fontSizeMin = minFontSize;
             dialogueText.fontSizeMax = maxFontSize;
+            dialogueText.richText = true;
             dialogueText.enableWordWrapping = true;
             dialogueText.alignment = TextAlignmentOptions.MidlineLeft;
             dialogueText.raycastTarget = false;
@@ -301,12 +314,18 @@ public sealed class TruthRevealed : MonoBehaviour
             StopCoroutine(typingRoutine);
         }
 
+        currentParsedLine = DialogueInlineEffects.Parse(
+            fullText,
+            secondsPerChar,
+            dialogueText != null && dialogueText.fontSize > 0f ? dialogueText.fontSize : maxFontSize);
+        typingSfxPlayer?.Reset();
         typingRoutine = StartCoroutine(TypeLineRoutine(fullText));
     }
 
     private IEnumerator TypeLineRoutine(string fullText)
     {
         isTyping = true;
+        isTypingPaused = false;
         skipTyping = false;
 
         if (dialogueText == null)
@@ -314,21 +333,67 @@ public sealed class TruthRevealed : MonoBehaviour
             yield break;
         }
 
-        dialogueText.text = string.Empty;
-        for (int i = 0; i < fullText.Length; i++)
+        dialogueText.richText = true;
+        dialogueText.text = currentParsedLine != null ? currentParsedLine.DisplayText : string.Empty;
+        dialogueText.maxVisibleCharacters = 0;
+        dialogueText.ForceMeshUpdate();
+
+        List<DialogueInlineEffects.VisibleCharacter> visibleCharacters =
+            currentParsedLine != null ? currentParsedLine.VisibleCharacters : null;
+        if (visibleCharacters == null || visibleCharacters.Count == 0)
+        {
+            dialogueText.maxVisibleCharacters = int.MaxValue;
+            isTyping = false;
+            isTypingPaused = false;
+            skipTyping = false;
+            typingRoutine = null;
+            yield break;
+        }
+
+        int visible = 0;
+        int lastPauseIndex = -1;
+        while (visible < visibleCharacters.Count)
         {
             if (skipTyping)
             {
-                dialogueText.text = fullText;
+                dialogueText.maxVisibleCharacters = int.MaxValue;
                 break;
             }
 
-            dialogueText.text += fullText[i];
-            yield return new WaitForSeconds(secondsPerChar);
+            if (isTypingPaused)
+            {
+                yield return null;
+                continue;
+            }
+
+            DialogueInlineEffects.VisibleCharacter visibleCharacter = visibleCharacters[visible];
+            if (visibleCharacter.PauseBefore && lastPauseIndex != visible)
+            {
+                isTypingPaused = true;
+                lastPauseIndex = visible;
+                continue;
+            }
+
+            visible++;
+            dialogueText.maxVisibleCharacters = visible;
+            typingSfxPlayer?.ApplyPool(visibleCharacter.TypingSfxPoolId);
+            typingSfxPlayer?.Play(dialogueText, visible - 1, visibleCharacter.FontSizeScale);
+
+            float delay = Mathf.Max(0f, visibleCharacter.SecondsPerCharacter);
+            if (delay > 0f)
+            {
+                yield return new WaitForSeconds(delay);
+            }
+            else
+            {
+                yield return null;
+            }
         }
 
-        dialogueText.text = fullText;
+        dialogueText.text = currentParsedLine != null ? currentParsedLine.DisplayText : string.Empty;
+        dialogueText.maxVisibleCharacters = int.MaxValue;
         isTyping = false;
+        isTypingPaused = false;
         skipTyping = false;
         typingRoutine = null;
     }
@@ -388,7 +453,20 @@ public sealed class TruthRevealed : MonoBehaviour
         }
 
         int clampedIndex = Mathf.Clamp(currentLineIndex, 0, lines.Count - 1);
-        dialogueText.text = lines[clampedIndex]?.text ?? string.Empty;
+        string raw = lines[clampedIndex]?.text ?? string.Empty;
+        dialogueText.richText = true;
+        dialogueText.text = DialogueInlineEffects.Parse(
+            raw,
+            secondsPerChar,
+            dialogueText.fontSize > 0f ? dialogueText.fontSize : maxFontSize).DisplayText;
+        dialogueText.maxVisibleCharacters = int.MaxValue;
+    }
+
+    private void EnsureTypingSfxSupport()
+    {
+        typingSfxReferenceBubble = DialogueBubbleView.ResolveTypingSfxReference(typingSfxReferenceBubble);
+        typingAudioSource = DialogueBubbleView.EnsureExternalTypingAudioSource(this, "TruthRevealedTypingSfx");
+        typingSfxPlayer = DialogueBubbleView.CreateExternalTypingSfxPlayer(typingSfxReferenceBubble, typingAudioSource);
     }
 
     private static TMP_FontAsset TryLoadDialogueFont()

@@ -61,10 +61,14 @@ public sealed class Chapter5 : MonoBehaviour
 
     private bool hasPlayed;
     private bool isTyping;
+    private bool isTypingPaused;
     private bool skipTyping;
     private bool waitingForCloseClick;
     private bool shenEntranceStarted;
     private bool characterDialogueActive;
+    private DialogueInlineEffects.ParsedLine currentIntroParsedLine;
+    private AudioSource introTypingAudioSource;
+    private DialogueBubbleView.ExternalTypingSfxPlayer introTypingSfxPlayer;
 
     private Vector3 shenTargetPosition;
     private bool hasCachedShenTargetPosition;
@@ -79,6 +83,7 @@ public sealed class Chapter5 : MonoBehaviour
         PlaceShenOffscreenLeft();
 
         EnsureDialogueBubblePrefab();
+        EnsureIntroTypingSfxSupport();
         EnsureBubbleAnchors();
         EnsureBubbleInstances();
 
@@ -131,6 +136,12 @@ public sealed class Chapter5 : MonoBehaviour
 
         if (isTyping)
         {
+            if (isTypingPaused)
+            {
+                isTypingPaused = false;
+                return;
+            }
+
             skipTyping = true;
             return;
         }
@@ -531,6 +542,7 @@ public sealed class Chapter5 : MonoBehaviour
         dialogueText.enableAutoSizing = true;
         dialogueText.fontSizeMin = minFontSize;
         dialogueText.fontSizeMax = maxFontSize;
+        dialogueText.richText = true;
         dialogueText.enableWordWrapping = true;
         dialogueText.alignment = TextAlignmentOptions.MidlineLeft;
         dialogueText.overflowMode = TextOverflowModes.Overflow;
@@ -547,8 +559,10 @@ public sealed class Chapter5 : MonoBehaviour
     {
         StopTypingRoutine();
         isTyping = false;
+        isTypingPaused = false;
         skipTyping = false;
         dialogueText.text = string.Empty;
+        dialogueText.maxVisibleCharacters = 0;
         textBox.gameObject.SetActive(false);
         textBoxCanvasGroup.alpha = 0f;
     }
@@ -557,33 +571,80 @@ public sealed class Chapter5 : MonoBehaviour
     {
         StopTypingRoutine();
         waitingForCloseClick = false;
+        currentIntroParsedLine = DialogueInlineEffects.Parse(
+            content,
+            secondsPerChar,
+            dialogueText != null && dialogueText.fontSize > 0f ? dialogueText.fontSize : maxFontSize);
+        introTypingSfxPlayer?.Reset();
         typingRoutine = StartCoroutine(TypeLineRoutine(content ?? string.Empty));
     }
 
     private IEnumerator TypeLineRoutine(string fullText)
     {
         isTyping = true;
+        isTypingPaused = false;
         skipTyping = false;
-        dialogueText.text = string.Empty;
-        float delay = Mathf.Max(0.001f, secondsPerChar);
+        dialogueText.richText = true;
+        dialogueText.text = currentIntroParsedLine != null ? currentIntroParsedLine.DisplayText : string.Empty;
+        dialogueText.maxVisibleCharacters = 0;
+        dialogueText.ForceMeshUpdate();
 
-        for (int i = 1; i <= fullText.Length; i++)
+        List<DialogueInlineEffects.VisibleCharacter> visibleCharacters =
+            currentIntroParsedLine != null ? currentIntroParsedLine.VisibleCharacters : null;
+        if (visibleCharacters == null || visibleCharacters.Count == 0)
+        {
+            dialogueText.maxVisibleCharacters = int.MaxValue;
+            isTyping = false;
+            isTypingPaused = false;
+            skipTyping = false;
+            waitingForCloseClick = true;
+            typingRoutine = null;
+            yield break;
+        }
+
+        int visible = 0;
+        int lastPauseIndex = -1;
+        while (visible < visibleCharacters.Count)
         {
             if (skipTyping)
             {
-                dialogueText.text = fullText;
+                dialogueText.maxVisibleCharacters = int.MaxValue;
                 break;
             }
 
-            dialogueText.text = fullText.Substring(0, i);
-            if (i < fullText.Length)
+            if (isTypingPaused)
+            {
+                yield return null;
+                continue;
+            }
+
+            DialogueInlineEffects.VisibleCharacter visibleCharacter = visibleCharacters[visible];
+            if (visibleCharacter.PauseBefore && lastPauseIndex != visible)
+            {
+                isTypingPaused = true;
+                lastPauseIndex = visible;
+                continue;
+            }
+
+            visible++;
+            dialogueText.maxVisibleCharacters = visible;
+            introTypingSfxPlayer?.ApplyPool(visibleCharacter.TypingSfxPoolId);
+            introTypingSfxPlayer?.Play(dialogueText, visible - 1, visibleCharacter.FontSizeScale);
+            float delay = Mathf.Max(0f, visibleCharacter.SecondsPerCharacter);
+            if (delay > 0f)
             {
                 yield return new WaitForSeconds(delay);
             }
+            else
+            {
+                yield return null;
+            }
         }
 
-        dialogueText.text = fullText;
+        dialogueText.text = currentIntroParsedLine != null ? currentIntroParsedLine.DisplayText : string.Empty;
+        dialogueText.maxVisibleCharacters = int.MaxValue;
         isTyping = false;
+        isTypingPaused = false;
         skipTyping = false;
         waitingForCloseClick = true;
         typingRoutine = null;
@@ -596,6 +657,15 @@ public sealed class Chapter5 : MonoBehaviour
             StopCoroutine(typingRoutine);
             typingRoutine = null;
         }
+
+        isTypingPaused = false;
+    }
+
+    private void EnsureIntroTypingSfxSupport()
+    {
+        dialogueBubblePrefab = DialogueBubbleView.ResolveTypingSfxReference(dialogueBubblePrefab);
+        introTypingAudioSource = DialogueBubbleView.EnsureExternalTypingAudioSource(this, "Chapter5IntroTypingSfx");
+        introTypingSfxPlayer = DialogueBubbleView.CreateExternalTypingSfxPlayer(dialogueBubblePrefab, introTypingAudioSource);
     }
 
     public static IReadOnlyList<DialogueLine> Get(string id)
@@ -644,12 +714,7 @@ public sealed class Chapter5 : MonoBehaviour
 
     private static DialogueEmphasis Normal()
     {
-        return new DialogueEmphasis
-        {
-            enabled = false,
-            scaleMultiplier = 1.25f,
-            shakeMagnitude = 0.08f
-        };
+        return DialogueBubbleView.CreateNormalEmphasis();
     }
 
     private static TMP_FontAsset TryLoadDialogueFont()

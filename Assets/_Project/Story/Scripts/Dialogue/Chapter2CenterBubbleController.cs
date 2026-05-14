@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,6 +20,7 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
     [SerializeField] private FontStyles textFontStyle = FontStyles.Normal;
     [SerializeField] private TextAlignmentOptions textAlignment = TextAlignmentOptions.MidlineLeft;
     [SerializeField] private float secondsPerCharacter = 0.03f;
+    [SerializeField] private DialogueBubbleView typingSfxReferenceBubble;
 
     [Header("展开/关闭")]
     [SerializeField] private float openDuration = 0.32f;
@@ -46,18 +48,24 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
     private Coroutine typingRoutine;
     private bool isOpen;
     private bool isTyping;
+    private bool isPaused;
     private string currentFullText = string.Empty;
+    private DialogueInlineEffects.ParsedLine currentParsedLine;
     private Action onTypingFinished;
+    private AudioSource typingAudioSource;
+    private DialogueBubbleView.ExternalTypingSfxPlayer typingSfxPlayer;
 
     public bool IsOpen => isOpen;
     public bool IsTransitioning => transitionRoutine != null;
     public bool IsTyping => isTyping;
+    public bool IsPaused => isPaused;
 
     private void Awake()
     {
         ResolveTargetRenderer();
         CacheInitialVisualStateIfNeeded();
         EnsureTextUi();
+        EnsureTypingSfxSupport();
         ApplyFont();
         ApplyTextStyle();
     }
@@ -75,10 +83,21 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
             CaptureInitialVisualState();
 
             EnsureTextUi();
+            EnsureTypingSfxReference();
         }
 
         ApplyFont();
         ApplyTextStyle();
+    }
+
+    public void SetTypingSfxReferenceBubble(DialogueBubbleView referenceBubble)
+    {
+        if (referenceBubble != null)
+        {
+            typingSfxReferenceBubble = referenceBubble;
+        }
+
+        EnsureTypingSfxSupport();
     }
 
     public void ShowNpcLine(string content, Action onComplete = null)
@@ -90,10 +109,13 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
         ApplyTextStyle();
         onTypingFinished = onComplete;
         currentFullText = content ?? string.Empty;
+        currentParsedLine = ParseCurrentLine();
+        typingSfxPlayer?.Reset();
 
         if (dialogueText != null)
         {
             dialogueText.text = string.Empty;
+            dialogueText.maxVisibleCharacters = 0;
             dialogueText.gameObject.SetActive(true);
         }
 
@@ -113,10 +135,18 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
 
     public void CompleteTyping()
     {
+        if (isPaused)
+        {
+            ResumeTyping();
+            return;
+        }
+
         StopTypingRoutine();
         if (dialogueText != null)
         {
-            dialogueText.text = currentFullText;
+            dialogueText.richText = true;
+            dialogueText.text = currentParsedLine != null ? currentParsedLine.DisplayText : string.Empty;
+            dialogueText.maxVisibleCharacters = int.MaxValue;
         }
 
         isTyping = false;
@@ -128,6 +158,7 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
     {
         StopTypingRoutine();
         currentFullText = string.Empty;
+        currentParsedLine = null;
         onTypingFinished = null;
 
         if (!isOpen)
@@ -345,6 +376,7 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
         dialogueText.color = textColor;
         dialogueText.fontStyle = textFontStyle;
         dialogueText.alignment = textAlignment;
+        dialogueText.richText = true;
         dialogueText.enableWordWrapping = true;
         dialogueText.overflowMode = TextOverflowModes.Overflow;
         dialogueText.raycastTarget = false;
@@ -358,41 +390,84 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
     private void StartTypingCurrentText()
     {
         StopTypingRoutine();
-        typingRoutine = StartCoroutine(TypeTextRoutine(currentFullText));
+        currentParsedLine = ParseCurrentLine();
+        typingRoutine = StartCoroutine(TypeTextRoutine(currentParsedLine));
     }
 
-    private IEnumerator TypeTextRoutine(string content)
+    public void ResumeTyping()
+    {
+        isPaused = false;
+    }
+
+    private IEnumerator TypeTextRoutine(DialogueInlineEffects.ParsedLine parsedLine)
     {
         isTyping = true;
+        isPaused = false;
         if (dialogueText != null)
         {
-            dialogueText.text = string.Empty;
+            dialogueText.richText = true;
+            dialogueText.text = parsedLine != null ? parsedLine.DisplayText : string.Empty;
+            dialogueText.maxVisibleCharacters = 0;
+            dialogueText.ForceMeshUpdate();
         }
 
-        if (string.IsNullOrEmpty(content))
+        List<DialogueInlineEffects.VisibleCharacter> visibleCharacters =
+            parsedLine != null ? parsedLine.VisibleCharacters : null;
+        if (visibleCharacters == null || visibleCharacters.Count == 0)
         {
             isTyping = false;
+            isPaused = false;
             typingRoutine = null;
             onTypingFinished?.Invoke();
             onTypingFinished = null;
             yield break;
         }
 
-        float delay = Mathf.Max(0.001f, secondsPerCharacter);
-        for (int i = 1; i <= content.Length; i++)
+        int visible = 0;
+        int lastPauseIndex = -1;
+        while (visible < visibleCharacters.Count)
         {
-            if (dialogueText != null)
+            if (isPaused)
             {
-                dialogueText.text = content.Substring(0, i);
+                yield return null;
+                continue;
             }
 
-            if (i < content.Length)
+            DialogueInlineEffects.VisibleCharacter visibleCharacter = visibleCharacters[visible];
+            if (visibleCharacter.PauseBefore && lastPauseIndex != visible)
+            {
+                isPaused = true;
+                lastPauseIndex = visible;
+                continue;
+            }
+
+            visible++;
+            if (dialogueText != null)
+            {
+                dialogueText.maxVisibleCharacters = visible;
+            }
+
+            typingSfxPlayer?.ApplyPool(visibleCharacter.TypingSfxPoolId);
+            typingSfxPlayer?.Play(dialogueText, visible - 1, visibleCharacter.FontSizeScale);
+
+            float delay = Mathf.Max(0f, visibleCharacter.SecondsPerCharacter);
+            if (delay > 0f)
             {
                 yield return new WaitForSeconds(delay);
             }
+            else
+            {
+                yield return null;
+            }
+        }
+
+        if (dialogueText != null)
+        {
+            dialogueText.maxVisibleCharacters = int.MaxValue;
         }
 
         isTyping = false;
+        isPaused = false;
         typingRoutine = null;
         onTypingFinished?.Invoke();
         onTypingFinished = null;
@@ -407,6 +482,25 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
         }
 
         isTyping = false;
+        isPaused = false;
+    }
+
+    private DialogueInlineEffects.ParsedLine ParseCurrentLine()
+    {
+        float baseFontSize = dialogueText != null && dialogueText.fontSize > 0f ? dialogueText.fontSize : textFontSize;
+        return DialogueInlineEffects.Parse(currentFullText, secondsPerCharacter, baseFontSize);
+    }
+
+    private void EnsureTypingSfxSupport()
+    {
+        EnsureTypingSfxReference();
+        typingAudioSource = DialogueBubbleView.EnsureExternalTypingAudioSource(this, "Chapter2CenterBubbleTypingSfx");
+        typingSfxPlayer = DialogueBubbleView.CreateExternalTypingSfxPlayer(typingSfxReferenceBubble, typingAudioSource);
+    }
+
+    private void EnsureTypingSfxReference()
+    {
+        typingSfxReferenceBubble = DialogueBubbleView.ResolveTypingSfxReference(typingSfxReferenceBubble);
     }
 
     private IEnumerator PlayOpenRoutine(Action onComplete)
