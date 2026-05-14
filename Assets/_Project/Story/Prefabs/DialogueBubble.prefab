@@ -428,7 +428,7 @@ MonoBehaviour:
   m_FallbackScreenDPI: 96
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 50
-  m_PresetInfoIsWorld: 0
+  m_PresetInfoIsWorld: 1
 --- !u!114 &4900870302483710290
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -480,6 +480,22 @@ MonoBehaviour:
   clampToScreen: 1
   screenEdgePadding: 8
   fontOverride: {fileID: 0}
+  typingAudioSource: {fileID: 0}
+  typingSfxPool:
+  - {fileID: 8300000, guid: cc80f847ce489f94dbcde4f7afd9edf9, type: 3}
+  - {fileID: 8300000, guid: 0893f474f13164f439f928aed91c3bcc, type: 3}
+  - {fileID: 8300000, guid: 48f847f6b283ccf499f6edf55ddfd83c, type: 3}
+  - {fileID: 8300000, guid: 5f5df535f106d00448acf0936369d488, type: 3}
+  typingSfxNamedPools:
+  - id: 
+    clips: []
+  typingSfxBaseVolume: 0.31
+  typingSfxMaxVolume: 1
+  typingSfxReferenceSizeScale: 2
+  typingSfxVolumeResponse: 3
+  typingSfxMinInterval: 0.015
+  playTypingSfxForWhitespace: 0
+  playTypingSfxForPunctuation: 0
 --- !u!1 &9066137799979675058
 GameObject:
   m_ObjectHideFlags: 0

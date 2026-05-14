@@ -56,6 +56,18 @@ public sealed class DialogueBubbleView : MonoBehaviour
     [SerializeField] private TMP_FontAsset fontOverride;
     [SerializeField] private float fontSizeOverride = -1f;
 
+    [Header("Typing SFX")]
+    [SerializeField] private AudioSource typingAudioSource;
+    [SerializeField] private List<AudioClip> typingSfxPool = new List<AudioClip>();
+    [SerializeField] private List<TypingSfxPoolDefinition> typingSfxNamedPools = new List<TypingSfxPoolDefinition>();
+    [SerializeField] [Range(0f, 1f)] private float typingSfxBaseVolume = 0.18f;
+    [SerializeField] [Range(0f, 1f)] private float typingSfxMaxVolume = 0.7f;
+    [SerializeField] [Range(1f, 4f)] private float typingSfxReferenceSizeScale = 2f;
+    [SerializeField] [Range(0.5f, 3f)] private float typingSfxVolumeResponse = 1.35f;
+    [SerializeField] [Range(0f, 0.1f)] private float typingSfxMinInterval = 0.015f;
+    [SerializeField] private bool playTypingSfxForWhitespace;
+    [SerializeField] private bool playTypingSfxForPunctuation;
+
     private Transform follow;
     private Coroutine typeRoutine;
     private bool isTyping;
@@ -63,8 +75,11 @@ public sealed class DialogueBubbleView : MonoBehaviour
     private bool isPaused;
     private bool wasPausedByControlTag;
     private float currentSecondsPerChar;
+    private DialogueEmphasis currentTypingEmphasis;
     private List<CharAnimationData> charAnimations;
     private HashSet<int> pauseAtCharIndex;
+    private Dictionary<int, string> sfxPoolChangeAtCharIndex;
+    private List<AudioClip> activeTypingSfxPool;
     private Vector3 bubbleBaseLocalScale = Vector3.one;
     private float shakeMag;
     private Vector3 shake;
@@ -73,6 +88,8 @@ public sealed class DialogueBubbleView : MonoBehaviour
     private Vector2 screenBottomSize = new Vector2(1280f, 220f);
     private Vector2 screenBottomOffset = new Vector2(0f, 120f);
     private float screenBottomAlpha = 0.6f;
+    private int lastTypingSfxIndex = -1;
+    private float lastTypingSfxTime = -10f;
 
     private bool _built;
     private Coroutine _imageRefreshRoutine;
@@ -96,12 +113,24 @@ public sealed class DialogueBubbleView : MonoBehaviour
         }
     }
 
+    [System.Serializable]
+    public sealed class TypingSfxPoolDefinition
+    {
+        public string id = "default";
+        public List<AudioClip> clips = new List<AudioClip>();
+    }
+
     private void OnDisable()
     {
         if (_imageRefreshRoutine != null)
         {
             StopCoroutine(_imageRefreshRoutine);
             _imageRefreshRoutine = null;
+        }
+
+        if (typingAudioSource != null)
+        {
+            typingAudioSource.Stop();
         }
     }
 
@@ -121,6 +150,23 @@ public sealed class DialogueBubbleView : MonoBehaviour
         {
             lineText.fontSize = size;
         }
+    }
+
+    private void EnsureTypingAudioSource()
+    {
+        if (typingAudioSource == null)
+        {
+            typingAudioSource = GetComponent<AudioSource>();
+        }
+
+        if (typingAudioSource == null)
+        {
+            typingAudioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        typingAudioSource.playOnAwake = false;
+        typingAudioSource.loop = false;
+        typingAudioSource.spatialBlend = 0f;
     }
 
     public void SetBottomScreenLayout(bool enabled, Vector2 size, Vector2 offset, float alpha, bool hideTail)
@@ -304,6 +350,7 @@ public sealed class DialogueBubbleView : MonoBehaviour
             rootCanvas.worldCamera = rootCanvas.worldCamera != null ? rootCanvas.worldCamera : Camera.main;
         }
 
+        EnsureTypingAudioSource();
         lineText.enableWordWrapping = true;
         lineText.overflowMode = TextOverflowModes.Overflow;
         if (fontOverride != null)
@@ -404,6 +451,12 @@ public sealed class DialogueBubbleView : MonoBehaviour
         isPaused = false;
     }
 
+    public void SetTypingSfxPool(string poolId)
+    {
+        activeTypingSfxPool = ResolveTypingSfxPool(poolId);
+        lastTypingSfxIndex = -1;
+    }
+
     public void TypeLine(string content, float secondsPerChar, DialogueEmphasis emphasis)
     {
         BuildIfNeeded();
@@ -418,12 +471,15 @@ public sealed class DialogueBubbleView : MonoBehaviour
             typeRoutine = null;
         }
 
+        currentTypingEmphasis = emphasis;
         ApplyEmphasis(emphasis, true);
         string raw = content ?? string.Empty;
         string display = StripControlTags(raw);
 
         charAnimations = ParseCharAnimations(raw);
         pauseAtCharIndex = ParsePausePoints(raw);
+        sfxPoolChangeAtCharIndex = ParseSfxPoolChanges(raw);
+        activeTypingSfxPool = typingSfxPool;
 
         LayoutForFullString(display);
         typeRoutine = StartCoroutine(TypeRoutine(raw, display, secondsPerChar, emphasis));
@@ -435,8 +491,11 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
     isTyping = true;
     skipType = false;
     isPaused = false;
+    wasPausedByControlTag = false;
+    lastTypingSfxTime = -10f;
+    lastTypingSfxIndex = -1;
 
-    float currentSecPer = Mathf.Max(0f, secPer);
+    currentSecondsPerChar = Mathf.Max(0f, secPer);
 
     lineText.richText = true;
     lineText.text = display ?? string.Empty;
@@ -476,6 +535,13 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
         {
             rawIndex += "[pause]".Length;
             isPaused = true;
+            wasPausedByControlTag = true;
+            continue;
+        }
+
+        if (MatchLiteral(raw, rawIndex, "[resume]") || MatchLiteral(raw, rawIndex, "[RESUME]"))
+        {
+            rawIndex += 8;
             continue;
         }
 
@@ -496,9 +562,29 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
                     System.Globalization.CultureInfo.InvariantCulture,
                     out float sp))
                 {
-                    currentSecPer = Mathf.Max(0f, sp);
+                    currentSecondsPerChar = Mathf.Max(0f, sp);
                 }
 
+                rawIndex = end + 1;
+                continue;
+            }
+        }
+
+        if (MatchLiteral(raw, rawIndex, "[size=") || MatchLiteral(raw, rawIndex, "[SIZE="))
+        {
+            int end = raw.IndexOf(']', rawIndex);
+            if (end != -1)
+            {
+                rawIndex = end + 1;
+                continue;
+            }
+        }
+
+        if (MatchLiteral(raw, rawIndex, "[sfx=") || MatchLiteral(raw, rawIndex, "[SFX="))
+        {
+            int end = raw.IndexOf(']', rawIndex);
+            if (end != -1)
+            {
                 rawIndex = end + 1;
                 continue;
             }
@@ -524,14 +610,24 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
         // =========================
         // 普通字符
         // =========================
+        ApplySfxPoolChangeForCharacter(visible);
         visible++;
         lineText.maxVisibleCharacters = visible;
+        CharAnimationData charAnim = GetCharAnimation(visible - 1);
+        PlayTypingSfxForCharacter(visible - 1, charAnim);
+        if (ShouldAnimateCharacterPulse(charAnim))
+        {
+            float targetScale = charAnim != null ? charAnim.fontSizeScale : 1f;
+            StartCoroutine(AnimateCharSize(visible - 1, targetScale));
+        }
 
         rawIndex++;
 
-        if (currentSecPer > 0f)
+        float waitTime = currentSecondsPerChar;
+
+        if (waitTime > 0f)
         {
-            yield return new WaitForSeconds(currentSecPer);
+            yield return new WaitForSeconds(waitTime);
         }
         else
         {
@@ -544,7 +640,9 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
     isTyping = false;
     skipType = false;
     isPaused = false;
+    wasPausedByControlTag = false;
     typeRoutine = null;
+    currentTypingEmphasis = default;
 
     ApplyEmphasis(em, false);
 }
@@ -567,6 +665,7 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
         result = Regex.Replace(result, @"\[/?resume\]", "", RegexOptions.IgnoreCase);
         result = Regex.Replace(result, @"\[speed=[^\]]*\]", "", RegexOptions.IgnoreCase);
         result = Regex.Replace(result, @"\[size=[^\]]*\]", "", RegexOptions.IgnoreCase);
+        result = Regex.Replace(result, @"\[sfx=[^\]]*\]", "", RegexOptions.IgnoreCase);
         return result;
     }
 
@@ -649,6 +748,79 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
         return pauses;
     }
 
+    private static Dictionary<int, string> ParseSfxPoolChanges(string raw)
+    {
+        var changes = new Dictionary<int, string>();
+        if (string.IsNullOrEmpty(raw))
+        {
+            return changes;
+        }
+
+        int rawIndex = 0;
+        int displayIndex = 0;
+        while (rawIndex < raw.Length)
+        {
+            if (raw[rawIndex] == '[')
+            {
+                if (MatchLiteral(raw, rawIndex, "[sfx=") || MatchLiteral(raw, rawIndex, "[SFX="))
+                {
+                    int start = rawIndex + 5;
+                    int end = raw.IndexOf(']', start);
+                    if (end > start)
+                    {
+                        string poolId = raw.Substring(start, end - start).Trim();
+                        changes[displayIndex] = poolId;
+                        rawIndex = end + 1;
+                        continue;
+                    }
+                }
+
+                if (MatchLiteral(raw, rawIndex, "[pause]") || MatchLiteral(raw, rawIndex, "[PAUSE]"))
+                {
+                    rawIndex += 7;
+                    continue;
+                }
+
+                if (MatchLiteral(raw, rawIndex, "[resume]") || MatchLiteral(raw, rawIndex, "[RESUME]"))
+                {
+                    rawIndex += 8;
+                    continue;
+                }
+
+                if (MatchLiteral(raw, rawIndex, "[speed=") || MatchLiteral(raw, rawIndex, "[SPEED="))
+                {
+                    int start = rawIndex + 7;
+                    int end = raw.IndexOf(']', start);
+                    if (end > start)
+                    {
+                        rawIndex = end + 1;
+                        continue;
+                    }
+                }
+
+                if (MatchLiteral(raw, rawIndex, "[size=") || MatchLiteral(raw, rawIndex, "[SIZE="))
+                {
+                    int start = rawIndex + 6;
+                    int end = raw.IndexOf(']', start);
+                    if (end > start)
+                    {
+                        rawIndex = end + 1;
+                        continue;
+                    }
+                }
+            }
+
+            if (raw[rawIndex] != '[')
+            {
+                displayIndex++;
+            }
+
+            rawIndex++;
+        }
+
+        return changes;
+    }
+
     // Back-compat with requested signature; parsing is precomputed in ParsePausePoints/ParseCharAnimations.
     private bool TryProcessControlTags(string raw, ref int index, ref float secondsPerChar, int currentVisibleCount)
     {
@@ -657,7 +829,7 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
         return false;
     }
 
-    private static List<CharAnimationData> ParseCharAnimations(string raw)
+    private List<CharAnimationData> ParseCharAnimations(string raw)
     {
         var animations = new List<CharAnimationData>();
         if (string.IsNullOrEmpty(raw))
@@ -668,10 +840,37 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
         int rawIndex = 0;
         int displayCharCount = 0;
         float currentSizeScale = 1f;
-        float currentSpeedMult = 1f;
+        float baseFontSize = lineText != null && lineText.fontSize > 0f ? lineText.fontSize : 0f;
+        var sizeScaleStack = new Stack<float>();
 
         while (rawIndex < raw.Length)
         {
+            if (raw[rawIndex] == '<')
+            {
+                int tagEnd = raw.IndexOf('>', rawIndex);
+                if (tagEnd > rawIndex)
+                {
+                    string tagBody = raw.Substring(rawIndex + 1, tagEnd - rawIndex - 1).Trim();
+                    if (TryParseTmpSizeOpenTag(tagBody, currentSizeScale, baseFontSize, out float newScale))
+                    {
+                        sizeScaleStack.Push(currentSizeScale);
+                        currentSizeScale = newScale;
+                        rawIndex = tagEnd + 1;
+                        continue;
+                    }
+
+                    if (IsTmpSizeCloseTag(tagBody))
+                    {
+                        currentSizeScale = sizeScaleStack.Count > 0 ? sizeScaleStack.Pop() : 1f;
+                        rawIndex = tagEnd + 1;
+                        continue;
+                    }
+
+                    rawIndex = tagEnd + 1;
+                    continue;
+                }
+            }
+
             if (raw[rawIndex] == '[')
             {
                 if (MatchLiteral(raw, rawIndex, "[size=") || MatchLiteral(raw, rawIndex, "[SIZE="))
@@ -700,16 +899,6 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
                     int end = raw.IndexOf(']', start);
                     if (end > start)
                     {
-                        string num = raw.Substring(start, end - start);
-                        if (float.TryParse(
-                                num,
-                                System.Globalization.NumberStyles.Float,
-                                System.Globalization.CultureInfo.InvariantCulture,
-                                out float speedMult))
-                        {
-                            currentSpeedMult = speedMult;
-                        }
-
                         rawIndex = end + 1;
                         continue;
                     }
@@ -724,11 +913,21 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
                     rawIndex += 8;
                     continue;
                 }
+                else if (MatchLiteral(raw, rawIndex, "[sfx=") || MatchLiteral(raw, rawIndex, "[SFX="))
+                {
+                    int start = rawIndex + 5;
+                    int end = raw.IndexOf(']', start);
+                    if (end > start)
+                    {
+                        rawIndex = end + 1;
+                        continue;
+                    }
+                }
             }
 
             if (raw[rawIndex] != '[')
             {
-                animations.Add(new CharAnimationData(displayCharCount, currentSizeScale, currentSpeedMult));
+                animations.Add(new CharAnimationData(displayCharCount, currentSizeScale, 1f));
                 displayCharCount++;
             }
 
@@ -736,6 +935,60 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
         }
 
         return animations;
+    }
+
+    private static bool TryParseTmpSizeOpenTag(string tagBody, float currentSizeScale, float baseFontSize, out float newScale)
+    {
+        newScale = currentSizeScale;
+        if (string.IsNullOrWhiteSpace(tagBody))
+        {
+            return false;
+        }
+
+        if (!tagBody.StartsWith("size=", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        string rawValue = tagBody.Substring(5).Trim();
+        if (string.IsNullOrEmpty(rawValue))
+        {
+            return false;
+        }
+
+        if (rawValue.EndsWith("%", System.StringComparison.Ordinal))
+        {
+            string percentValue = rawValue.Substring(0, rawValue.Length - 1);
+            if (float.TryParse(
+                    percentValue,
+                    System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out float percent))
+            {
+                newScale = Mathf.Max(0.01f, percent / 100f);
+                return true;
+            }
+
+            return false;
+        }
+
+        if (baseFontSize > 0f
+            && float.TryParse(
+                rawValue,
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out float absoluteSize))
+        {
+            newScale = Mathf.Max(0.01f, absoluteSize / baseFontSize);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool IsTmpSizeCloseTag(string tagBody)
+    {
+        return string.Equals(tagBody.Trim(), "/size", System.StringComparison.OrdinalIgnoreCase);
     }
 
     private CharAnimationData GetCharAnimation(int charIndex)
@@ -746,6 +999,198 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
         }
 
         return charAnimations[charIndex];
+    }
+
+    private bool ShouldAnimateCharacterPulse(CharAnimationData charAnim)
+    {
+        if (charAnim != null && !Mathf.Approximately(charAnim.fontSizeScale, 1f))
+        {
+            return true;
+        }
+
+        return currentTypingEmphasis.enabled && currentTypingEmphasis.scaleMultiplier > 1.001f;
+    }
+
+    private void ApplySfxPoolChangeForCharacter(int charIndex)
+    {
+        if (sfxPoolChangeAtCharIndex == null)
+        {
+            return;
+        }
+
+        if (!sfxPoolChangeAtCharIndex.TryGetValue(charIndex, out string poolId))
+        {
+            return;
+        }
+
+        activeTypingSfxPool = ResolveTypingSfxPool(poolId);
+    }
+
+    private void PlayTypingSfxForCharacter(int charIndex, CharAnimationData charAnim)
+    {
+        if (typingAudioSource == null)
+        {
+            return;
+        }
+
+        if (Time.unscaledTime - lastTypingSfxTime < typingSfxMinInterval)
+        {
+            return;
+        }
+
+        char typedChar = GetDisplayedCharacter(charIndex);
+        if (typedChar == '\0')
+        {
+            return;
+        }
+
+        if (!playTypingSfxForWhitespace && char.IsWhiteSpace(typedChar))
+        {
+            return;
+        }
+
+        if (!playTypingSfxForPunctuation && char.IsPunctuation(typedChar))
+        {
+            return;
+        }
+
+        AudioClip clip = GetRandomTypingSfxClip();
+        if (clip == null)
+        {
+            return;
+        }
+
+        float volume = typingSfxBaseVolume;
+        if (charAnim != null)
+        {
+            float normalizedScale = Mathf.InverseLerp(1f, Mathf.Max(1.01f, typingSfxReferenceSizeScale), Mathf.Max(1f, charAnim.fontSizeScale));
+            normalizedScale = Mathf.Pow(normalizedScale, typingSfxVolumeResponse);
+            volume = Mathf.Lerp(typingSfxBaseVolume, typingSfxMaxVolume, normalizedScale);
+        }
+
+        typingAudioSource.PlayOneShot(clip, Mathf.Clamp01(volume));
+        lastTypingSfxTime = Time.unscaledTime;
+    }
+
+    private AudioClip GetRandomTypingSfxClip()
+    {
+        List<AudioClip> pool = activeTypingSfxPool != null && activeTypingSfxPool.Count > 0
+            ? activeTypingSfxPool
+            : typingSfxPool;
+        if (pool == null || pool.Count == 0)
+        {
+            return null;
+        }
+
+        int validCount = 0;
+        for (int i = 0; i < pool.Count; i++)
+        {
+            if (pool[i] != null)
+            {
+                validCount++;
+            }
+        }
+
+        if (validCount == 0)
+        {
+            return null;
+        }
+
+        int chosenIndex = lastTypingSfxIndex;
+        if (validCount == 1)
+        {
+            for (int i = 0; i < pool.Count; i++)
+            {
+                if (pool[i] != null)
+                {
+                    chosenIndex = i;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            const int maxAttempts = 8;
+            for (int attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                int candidate = Random.Range(0, pool.Count);
+                if (pool[candidate] == null || candidate == lastTypingSfxIndex)
+                {
+                    continue;
+                }
+
+                chosenIndex = candidate;
+                break;
+            }
+
+            if (chosenIndex == lastTypingSfxIndex || chosenIndex < 0 || chosenIndex >= pool.Count || pool[chosenIndex] == null)
+            {
+                for (int i = 0; i < pool.Count; i++)
+                {
+                    if (pool[i] != null && i != lastTypingSfxIndex)
+                    {
+                        chosenIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (chosenIndex < 0 || chosenIndex >= pool.Count)
+        {
+            return null;
+        }
+
+        lastTypingSfxIndex = chosenIndex;
+        return pool[chosenIndex];
+    }
+
+    private List<AudioClip> ResolveTypingSfxPool(string poolId)
+    {
+        if (string.IsNullOrWhiteSpace(poolId))
+        {
+            return typingSfxPool;
+        }
+
+        if (string.Equals(poolId, "default", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return typingSfxPool;
+        }
+
+        if (typingSfxNamedPools != null)
+        {
+            for (int i = 0; i < typingSfxNamedPools.Count; i++)
+            {
+                TypingSfxPoolDefinition pool = typingSfxNamedPools[i];
+                if (pool == null || string.IsNullOrWhiteSpace(pool.id))
+                {
+                    continue;
+                }
+
+                if (string.Equals(pool.id, poolId, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return pool.clips;
+                }
+            }
+        }
+
+        return typingSfxPool;
+    }
+
+    private char GetDisplayedCharacter(int charIndex)
+    {
+        if (lineText == null || lineText.textInfo == null)
+        {
+            return '\0';
+        }
+
+        lineText.ForceMeshUpdate();
+        if (charIndex < 0 || charIndex >= lineText.textInfo.characterCount)
+        {
+            return '\0';
+        }
+
+        return lineText.textInfo.characterInfo[charIndex].character;
     }
 
     private IEnumerator AnimateCharSize(int charIndex, float targetScale)
@@ -773,22 +1218,45 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
         int vertexIndex = charInfo.vertexIndex;
 
         Vector3[] vertices = lineText.textInfo.meshInfo[materialIndex].vertices;
-        Vector3 originalCenter = (vertices[vertexIndex + 0] + vertices[vertexIndex + 2]) / 2f;
+        Vector3[] originalVertices = new Vector3[4];
+        for (int i = 0; i < 4; i++)
+        {
+            originalVertices[i] = vertices[vertexIndex + i];
+        }
 
-        float duration = 0.1f;
+        Vector3 originalCenter = (originalVertices[0] + originalVertices[2]) / 2f;
+
+        float pulseScale = Mathf.Lerp(1f, targetScale, 0.25f);
+        if (currentTypingEmphasis.enabled)
+        {
+            float emphasisPulseScale = Mathf.Lerp(1f, Mathf.Max(1f, currentTypingEmphasis.scaleMultiplier), 5.0f);
+            pulseScale = Mathf.Max(pulseScale, emphasisPulseScale);
+        }
+
+        pulseScale = Mathf.Clamp(pulseScale, 0.85f, 2.0f);
+
+        float duration = 0.08f;
+        float halfDuration = duration * 0.5f;
         float elapsed = 0f;
-        float startScale = 1f;
 
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
-            float t = duration <= 0f ? 1f : elapsed / duration;
-            float currentScale = Mathf.Lerp(startScale, targetScale, t);
+            float currentScale;
+            if (elapsed <= halfDuration)
+            {
+                float t = halfDuration <= 0f ? 1f : elapsed / halfDuration;
+                currentScale = Mathf.Lerp(1f, pulseScale, t);
+            }
+            else
+            {
+                float t = halfDuration <= 0f ? 1f : (elapsed - halfDuration) / halfDuration;
+                currentScale = Mathf.Lerp(pulseScale, 1f, t);
+            }
 
             for (int i = 0; i < 4; i++)
             {
-                Vector3 vertex = vertices[vertexIndex + i];
-                Vector3 dir = vertex - originalCenter;
+                Vector3 dir = originalVertices[i] - originalCenter;
                 vertices[vertexIndex + i] = originalCenter + dir * currentScale;
             }
 
@@ -798,9 +1266,7 @@ private IEnumerator TypeRoutine(string raw, string display, float secPer, Dialog
 
         for (int i = 0; i < 4; i++)
         {
-            Vector3 vertex = vertices[vertexIndex + i];
-            Vector3 dir = vertex - originalCenter;
-            vertices[vertexIndex + i] = originalCenter + dir * targetScale;
+            vertices[vertexIndex + i] = originalVertices[i];
         }
 
         lineText.UpdateVertexData(TMP_VertexDataUpdateFlags.Vertices);
