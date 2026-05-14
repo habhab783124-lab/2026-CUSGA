@@ -15,9 +15,9 @@ MonoBehaviour:
   definitions:
   - archetypeId: 1
     displayName: Scavenger
-    maxHealth: 4
-    moveSpeed: 1.9
-    scrapReward: 8
+    maxHealth: 3
+    moveSpeed: 1.5236099
+    scrapReward: 9
     baseDamageToBase: 1
     armorTier: 0
     nonPiercingDamageMultiplier: 1
@@ -43,8 +43,8 @@ MonoBehaviour:
   - archetypeId: 2
     displayName: Wolf Runner
     maxHealth: 3
-    moveSpeed: 3.4
-    scrapReward: 7
+    moveSpeed: 2.72646
+    scrapReward: 8
     baseDamageToBase: 1
     armorTier: 0
     nonPiercingDamageMultiplier: 1
@@ -69,9 +69,9 @@ MonoBehaviour:
     splitSpawnRadius: 0.4
   - archetypeId: 3
     displayName: Banner Scavenger
-    maxHealth: 8
-    moveSpeed: 1.35
-    scrapReward: 14
+    maxHealth: 6
+    moveSpeed: 1.0825651
+    scrapReward: 19
     baseDamageToBase: 1
     armorTier: 1
     nonPiercingDamageMultiplier: 0.75
@@ -96,9 +96,9 @@ MonoBehaviour:
     splitSpawnRadius: 0.4
   - archetypeId: 4
     displayName: Mechanic
-    maxHealth: 7
-    moveSpeed: 1.2
-    scrapReward: 12
+    maxHealth: 5
+    moveSpeed: 0.96228004
+    scrapReward: 17
     baseDamageToBase: 1
     armorTier: 1
     nonPiercingDamageMultiplier: 0.78
@@ -123,9 +123,9 @@ MonoBehaviour:
     splitSpawnRadius: 0.4
   - archetypeId: 5
     displayName: Heavy Armored Machine
-    maxHealth: 18
-    moveSpeed: 1.05
-    scrapReward: 18
+    maxHealth: 14
+    moveSpeed: 0.8419949
+    scrapReward: 23
     baseDamageToBase: 1
     armorTier: 2
     nonPiercingDamageMultiplier: 0.18
@@ -150,9 +150,9 @@ MonoBehaviour:
     splitSpawnRadius: 0.4
   - archetypeId: 6
     displayName: Stealth Stalker
-    maxHealth: 4
-    moveSpeed: 2.8
-    scrapReward: 13
+    maxHealth: 3
+    moveSpeed: 2.2453198
+    scrapReward: 18
     baseDamageToBase: 1
     armorTier: 0
     nonPiercingDamageMultiplier: 1

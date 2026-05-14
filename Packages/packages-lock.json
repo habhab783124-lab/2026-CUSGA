@@ -1,5 +1,14 @@
 {
   "dependencies": {
+    "com.besty.unity-skills": {
+      "version": "file:SkillsForUnity",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.0.2",
+        "com.unity.timeline": "1.7.7"
+      }
+    },
     "com.unity.2d.animation": {
       "version": "9.2.0",
       "depth": 1,

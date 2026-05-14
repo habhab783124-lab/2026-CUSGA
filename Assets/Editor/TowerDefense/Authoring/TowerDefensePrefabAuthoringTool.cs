@@ -115,11 +115,6 @@ namespace TowerDefense.Editor
                 WireGameplayScene(scenePath, relayPrefab, singleTargetPrefab, slowFieldPrefab, bombardPrefab, enemyPrefab);
             }
 
-            // 保持 SampleScene 里的作者原型回到单体塔默认态，方便你之后继续从场景里做对照编辑。
-            defensePrototype.ConfigureBuildType(TowerType.SingleTarget);
-            EditorSceneManager.MarkSceneDirty(defensePrototype.gameObject.scene);
-            EditorSceneManager.SaveScene(defensePrototype.gameObject.scene);
-
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
 
@@ -172,6 +167,15 @@ namespace TowerDefense.Editor
                     throw new System.InvalidOperationException($"Temporary clone for '{towerType}' is missing DefenseTower.");
                 }
 
+                // Always start each typed prefab from a fresh clone of the shared prototype.
+                //
+                // Why this matters:
+                // `ConfigureBuildType()` is allowed to destroy and rebuild type-specific feedback
+                // roots. Reusing one already-mutated clone across multiple tower kinds can leave
+                // behind Unity fake-null references during editor-time prefab generation.
+                //
+                // By guaranteeing one clean clone per requested tower type, we keep the authoring
+                // pass deterministic and avoid carrying destroyed references from a previous type.
                 tower.ConfigureBuildType(towerType);
                 EnsurePlacedStructureComponents(temporaryClone, DefaultCombatTowerPlacementRadius);
                 return PrefabUtility.SaveAsPrefabAsset(temporaryClone, assetPath);

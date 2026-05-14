@@ -153,6 +153,9 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private Color starterZoneMarkerEdgeColor = new Color(0.9f, 1f, 0.98f, 1f);
     [SerializeField] private int starterZoneMarkerSortingOrder = 10;
 
+    [Header("Diagnostics")]
+    [SerializeField] private bool enablePlacementDiagnostics;
+
     [Header("Tower Presentation")]
     [SerializeField] private TowerPresentationAuthoring relayPresentation = new TowerPresentationAuthoring
     {
@@ -380,7 +383,6 @@ public class TowerDefenseGame : MonoBehaviour
         InitializePlacementVisuals();
         _presentationCoordinator?.InitializePresentation("Place a relay on any empty ground, then deploy towers inside relay coverage. You can drag the deploy cards or use hotkeys 1 / 2 / 3 / 4.");
         _placementSupportCoordinator?.HidePlacementAreaOverlay();
-        _placementSupportCoordinator?.RunStarterPlacementSanityCheck();
         _powerGridCoordinator?.RecalculatePowerDistribution();
     }
 
@@ -669,6 +671,11 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private void LogPlacementDiagnostic(string message)
     {
+        if (!enablePlacementDiagnostics)
+        {
+            return;
+        }
+
         Debug.Log($"[PlacementDebug] {message}", this);
     }
 

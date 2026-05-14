@@ -105,14 +105,14 @@ namespace TowerDefense.Editor
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("作者操作", EditorStyles.boldLabel);
-                if (GUILayout.Button("生成视觉根节点"))
+                if (GUILayout.Button("生成反馈与标记根节点"))
                 {
-                    MaterializeVisualRoots(tower);
+                    MaterializeAuthoringRoots(tower);
                 }
             }
         }
 
-        private void MaterializeVisualRoots(DefenseTower tower)
+        private void MaterializeAuthoringRoots(DefenseTower tower)
         {
             if (tower == null)
             {

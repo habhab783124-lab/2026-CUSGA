@@ -32,9 +32,7 @@ namespace TowerDefense.Editor
             "relayPlacementRadius",
             "defensePlacementRadius",
             "relayExpansionSquareSize",
-            "defenseExpansionSquareSize",
-            "initialPlacementSquareCenter",
-            "initialPlacementSquareSize"
+            "defenseExpansionSquareSize"
         };
 
         private static readonly string[] PlacementVisualFields = // 中文：放置视觉Fields
@@ -46,10 +44,7 @@ namespace TowerDefense.Editor
             "placementAreaOverlayPixelsPerUnit",
             "placementAreaOverlayFillColor",
             "placementAreaOverlayEdgeColor",
-            "placementAreaOverlaySortingOrder",
-            "starterZoneMarkerFillColor",
-            "starterZoneMarkerEdgeColor",
-            "starterZoneMarkerSortingOrder"
+            "placementAreaOverlaySortingOrder"
         };
 
         private static readonly string[] SharedPresentationAssetFields = // 中文：Shared展示资产Fields
@@ -207,10 +202,7 @@ namespace TowerDefense.Editor
                     "placementAreaOverlayPixelsPerUnit",
                     "placementAreaOverlayFillColor",
                     "placementAreaOverlayEdgeColor",
-                    "placementAreaOverlaySortingOrder",
-                    "starterZoneMarkerFillColor",
-                    "starterZoneMarkerEdgeColor",
-                    "starterZoneMarkerSortingOrder");
+                    "placementAreaOverlaySortingOrder");
             }
         }
 

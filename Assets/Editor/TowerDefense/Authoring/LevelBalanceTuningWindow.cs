@@ -97,11 +97,12 @@ namespace TowerDefense.Editor
         [SerializeField] private float waveIntervalMultiplier = 0.95f;
         [SerializeField] private float buildCostMultiplier = 1.1f;
         [SerializeField] private float upgradeCostMultiplier = 1.1f;
+        [SerializeField] private Vector2 scrollPosition;
 
-        [MenuItem("Tools/Tower Defense/Authoring/Level Balance Tuning Console")]
+        [MenuItem("Tools/Tower Defense/Authoring/关卡数值调参台")]
         public static void OpenWindow()
         {
-            LevelBalanceTuningWindow window = GetWindow<LevelBalanceTuningWindow>("Level Balance");
+            LevelBalanceTuningWindow window = GetWindow<LevelBalanceTuningWindow>("关卡数值");
             window.minSize = new Vector2(720f, 520f);
             window.AdoptCurrentSceneContext();
         }
@@ -113,81 +114,89 @@ namespace TowerDefense.Editor
 
         private void OnGUI()
         {
-            DrawHeader();
-            EditorGUILayout.Space(8f);
-
-            if (currentGame == null && currentWaveSpawner == null && currentMap == null)
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+            try
             {
-                EditorGUILayout.HelpBox(
-                    "No level context is assigned yet. Open a gameplay scene and press 'Adopt Current Scene'.",
-                    MessageType.Warning);
-                return;
+                DrawHeader();
+                EditorGUILayout.Space(8f);
+
+                if (currentGame == null && currentWaveSpawner == null && currentMap == null)
+                {
+                    EditorGUILayout.HelpBox(
+                        "当前还没有接管关卡上下文。请先打开一个战斗关卡场景，再点“接管当前场景”。",
+                        MessageType.Warning);
+                    return;
+                }
+
+                DrawSceneSummary();
+                EditorGUILayout.Space(8f);
+
+                showPresets = EditorGUILayout.Foldout(showPresets, "难度预设", true);
+                if (showPresets)
+                {
+                    DrawPresetSection();
+                }
+
+                showCoreEconomy = EditorGUILayout.Foldout(showCoreEconomy, "核心经济与部署规则", true);
+                if (showCoreEconomy)
+                {
+                    DrawCoreEconomySection();
+                }
+
+                showWaveTuning = EditorGUILayout.Foldout(showWaveTuning, "波次调参", true);
+                if (showWaveTuning)
+                {
+                    DrawWaveSection();
+                }
+
+                showRelayTuning = EditorGUILayout.Foldout(showRelayTuning, "继电器原型调参", true);
+                if (showRelayTuning)
+                {
+                    DrawRelaySection();
+                }
+
+                showSingleTargetTuning = EditorGUILayout.Foldout(showSingleTargetTuning, "单体塔调参", true);
+                if (showSingleTargetTuning)
+                {
+                    DrawDefenseTowerSection(
+                        "singleTargetTowerPrototypeReference",
+                        "singleTargetTuning",
+                        "单体塔原型资源");
+                }
+
+                showSlowFieldTuning = EditorGUILayout.Foldout(showSlowFieldTuning, "减速塔调参", true);
+                if (showSlowFieldTuning)
+                {
+                    DrawDefenseTowerSection(
+                        "slowFieldTowerPrototypeReference",
+                        "slowFieldTuning",
+                        "减速塔原型资源");
+                }
+
+                showBombardTuning = EditorGUILayout.Foldout(showBombardTuning, "炸弹塔调参", true);
+                if (showBombardTuning)
+                {
+                    DrawDefenseTowerSection(
+                        "bombardTowerPrototypeReference",
+                        "bombardTuning",
+                        "炸弹塔原型资源");
+                }
+
+                showQuickBatchTools = EditorGUILayout.Foldout(showQuickBatchTools, "批量调参快捷工具", true);
+                if (showQuickBatchTools)
+                {
+                    DrawQuickBatchSection();
+                }
+
+                showAdvancedRawEditors = EditorGUILayout.Foldout(showAdvancedRawEditors, "高级原始参数面板", true);
+                if (showAdvancedRawEditors)
+                {
+                    DrawAdvancedRawEditors();
+                }
             }
-
-            DrawSceneSummary();
-            EditorGUILayout.Space(8f);
-
-            showPresets = EditorGUILayout.Foldout(showPresets, "Preset Difficulty Profiles", true);
-            if (showPresets)
+            finally
             {
-                DrawPresetSection();
-            }
-
-            showCoreEconomy = EditorGUILayout.Foldout(showCoreEconomy, "Core Economy And Placement", true);
-            if (showCoreEconomy)
-            {
-                DrawCoreEconomySection();
-            }
-
-            showWaveTuning = EditorGUILayout.Foldout(showWaveTuning, "Wave Tuning", true);
-            if (showWaveTuning)
-            {
-                DrawWaveSection();
-            }
-
-            showRelayTuning = EditorGUILayout.Foldout(showRelayTuning, "Relay Prototype Tuning", true);
-            if (showRelayTuning)
-            {
-                DrawRelaySection();
-            }
-
-            showSingleTargetTuning = EditorGUILayout.Foldout(showSingleTargetTuning, "Single Target Tower Tuning", true);
-            if (showSingleTargetTuning)
-            {
-                DrawDefenseTowerSection(
-                    "singleTargetTowerPrototypeReference",
-                    "singleTargetTuning",
-                    "Single-target turret tuning asset");
-            }
-
-            showSlowFieldTuning = EditorGUILayout.Foldout(showSlowFieldTuning, "Slow Field Tower Tuning", true);
-            if (showSlowFieldTuning)
-            {
-                DrawDefenseTowerSection(
-                    "slowFieldTowerPrototypeReference",
-                    "slowFieldTuning",
-                    "Slow-field tower tuning asset");
-            }
-
-            showBombardTuning = EditorGUILayout.Foldout(showBombardTuning, "Bombard Tower Tuning", true);
-            if (showBombardTuning)
-            {
-                DrawDefenseTowerSection(
-                    "bombardTowerPrototypeReference",
-                    "bombardTuning",
-                    "Bombard tower tuning asset");
-            }
-
-            showQuickBatchTools = EditorGUILayout.Foldout(showQuickBatchTools, "Quick Batch Helpers", true);
-            if (showQuickBatchTools)
-            {
-                DrawQuickBatchSection();
-            }
-
-            showAdvancedRawEditors = EditorGUILayout.Foldout(showAdvancedRawEditors, "Advanced Raw Editors", true);
-            if (showAdvancedRawEditors)
-            {
-                DrawAdvancedRawEditors();
+                EditorGUILayout.EndScrollView();
             }
         }
 
@@ -201,39 +210,42 @@ namespace TowerDefense.Editor
         /// </summary>
         private void DrawHeader()
         {
-            EditorGUILayout.LabelField("Level Balance Tuning Console", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("关卡数值调参台", EditorStyles.boldLabel);
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Adopt Current Scene", GUILayout.Width(160f)))
+            if (GUILayout.Button("接管当前场景", GUILayout.Width(160f)))
             {
                 AdoptCurrentSceneContext();
             }
 
-            if (GUILayout.Button("Save Scene + Assets", GUILayout.Width(160f)))
+            if (GUILayout.Button("保存场景与资源", GUILayout.Width(160f)))
             {
                 SaveCurrentWork();
             }
             EditorGUILayout.EndHorizontal();
 
-            currentGame = (TowerDefenseGame)EditorGUILayout.ObjectField("TowerDefenseGame", currentGame, typeof(TowerDefenseGame), true);
-            currentWaveSpawner = (WaveSpawner)EditorGUILayout.ObjectField("WaveSpawner", currentWaveSpawner, typeof(WaveSpawner), true);
-            currentMap = (BattlefieldMapDefinition)EditorGUILayout.ObjectField("BattlefieldMap", currentMap, typeof(BattlefieldMapDefinition), true);
+            currentGame = (TowerDefenseGame)EditorGUILayout.ObjectField("总控", currentGame, typeof(TowerDefenseGame), true);
+            currentWaveSpawner = (WaveSpawner)EditorGUILayout.ObjectField("刷怪器", currentWaveSpawner, typeof(WaveSpawner), true);
+            currentMap = (BattlefieldMapDefinition)EditorGUILayout.ObjectField("地图入口", currentMap, typeof(BattlefieldMapDefinition), true);
         }
 
         private void DrawSceneSummary()
         {
             Scene activeScene = SceneManager.GetActiveScene();
-            string sceneName = string.IsNullOrWhiteSpace(activeScene.name) ? "(No Scene)" : activeScene.name;
+            string sceneName = string.IsNullOrWhiteSpace(activeScene.name) ? "(无场景)" : activeScene.name;
+            TowerDefenseAuthoringSceneContext sharedContext = TowerDefenseAuthoringSceneContext.GetOrCreate();
 
             int gateCount = currentMap != null ? currentMap.SpawnGateCount : 0;
             int defenseCount = currentMap != null ? currentMap.DefensePointCount : 0;
             int relayLimit = currentMap != null ? currentMap.RelayLimit : 0;
 
             EditorGUILayout.HelpBox(
-                $"Scene: {sceneName}\n" +
-                $"Spawn Gates: {gateCount} | Defense Points: {defenseCount} | Relay Limit: {relayLimit}\n" +
-                $"This window edits the current level scene plus the prototype prefabs referenced by this scene.",
+                $"当前场景：{sceneName}\n" +
+                $"出怪口：{gateCount} | 防御点：{defenseCount} | 继电器上限：{relayLimit}\n" +
+                $"这个窗口会直接修改当前关卡场景，以及该场景引用到的原型 Prefab / 资产。",
                 MessageType.Info);
+
+            EditorGUILayout.HelpBox(sharedContext.BuildSummary(), MessageType.None);
         }
 
         /// <summary>
@@ -250,8 +262,7 @@ namespace TowerDefense.Editor
         private void DrawPresetSection()
         {
             EditorGUILayout.HelpBox(
-                "Preset buttons apply directly on top of the current authored level numbers. " +
-                "Use them as a fast difficulty pass, then fine-tune the exact values below.",
+                "预设会直接作用在当前关卡现有数值之上。建议先用它快速打一个难度基线，再在下方做细调。",
                 MessageType.Warning);
 
             DrawPresetCard(BalancePresetKind.Simple);
@@ -267,7 +278,7 @@ namespace TowerDefense.Editor
             EditorGUILayout.LabelField(preset.Label, EditorStyles.boldLabel);
             EditorGUILayout.LabelField(preset.Description, EditorStyles.wordWrappedMiniLabel);
 
-            if (GUILayout.Button($"Apply {preset.Label} Preset"))
+            if (GUILayout.Button($"应用 {preset.Label} 预设"))
             {
                 ApplyPreset(preset);
             }
@@ -279,32 +290,30 @@ namespace TowerDefense.Editor
         {
             if (currentGame == null)
             {
-                EditorGUILayout.HelpBox("TowerDefenseGame is required for economy tuning.", MessageType.Warning);
+                EditorGUILayout.HelpBox("当前必须先找到 TowerDefenseGame，才能调核心经济参数。", MessageType.Warning);
                 return;
             }
 
             SerializedObject serializedGame = new SerializedObject(currentGame);
             serializedGame.Update();
 
-            EditorGUILayout.LabelField("Starting Resources", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("开局资源", EditorStyles.miniBoldLabel);
             DrawPropertyField(serializedGame, "startingScrap");
             DrawPropertyField(serializedGame, "startingBaseHealth");
 
             EditorGUILayout.Space(4f);
-            EditorGUILayout.LabelField("Build Costs", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("建造成本", EditorStyles.miniBoldLabel);
             DrawPropertyField(serializedGame, "relayTowerCost");
             DrawPropertyField(serializedGame, "singleTargetTowerCost");
             DrawPropertyField(serializedGame, "slowFieldTowerCost");
             DrawPropertyField(serializedGame, "bombardTowerCost");
 
             EditorGUILayout.Space(4f);
-            EditorGUILayout.LabelField("Placement Rules", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("部署规则", EditorStyles.miniBoldLabel);
             DrawPropertyField(serializedGame, "relayPlacementRadius");
             DrawPropertyField(serializedGame, "defensePlacementRadius");
             DrawPropertyField(serializedGame, "relayExpansionSquareSize");
             DrawPropertyField(serializedGame, "defenseExpansionSquareSize");
-            DrawPropertyField(serializedGame, "initialPlacementSquareCenter");
-            DrawPropertyField(serializedGame, "initialPlacementSquareSize");
 
             serializedGame.ApplyModifiedProperties();
             EditorUtility.SetDirty(currentGame);
@@ -314,7 +323,7 @@ namespace TowerDefense.Editor
                 SerializedObject serializedMap = new SerializedObject(currentMap);
                 serializedMap.Update();
                 EditorGUILayout.Space(4f);
-                EditorGUILayout.LabelField("Map Limit", EditorStyles.miniBoldLabel);
+                EditorGUILayout.LabelField("地图限制", EditorStyles.miniBoldLabel);
                 DrawPropertyField(serializedMap, "relayLimit");
                 serializedMap.ApplyModifiedProperties();
                 EditorUtility.SetDirty(currentMap);
@@ -325,21 +334,21 @@ namespace TowerDefense.Editor
         {
             if (currentWaveSpawner == null)
             {
-                EditorGUILayout.HelpBox("WaveSpawner is required for wave tuning.", MessageType.Warning);
+                EditorGUILayout.HelpBox("当前必须先找到 WaveSpawner，才能调波次。", MessageType.Warning);
                 return;
             }
 
             SerializedObject serializedSpawner = new SerializedObject(currentWaveSpawner);
             serializedSpawner.Update();
 
-            EditorGUILayout.LabelField("Wave Timeline", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("波次时序", EditorStyles.miniBoldLabel);
             DrawPropertyField(serializedSpawner, "initialDelay");
             DrawPropertyField(serializedSpawner, "delayBetweenWaves");
             DrawPropertyField(serializedSpawner, "routePreviewLeadTime");
             DrawPropertyField(serializedSpawner, "continueCampaignAfterClear");
 
             EditorGUILayout.Space(4f);
-            EditorGUILayout.LabelField("Wave Authoring Source", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("波次数据来源", EditorStyles.miniBoldLabel);
             DrawPropertyField(serializedSpawner, "waveCatalogAsset");
             DrawPropertyField(serializedSpawner, "enemyCatalogAsset");
 
@@ -348,8 +357,7 @@ namespace TowerDefense.Editor
             if (resolvedWaveCatalog != null)
             {
                 EditorGUILayout.HelpBox(
-                    "This scene is using WaveCatalogAsset as the primary planner workflow. " +
-                    "Edit wave groups here, and only keep the fallback scene-wave array for legacy compatibility.",
+                    "当前场景已经切到 WaveCatalogAsset 主工作流。建议直接在这里改波次组，场景里的 fallback waves 只保留给兼容兜底。",
                     MessageType.Info);
 
                 SerializedObject serializedCatalog = new SerializedObject(resolvedWaveCatalog);
@@ -357,9 +365,9 @@ namespace TowerDefense.Editor
                 DrawPropertyField(serializedCatalog, "waves", includeChildren: true);
                 serializedCatalog.ApplyModifiedProperties();
                 EditorUtility.SetDirty(resolvedWaveCatalog);
-                DrawPingButton(resolvedWaveCatalog, "Ping Wave Catalog");
+                DrawPingButton(resolvedWaveCatalog, "定位波次目录");
 
-                showFallbackSceneWaveArray = EditorGUILayout.Foldout(showFallbackSceneWaveArray, "Fallback Scene Wave Array", true);
+                showFallbackSceneWaveArray = EditorGUILayout.Foldout(showFallbackSceneWaveArray, "兼容兜底场景波次数组", true);
                 if (showFallbackSceneWaveArray)
                 {
                     DrawPropertyField(serializedSpawner, "waves", includeChildren: true);
@@ -368,9 +376,9 @@ namespace TowerDefense.Editor
             else
             {
                 EditorGUILayout.HelpBox(
-                    "No WaveCatalogAsset is assigned yet, so the scene is still using the older fallback wave array.",
+                    "当前还没有接 WaveCatalogAsset，所以这个场景仍在使用旧的场景波次数组。",
                     MessageType.Warning);
-                EditorGUILayout.LabelField("Fallback Scene Wave List", EditorStyles.miniBoldLabel);
+                EditorGUILayout.LabelField("场景波次数组", EditorStyles.miniBoldLabel);
                 DrawPropertyField(serializedSpawner, "waves", includeChildren: true);
             }
 
@@ -383,7 +391,7 @@ namespace TowerDefense.Editor
             RelayTower relayPrototype = ResolveRelayPrototype();
             if (relayPrototype == null)
             {
-                EditorGUILayout.HelpBox("Relay prototype could not be resolved from TowerDefenseGame.", MessageType.Warning);
+                EditorGUILayout.HelpBox("当前无法从 TowerDefenseGame 解析出继电器原型。", MessageType.Warning);
                 return;
             }
 
@@ -401,7 +409,7 @@ namespace TowerDefense.Editor
             serializedRelay.ApplyModifiedProperties();
             EditorUtility.SetDirty(relayPrototype);
 
-            DrawPingButton(relayPrototype, "Ping Relay Prototype");
+            DrawPingButton(relayPrototype, "定位继电器原型");
         }
 
         private void DrawDefenseTowerSection(string prefabPropertyName, string tuningPropertyName, string missingMessage)
@@ -409,7 +417,7 @@ namespace TowerDefense.Editor
             DefenseTower towerPrototype = ResolveDefensePrototype(prefabPropertyName);
             if (towerPrototype == null)
             {
-                EditorGUILayout.HelpBox($"Could not resolve {missingMessage}.", MessageType.Warning);
+                EditorGUILayout.HelpBox($"当前无法解析：{missingMessage}", MessageType.Warning);
                 return;
             }
 
@@ -426,7 +434,7 @@ namespace TowerDefense.Editor
             serializedTower.ApplyModifiedProperties();
             EditorUtility.SetDirty(towerPrototype);
 
-            DrawPingButton(towerPrototype, "Ping Tower Prototype");
+            DrawPingButton(towerPrototype, "定位塔原型");
         }
 
         /// <summary>
@@ -469,22 +477,21 @@ namespace TowerDefense.Editor
         private void DrawQuickBatchSection()
         {
             EditorGUILayout.HelpBox(
-                "These helpers are meant for fast balance passes. " +
-                "They only touch numeric gameplay values and leave references / visuals alone.",
+                "这些快捷工具适合快速做一轮平衡性调节。它们只改数值，不会去动引用和视觉资源。",
                 MessageType.None);
 
-            waveCountMultiplier = EditorGUILayout.FloatField("Wave Count Multiplier", waveCountMultiplier);
-            waveHealthMultiplier = EditorGUILayout.FloatField("Wave Health Multiplier", waveHealthMultiplier);
-            waveSpeedMultiplier = EditorGUILayout.FloatField("Wave Speed Multiplier", waveSpeedMultiplier);
-            waveRewardMultiplier = EditorGUILayout.FloatField("Wave Reward Multiplier", waveRewardMultiplier);
-            waveIntervalMultiplier = EditorGUILayout.FloatField("Wave Interval Multiplier", waveIntervalMultiplier);
-            buildCostMultiplier = EditorGUILayout.FloatField("Build Cost Multiplier", buildCostMultiplier);
-            upgradeCostMultiplier = EditorGUILayout.FloatField("Upgrade Cost Multiplier", upgradeCostMultiplier);
+            waveCountMultiplier = EditorGUILayout.FloatField("敌人数倍率", waveCountMultiplier);
+            waveHealthMultiplier = EditorGUILayout.FloatField("敌人生命倍率", waveHealthMultiplier);
+            waveSpeedMultiplier = EditorGUILayout.FloatField("敌人速度倍率", waveSpeedMultiplier);
+            waveRewardMultiplier = EditorGUILayout.FloatField("废料奖励倍率", waveRewardMultiplier);
+            waveIntervalMultiplier = EditorGUILayout.FloatField("刷怪间隔倍率", waveIntervalMultiplier);
+            buildCostMultiplier = EditorGUILayout.FloatField("建造成本倍率", buildCostMultiplier);
+            upgradeCostMultiplier = EditorGUILayout.FloatField("升级成本倍率", upgradeCostMultiplier);
 
             EditorGUILayout.BeginHorizontal();
             using (new EditorGUI.DisabledScope(currentWaveSpawner == null))
             {
-                if (GUILayout.Button("Scale Current Scene Waves"))
+                if (GUILayout.Button("按倍率缩放当前波次"))
                 {
                     ApplyWaveMultipliers();
                 }
@@ -492,7 +499,7 @@ namespace TowerDefense.Editor
 
             using (new EditorGUI.DisabledScope(currentGame == null))
             {
-                if (GUILayout.Button("Scale Build Costs"))
+                if (GUILayout.Button("按倍率缩放建造成本"))
                 {
                     ApplyBuildCostMultiplier();
                 }
@@ -500,7 +507,7 @@ namespace TowerDefense.Editor
 
             using (new EditorGUI.DisabledScope(currentGame == null))
             {
-                if (GUILayout.Button("Scale Upgrade Costs"))
+                if (GUILayout.Button("按倍率缩放升级成本"))
                 {
                     ApplyUpgradeCostMultiplier();
                 }
@@ -515,8 +522,8 @@ namespace TowerDefense.Editor
                 BalancePresetKind.Simple => new BalancePresetDefinition
                 {
                     Kind = presetKind,
-                    Label = "Simple",
-                    Description = "More starting safety, cheaper growth, and lighter waves.",
+                    Label = "简单",
+                    Description = "开局更宽松，成长更便宜，波次压力更轻。",
                     StartingScrapMultiplier = 1.25f,
                     StartingBaseHealthMultiplier = 1.25f,
                     BuildCostMultiplier = 0.9f,
@@ -539,8 +546,8 @@ namespace TowerDefense.Editor
                 BalancePresetKind.Hard => new BalancePresetDefinition
                 {
                     Kind = presetKind,
-                    Label = "Hard",
-                    Description = "Tighter economy, denser waves, and harsher combat pressure.",
+                    Label = "困难",
+                    Description = "经济更紧，波次更密，战斗压迫更高。",
                     StartingScrapMultiplier = 0.85f,
                     StartingBaseHealthMultiplier = 0.85f,
                     BuildCostMultiplier = 1.12f,
@@ -563,8 +570,8 @@ namespace TowerDefense.Editor
                 _ => new BalancePresetDefinition
                 {
                     Kind = presetKind,
-                    Label = "Standard",
-                    Description = "Neutral baseline pass with no directional bias.",
+                    Label = "标准",
+                    Description = "中性基准档，不额外偏向任何方向。",
                     StartingScrapMultiplier = 1f,
                     StartingBaseHealthMultiplier = 1f,
                     BuildCostMultiplier = 1f,
@@ -751,13 +758,13 @@ namespace TowerDefense.Editor
 
         private void DrawAdvancedRawEditors()
         {
-            DrawRawObjectEditor("TowerDefenseGame Raw", currentGame);
-            DrawRawObjectEditor("WaveSpawner Raw", currentWaveSpawner);
-            DrawRawObjectEditor("BattlefieldMap Raw", currentMap);
-            DrawRawObjectEditor("Relay Prototype Raw", ResolveRelayPrototype());
-            DrawRawObjectEditor("Single Target Prototype Raw", ResolveDefensePrototype("singleTargetTowerPrototypeReference"));
-            DrawRawObjectEditor("Slow Field Prototype Raw", ResolveDefensePrototype("slowFieldTowerPrototypeReference"));
-            DrawRawObjectEditor("Bombard Prototype Raw", ResolveDefensePrototype("bombardTowerPrototypeReference"));
+            DrawRawObjectEditor("总控原始面板", currentGame);
+            DrawRawObjectEditor("刷怪器原始面板", currentWaveSpawner);
+            DrawRawObjectEditor("地图入口原始面板", currentMap);
+            DrawRawObjectEditor("继电器原型原始面板", ResolveRelayPrototype());
+            DrawRawObjectEditor("单体塔原型原始面板", ResolveDefensePrototype("singleTargetTowerPrototypeReference"));
+            DrawRawObjectEditor("减速塔原型原始面板", ResolveDefensePrototype("slowFieldTowerPrototypeReference"));
+            DrawRawObjectEditor("炸弹塔原型原始面板", ResolveDefensePrototype("bombardTowerPrototypeReference"));
         }
 
         private void DrawRawObjectEditor(string title, Object targetObject)
@@ -886,10 +893,10 @@ namespace TowerDefense.Editor
 
         private void AdoptCurrentSceneContext()
         {
-            Scene activeScene = SceneManager.GetActiveScene();
-            currentGame ??= FindFirstComponentInScene<TowerDefenseGame>(activeScene);
-            currentWaveSpawner ??= FindFirstComponentInScene<WaveSpawner>(activeScene);
-            currentMap ??= FindFirstComponentInScene<BattlefieldMapDefinition>(activeScene);
+            TowerDefenseAuthoringSceneContext context = TowerDefenseAuthoringSceneContext.CaptureActiveSceneContext();
+            currentGame = context.CurrentGame;
+            currentWaveSpawner = context.CurrentWaveSpawner;
+            currentMap = context.CurrentMap;
         }
 
         private RelayTower ResolveRelayPrototype()

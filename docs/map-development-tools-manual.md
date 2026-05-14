@@ -33,21 +33,23 @@
 
 如果你现在要从零做一关，建议按这个顺序：
 
-1. 打开目标场景，例如 `Level02 / Level03 / Level04`
-2. 用 `Level Topology Editor` 先把：
+1. 先更新 `docs/current-task-card.md`
+2. 复述理解并等待用户回复 `执行`
+3. 打开目标场景，例如 `Level02 / Level03 / Level04`
+4. 用 `Level Topology Editor` 先把：
    - `SpawnGate`
    - `DefensePoint`
    - `EnemyPath`
    搭出来
-3. 在 Scene 里摆路径点
-4. 用 `Enemy Path Authoring Tool` 整理路径点顺序
-5. 用 `Map Development Toolkit > Path Check` 检查怪路是否贴路
-6. 用 `Map Development Toolkit > Road Build` 生成功能性 `PathSegment`
-7. 用 `Map Development Toolkit > Zone Brush` 画可建造区和禁建区
-8. 用 `Road Art Authoring Tool` 铺道路美术层
-9. 用 `Wave Preview` 和 `Level Balance Tuning Console` 调波次与数值
-10. 用 `Health Check` 和 `TowerDefenseValidationRunner` 做最终检查
-11. 用 `Export Level Design Report` 导出策划报告
+5. 在 Scene 里摆路径点
+6. 用 `Enemy Path Authoring Tool` 整理路径点顺序
+7. 用 `Map Development Toolkit > Path Check` 检查怪路是否贴路
+8. 用 `Map Development Toolkit > Road Build` 生成功能性 `PathSegment`
+9. 用 `Map Development Toolkit > Zone Brush` 画可建造区和禁建区
+10. 用 `Road Art Authoring Tool` 铺道路美术层
+11. 用 `Wave Preview` 和 `Level Balance Tuning Console` 调波次与数值
+12. 用 `Health Check` 和 `TowerDefenseValidationRunner` 做最终检查
+13. 用 `Export Level Design Report` 导出策划报告
 
 ---
 
@@ -161,30 +163,7 @@
 
 ---
 
-### 3.6 LevelRouteBlueprintApplier
-
-菜单入口：
-
-- `Tools > Tower Defense > Authoring > Apply Level03 Advanced Blueprint`
-- `Tools > Tower Defense > Authoring > Apply Level04 Expanded Blueprint`
-
-用途：
-
-- 当你决定“大改一关路线骨架”时，用它快速重构
-
-适合什么时候用：
-
-- 不适合微调
-- 适合整张图的结构重做
-
-注意：
-
-- 这是重型工具
-- 用之前最好先留档
-
----
-
-### 3.7 TowerDefenseValidationRunner
+### 3.6 TowerDefenseValidationRunner
 
 主要用途：
 
@@ -793,12 +772,11 @@
 ### 大改一关
 
 1. 留档
-2. `LevelRouteBlueprintApplier`
-3. `Level Topology Editor`
-4. `Path Check`
-5. `Road Build`
-6. `Road Art Authoring Tool`
-7. `Health Check`
+2. `Level Topology Editor`
+3. `Path Check`
+4. `Road Build`
+5. `Road Art Authoring Tool`
+6. `Health Check`
 
 ### 只修“怪路和地面不一致”
 
@@ -861,4 +839,3 @@
 **先用拓扑和路径工具把关卡结构做对，再用路面和美术工具把关卡做漂亮，最后才是数值和平衡。**
 
 这个顺序能帮你少返工很多。
-

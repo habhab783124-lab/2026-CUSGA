@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: WaveCatalog_Level03
   m_EditorClassIdentifier: 
   waves:
-  - displayName: 第 01 波
-    designerNote: 第三关消耗波。旗帜怪和重甲怪一起出现，逼玩家正面处理高耐久前线。
+  - displayName: "\u7B2C 01 \u6CE2"
+    designerNote: "\u7B2C\u4E09\u5173\u6D88\u8017\u6CE2\u3002\u65D7\u5E1C\u602A\u548C\u91CD\u7532\u602A\u4E00\u8D77\u51FA\u73B0\uFF0C\u903C\u73A9\u5BB6\u6B63\u9762\u5904\u7406\u9AD8\u8010\u4E45\u524D\u7EBF\u3002"
     spawnGroups:
     - enemyType: 3
       enemyCount: 2
@@ -25,8 +25,8 @@ MonoBehaviour:
     - enemyType: 1
       enemyCount: 5
       spawnInterval: 0.75
-  - displayName: 第 02 波
-    designerNote: 第三关维修波。机械师让前线更难被啃动，要求玩家具备更稳的穿甲伤害。
+  - displayName: "\u7B2C 02 \u6CE2"
+    designerNote: "\u7B2C\u4E09\u5173\u7EF4\u4FEE\u6CE2\u3002\u673A\u68B0\u5E08\u8BA9\u524D\u7EBF\u66F4\u96BE\u88AB\u5543\u52A8\uFF0C\u8981\u6C42\u73A9\u5BB6\u5177\u5907\u66F4\u7A33\u7684\u7A7F\u7532\u4F24\u5BB3\u3002"
     spawnGroups:
     - enemyType: 4
       enemyCount: 2
@@ -37,8 +37,8 @@ MonoBehaviour:
     - enemyType: 2
       enemyCount: 3
       spawnInterval: 0.5
-  - displayName: 第 03 波
-    designerNote: 第三关隐袭波。隐身人和狼走副线，逼玩家不能只顾主战场。
+  - displayName: "\u7B2C 03 \u6CE2"
+    designerNote: "\u7B2C\u4E09\u5173\u9690\u88AD\u6CE2\u3002\u9690\u8EAB\u4EBA\u548C\u72FC\u8D70\u526F\u7EBF\uFF0C\u903C\u73A9\u5BB6\u4E0D\u80FD\u53EA\u987E\u4E3B\u6218\u573A\u3002"
     spawnGroups:
     - enemyType: 6
       enemyCount: 4
@@ -49,8 +49,8 @@ MonoBehaviour:
     - enemyType: 1
       enemyCount: 6
       spawnInterval: 0.75
-  - displayName: 第 04 波
-    designerNote: 第三关收尾波。憎恶带队，后方还有机械与隐身支援，检验整套供电与火力调度。
+  - displayName: "\u7B2C 04 \u6CE2"
+    designerNote: "\u7B2C\u4E09\u5173\u6536\u5C3E\u6CE2\u3002\u618E\u6076\u5E26\u961F\uFF0C\u540E\u65B9\u8FD8\u6709\u673A\u68B0\u4E0E\u9690\u8EAB\u652F\u63F4\uFF0C\u68C0\u9A8C\u6574\u5957\u4F9B\u7535\u4E0E\u706B\u529B\u8C03\u5EA6\u3002"
     spawnGroups:
     - enemyType: 7
       enemyCount: 1

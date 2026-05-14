@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: WaveCatalog
   m_EditorClassIdentifier: 
   waves:
-  - displayName: 第 01 波
-    designerNote: Use the first wave to introduce the basic scavenger swarm and one fast wolf burst.
+  - displayName: "\u7B2C 01 \u6CE2"
+    designerNote: Use the first wave to introduce the basic scavenger swarm and one
+      fast wolf burst.
     spawnGroups:
     - enemyType: 1
       enemyCount: 5
@@ -22,8 +23,9 @@ MonoBehaviour:
     - enemyType: 2
       enemyCount: 2
       spawnInterval: 0.55
-  - displayName: 第 02 波
-    designerNote: Introduce shield support and stealth pressure while still keeping the total count readable.
+  - displayName: "\u7B2C 02 \u6CE2"
+    designerNote: Introduce shield support and stealth pressure while still keeping
+      the total count readable.
     spawnGroups:
     - enemyType: 1
       enemyCount: 4
@@ -34,8 +36,9 @@ MonoBehaviour:
     - enemyType: 6
       enemyCount: 2
       spawnInterval: 0.8
-  - displayName: 第 03 波
-    designerNote: Mix heavy armor, repair support and one death-split boss-style unit.
+  - displayName: "\u7B2C 03 \u6CE2"
+    designerNote: Mix heavy armor, repair support and one death-split boss-style
+      unit.
     spawnGroups:
     - enemyType: 5
       enemyCount: 2

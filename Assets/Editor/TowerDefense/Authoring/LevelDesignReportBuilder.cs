@@ -264,12 +264,6 @@ namespace TowerDefense.Editor
                         continue;
                     }
 
-                    bool orthogonal = Mathf.Abs(start.position.x - end.position.x) <= 0.001f || Mathf.Abs(start.position.y - end.position.y) <= 0.001f;
-                    if (!orthogonal)
-                    {
-                        continue;
-                    }
-
                     spans.Add(new OrthogonalSpan(enemyPaths[pathIndex], start.position, end.position));
                 }
             }
