@@ -178,11 +178,16 @@ public sealed class TowerPlacementBuildExecutor
     }
 
     /// <summary>
-    /// 给正式落地的塔补上用于放置判定的圆形触发碰撞体。
+    /// Ensures a placed tower still has the trigger collider needed by placement rules.
     ///
-    /// 这里特别强调一次：
-    /// 它不是为了让塔在物理世界里互相顶开，
-    /// 而是为了让“塔之间不能贴太近”这条放置规则有稳定的运行时依据。
+    /// Important authoring rule:
+    /// - if the prefab already has a tuned CircleCollider2D, runtime must respect that setup
+    /// - only when the prefab is missing the collider entirely do we create a minimal fallback
+    ///
+    /// This keeps prefab-side authoring authoritative for:
+    /// - radius
+    /// - offset
+    /// - any later manual collider adjustments
     /// </summary>
     private void EnsureTowerPlacementCollider(GameObject tower, TowerType towerType)
     {
@@ -195,9 +200,9 @@ public sealed class TowerPlacementBuildExecutor
         if (circleCollider == null)
         {
             circleCollider = tower.AddComponent<CircleCollider2D>();
+            circleCollider.radius = _getPlacementRadius != null ? _getPlacementRadius(towerType) : 0.5f;
         }
 
         circleCollider.isTrigger = true;
-        circleCollider.radius = _getPlacementRadius != null ? _getPlacementRadius(towerType) : 0.5f;
     }
 }

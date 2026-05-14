@@ -19,6 +19,8 @@ Updated: 2026-05-12
 7. 如果任务涉及记忆管理、清理、压缩、历史检索，再读 `docs/ai-memory/td-memory-hygiene-and-lifecycle.md`
 8. 最后再读相关脚本、Prefab、Scene
 9. 进入执行前，更新 `docs/current-task-card.md`
+10. 进入高风险写操作前，检查 `docs/current-task-card.json`
+11. 必要时运行 `tools/check-task-gate.ps1`
 
 ## 每天开工前的仓库同步规则
 - 本项目采用 fork 工作流。
@@ -68,6 +70,7 @@ Updated: 2026-05-12
 
 ## 当前任务卡规则
 - 每轮非平凡任务开始前，先更新 `docs/current-task-card.md`
+- 同时更新 `docs/current-task-card.json`
 - 只写本轮：
   - 当前任务
   - 本轮要做
@@ -78,6 +81,7 @@ Updated: 2026-05-12
 - 还必须勾完“执行前强制检查”里的所有项
 - 只要任务卡仍是旧任务内容，就视为当前轮还没有完成接单
 - 必须写清楚“本轮任务来源于哪条用户请求”
+- 高风险写操作前，优先跑一次 `tools/check-task-gate.ps1`
 - 任务结束后更新状态，避免旧任务卡污染下一轮
 
 ## 推荐开发顺序

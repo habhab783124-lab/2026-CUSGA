@@ -163,30 +163,7 @@
 
 ---
 
-### 3.6 LevelRouteBlueprintApplier
-
-菜单入口：
-
-- `Tools > Tower Defense > Authoring > Apply Level03 Advanced Blueprint`
-- `Tools > Tower Defense > Authoring > Apply Level04 Expanded Blueprint`
-
-用途：
-
-- 当你决定“大改一关路线骨架”时，用它快速重构
-
-适合什么时候用：
-
-- 不适合微调
-- 适合整张图的结构重做
-
-注意：
-
-- 这是重型工具
-- 用之前最好先留档
-
----
-
-### 3.7 TowerDefenseValidationRunner
+### 3.6 TowerDefenseValidationRunner
 
 主要用途：
 
@@ -795,12 +772,11 @@
 ### 大改一关
 
 1. 留档
-2. `LevelRouteBlueprintApplier`
-3. `Level Topology Editor`
-4. `Path Check`
-5. `Road Build`
-6. `Road Art Authoring Tool`
-7. `Health Check`
+2. `Level Topology Editor`
+3. `Path Check`
+4. `Road Build`
+5. `Road Art Authoring Tool`
+6. `Health Check`
 
 ### 只修“怪路和地面不一致”
 

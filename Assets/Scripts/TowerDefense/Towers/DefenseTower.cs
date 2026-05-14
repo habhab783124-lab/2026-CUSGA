@@ -84,7 +84,7 @@ public class DefenseTower : MonoBehaviour
 
         [Header("Look")]
         public Sprite bodySprite = null;
-        public Color poweredColor = new Color(0.2f, 0.55f, 1f, 1f);
+        public Color poweredColor = Color.white;
 
         [Header("Type Signature")]
         public Sprite signatureSprite = null;
@@ -116,7 +116,7 @@ public class DefenseTower : MonoBehaviour
         powerRequiredPerUpgrade = 1,
         upgradeCostBase = 26,
         upgradeCostPerLevel = 14,
-        poweredColor = new Color(0.2f, 0.55f, 1f, 1f),
+        poweredColor = Color.white,
         signatureColor = new Color(0.42f, 0.86f, 1f, 0.92f),
         signatureOffset = new Vector2(0f, -0.5f),
         signatureBaseScale = new Vector2(0.55f, 0.08f),
@@ -140,7 +140,7 @@ public class DefenseTower : MonoBehaviour
         slowMultiplierPerUpgradeDelta = -0.08f,
         slowDuration = 1.25f,
         slowDurationPerUpgrade = 0.25f,
-        poweredColor = new Color(0.32f, 0.92f, 0.82f, 1f),
+        poweredColor = Color.white,
         signatureColor = new Color(0.3f, 0.95f, 0.84f, 0.18f),
         signatureOffset = new Vector2(0f, -0.04f),
         signatureBaseScale = new Vector2(0.45f, 0.45f),
@@ -171,7 +171,7 @@ public class DefenseTower : MonoBehaviour
         bombExplosionScaleMultiplier = 1.6f,
         bombProjectileColor = new Color(1f, 0.74f, 0.34f, 1f),
         bombExplosionColor = new Color(1f, 0.5f, 0.22f, 0.92f),
-        poweredColor = new Color(1f, 0.56f, 0.24f, 1f),
+        poweredColor = Color.white,
         signatureColor = new Color(1f, 0.72f, 0.36f, 0.92f),
         signatureOffset = new Vector2(0f, 0.56f),
         signatureBaseScale = new Vector2(0.22f, 0.22f),
@@ -234,9 +234,9 @@ public class DefenseTower : MonoBehaviour
 
     [Header("Shared Visuals")]
     [SerializeField] private Color flashColor = Color.white;
-    [SerializeField] private Color offlineColor = new Color(0.24f, 0.28f, 0.36f, 1f);
+    [SerializeField] private Color offlineColor = Color.white;
     [SerializeField] private float flashDuration = 0.06f;
-    [SerializeField] private Color upgradeFlashColor = new Color(1f, 0.96f, 0.68f, 1f);
+    [SerializeField] private Color upgradeFlashColor = Color.white;
     [SerializeField] private float upgradePulseDuration = 0.18f;
     [SerializeField] private float upgradeScaleMultiplier = 1.14f;
     [SerializeField] private Material feedbackMaterial;
@@ -795,7 +795,7 @@ public class DefenseTower : MonoBehaviour
             elapsed += Time.deltaTime;
             float progress = Mathf.Clamp01(elapsed / halfDuration);
             transform.localScale = Vector3.Lerp(baseScale, baseScale * upgradeScaleMultiplier, progress);
-            _spriteRenderer.color = Color.Lerp(ActiveTuning.poweredColor, upgradeFlashColor, progress);
+            _spriteRenderer.color = Color.white;
             yield return null;
         }
 
@@ -805,7 +805,7 @@ public class DefenseTower : MonoBehaviour
             elapsed += Time.deltaTime;
             float progress = Mathf.Clamp01(elapsed / halfDuration);
             transform.localScale = Vector3.Lerp(baseScale * upgradeScaleMultiplier, baseScale, progress);
-            _spriteRenderer.color = Color.Lerp(upgradeFlashColor, IsPowered ? ActiveTuning.poweredColor : offlineColor, progress);
+            _spriteRenderer.color = Color.white;
             yield return null;
         }
 
@@ -864,7 +864,7 @@ public class DefenseTower : MonoBehaviour
         }
 
         _spriteRenderer.sprite = ResolveBodySprite();
-        _spriteRenderer.color = IsPowered ? ActiveTuning.poweredColor : offlineColor;
+        _spriteRenderer.color = Color.white;
         RefreshTypeSignatureStyle();
     }
 
@@ -947,6 +947,11 @@ public class DefenseTower : MonoBehaviour
             return;
         }
 
+        if (rootReference != null && rootReference.Equals(null))
+        {
+            rootReference = null;
+        }
+
         if (rootReference == null)
         {
             Transform existing = feedbackRootReference.Find(GetFeedbackRootName(towerType));
@@ -993,6 +998,11 @@ public class DefenseTower : MonoBehaviour
             case TowerType.Bombard:
                 typedReference = ref bombardFeedbackRootReference;
                 break;
+        }
+
+        if (typedReference != null && typedReference.Equals(null))
+        {
+            typedReference = null;
         }
 
         if (typedReference == null)

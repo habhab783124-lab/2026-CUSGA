@@ -293,9 +293,11 @@ namespace TowerDefense.Editor
         /// Samples a straight segment between two waypoints and checks whether the line is covered
         /// by authored road strips.
         ///
-        /// The current map style is deliberately orthogonal, so this validation intentionally
-        /// treats diagonal movement between consecutive waypoints as an error. If the author wants
-        /// a turn, they should insert a visible corner by adding another waypoint.
+        /// Current project rules now allow two authoring styles:
+        /// - orthogonal placement: the route should bend with visible right-angle corners
+        /// - freeform placement: consecutive points may form a diagonal span
+        ///
+        /// So this validation no longer treats every diagonal span as an automatic error.
         /// </summary>
         internal static List<ToolkitIssue> AnalyzeEnemyPathAlignment(
             EnemyPath enemyPath,
@@ -358,24 +360,6 @@ namespace TowerDefense.Editor
                 Transform end = waypoints[segmentIndex + 1];
                 if (start == null || end == null)
                 {
-                    continue;
-                }
-
-                Vector3 delta = end.position - start.position;
-                bool vertical = Mathf.Abs(delta.x) <= 0.001f;
-                bool horizontal = Mathf.Abs(delta.y) <= 0.001f;
-                if (!vertical && !horizontal)
-                {
-                    issues.Add(new ToolkitIssue
-                    {
-                        Severity = ToolkitIssueSeverity.Error,
-                        Category = "路径段出现斜切",
-                        Message = $"{enemyPath.name} / #{segmentIndex + 1:D2} -> #{segmentIndex + 2:D2} 是斜线，怪物看起来会直接切过道路美术。",
-                        ContextObject = enemyPath,
-                        WorldPositionA = start.position,
-                        WorldPositionB = end.position,
-                        SuggestedAction = "补一个拐角路径点，或把其中一个点吸回目标拐弯位置。"
-                    });
                     continue;
                 }
 
@@ -452,7 +436,13 @@ namespace TowerDefense.Editor
         }
 
         /// <summary>
-        /// Builds one orthogonal road strip between two points, or two strips if the points form a corner.
+        /// Builds road strips between two points.
+        ///
+        /// Orthogonal mode produces either:
+        /// - one straight strip
+        /// - or two elbow strips
+        ///
+        /// Freeform mode produces one direct strip, even for diagonals.
         /// </summary>
         internal static List<(Vector3 start, Vector3 end)> BuildOrthogonalSegments(Vector3 start, Vector3 end, GeneratedTurnMode turnMode)
         {
@@ -470,6 +460,11 @@ namespace TowerDefense.Editor
             segments.Add((start, corner));
             segments.Add((corner, end));
             return segments;
+        }
+
+        internal static List<(Vector3 start, Vector3 end)> BuildFreeformSegments(Vector3 start, Vector3 end)
+        {
+            return new List<(Vector3 start, Vector3 end)> { (start, end) };
         }
 
         /// <summary>
@@ -641,19 +636,29 @@ namespace TowerDefense.Editor
             string blockerReason,
             Color previewColor)
         {
-            Vector3 center = new Vector3(worldRect.center.x, worldRect.center.y, 0f);
-            Vector3 scale = new Vector3(Mathf.Max(0.2f, worldRect.width), Mathf.Max(0.2f, worldRect.height), 1f);
+            Vector3 worldCenter = new Vector3(worldRect.center.x, worldRect.center.y, 0f);
+            Vector2 worldSize = new Vector2(Mathf.Max(0.2f, worldRect.width), Mathf.Max(0.2f, worldRect.height));
 
             GameObject createdObject = new GameObject(brushMode == AuthoringBrushMode.BuildZoneShape ? "ZoneShape_Box" : "PlacementBlocker_Box");
             Undo.RegisterCreatedObjectUndo(createdObject, "鍒涘缓鍦板浘鐢荤瑪鐭╁舰");
             SceneManager.MoveGameObjectToScene(createdObject, scene);
             createdObject.transform.SetParent(parent, false);
-            createdObject.transform.position = center;
-            createdObject.transform.localScale = scale;
+            createdObject.transform.localScale = Vector3.one;
+
+            Vector3 localCenter = parent != null
+                ? parent.InverseTransformPoint(worldCenter)
+                : worldCenter;
+            Vector3 lossyScale = parent != null ? parent.lossyScale : Vector3.one;
+            float safeScaleX = Mathf.Abs(lossyScale.x) > 0.0001f ? Mathf.Abs(lossyScale.x) : 1f;
+            float safeScaleY = Mathf.Abs(lossyScale.y) > 0.0001f ? Mathf.Abs(lossyScale.y) : 1f;
+            Vector2 localSize = new Vector2(worldSize.x / safeScaleX, worldSize.y / safeScaleY);
+
+            createdObject.transform.localPosition = localCenter;
 
             BoxCollider2D collider = createdObject.AddComponent<BoxCollider2D>();
             collider.isTrigger = true;
-            collider.size = Vector2.one;
+            collider.size = localSize;
+            collider.offset = Vector2.zero;
 
             SpriteRenderer spriteRenderer = createdObject.AddComponent<SpriteRenderer>();
             spriteRenderer.color = previewColor;
@@ -1309,6 +1314,7 @@ namespace TowerDefense.Editor
         [SerializeField] private bool showHealthInfoIssues = true;
         [SerializeField] private bool showHealthWarningIssues = true;
         [SerializeField] private bool showHealthErrorIssues = true;
+        [SerializeField] private Vector2 scrollPosition;
 
         private readonly List<ToolkitIssue> _issues = new List<ToolkitIssue>();
         private readonly List<WavePreviewRow> _wavePreviewRows = new List<WavePreviewRow>();
@@ -1346,48 +1352,57 @@ namespace TowerDefense.Editor
 
         private void OnGUI()
         {
-            DrawContextBar();
-            EditorGUILayout.Space(8f);
-
-            activeTab = (MapToolkitTab)GUILayout.Toolbar(
-                (int)activeTab,
-                new[]
-                {
-                    "路径校验",
-                    "道路生成",
-                    "模板同步",
-                    "健康检查",
-                    "区域画笔",
-                    "波次预览"
-                });
-
-            EditorGUILayout.Space(10f);
-
-            switch (activeTab)
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+            try
             {
-                case MapToolkitTab.PathAlignment:
-                    DrawPathAlignmentTab();
-                    break;
-                case MapToolkitTab.RoadGenerator:
-                    DrawRoadGeneratorTab();
-                    break;
-                case MapToolkitTab.TemplateSync:
-                    DrawTemplateSyncTab();
-                    break;
-                case MapToolkitTab.HealthCheck:
-                    DrawHealthCheckTab();
-                    break;
-                case MapToolkitTab.ZoneBrush:
-                    DrawZoneBrushTab();
-                    break;
-                case MapToolkitTab.WavePreview:
-                    DrawWavePreviewTab();
-                    break;
+                DrawContextBar();
+                EditorGUILayout.Space(8f);
+
+                activeTab = (MapToolkitTab)GUILayout.Toolbar(
+                    (int)activeTab,
+                    new[]
+                    {
+                        "路径校验",
+                        "道路生成",
+                        "模板同步",
+                        "健康检查",
+                        "区域画笔",
+                        "波次预览"
+                    });
+
+                EditorGUILayout.Space(10f);
+
+                switch (activeTab)
+                {
+                    case MapToolkitTab.PathAlignment:
+                        DrawPathAlignmentTab();
+                        break;
+                    case MapToolkitTab.RoadGenerator:
+                        DrawRoadGeneratorTab();
+                        break;
+                    case MapToolkitTab.TemplateSync:
+                        DrawTemplateSyncTab();
+                        break;
+                    case MapToolkitTab.HealthCheck:
+                        DrawHealthCheckTab();
+                        break;
+                    case MapToolkitTab.ZoneBrush:
+                        DrawZoneBrushTab();
+                        break;
+                    case MapToolkitTab.WavePreview:
+                        DrawWavePreviewTab();
+                        break;
+                }
+            }
+            finally
+            {
+                EditorGUILayout.EndScrollView();
             }
         }
 
         private void DrawContextBar()
         {
+            EditorGUILayout.HelpBox(TowerDefenseAuthoringSceneContext.GetOrCreate().BuildSummary(), MessageType.None);
             EditorGUILayout.LabelField("场景上下文", EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
             targetMap = (BattlefieldMapDefinition)EditorGUILayout.ObjectField("地图", targetMap, typeof(BattlefieldMapDefinition), true);
@@ -1399,7 +1414,7 @@ namespace TowerDefense.Editor
                 Repaint();
             }
 
-            if (GUILayout.Button("接管当前场景选择"))
+            if (GUILayout.Button("接管当前场景"))
             {
                 TryAdoptSceneContext();
             }
@@ -1415,7 +1430,7 @@ namespace TowerDefense.Editor
             bulkRepairMoveSpawnGates = EditorGUILayout.Toggle("批量修复：移动出怪口", bulkRepairMoveSpawnGates);
             bulkRepairRegenerateRoads = EditorGUILayout.Toggle("批量修复：重建道路段", bulkRepairRegenerateRoads);
             EditorGUILayout.HelpBox(
-                "局部段校验更适合精修单个拐角。选中两个相邻路径点时，只检查这一段；如果只选一个点，工具会默认检查它后面的那一段，尾点则回看前一段。",
+                "局部段校验更适合精修单个拐角或单条斜线段。选中两个相邻路径点时，只检查这一段；如果只选一个点，工具会默认检查它后面的那一段，尾点则回看前一段。正交放置重点看是否缺少拐角和路面覆盖；随意放置重点看斜线段是否有完整道路覆盖。",
                 MessageType.None);
 
             EditorGUILayout.BeginHorizontal();
@@ -1485,6 +1500,24 @@ namespace TowerDefense.Editor
             }
             EditorGUILayout.EndHorizontal();
 
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.HelpBox(
+                "如果这轮路径校验或自动修复做错了，你可以直接清理工具生成的结果，而不必一段段手工删。这里的清理动作优先针对工具生成对象，不会默认扫掉作者自己手工摆的装饰物。",
+                MessageType.Warning);
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("清空校验结果"))
+            {
+                _issues.Clear();
+                Repaint();
+                SceneView.RepaintAll();
+            }
+
+            if (GUILayout.Button("清空当前路径生成道路"))
+            {
+                ClearGeneratedRoadsForCurrentPath();
+            }
+            EditorGUILayout.EndHorizontal();
+
             DrawIssueList();
         }
 
@@ -1507,7 +1540,7 @@ namespace TowerDefense.Editor
             useTwoDigitSegmentNumbering = EditorGUILayout.Toggle("使用两位数编号", useTwoDigitSegmentNumbering);
 
             EditorGUILayout.HelpBox(
-                "推荐流程：先用路径点工具整理好 waypoint 顺序，再回到这里生成或重建功能性道路段。这个生成器会保持正交路线，并自动补 BoxCollider2D 和 PlacementBlocker，让地图仍然可玩。",
+                "推荐流程：先用路径点工具整理好 waypoint 顺序，再回到这里生成或重建功能性道路段。正交放置会生成横平竖直道路；随意放置会生成允许旋转的直连道路段。生成器会自动补 BoxCollider2D 和 PlacementBlocker，让地图仍然可玩。",
                 MessageType.Info);
 
             using (new EditorGUI.DisabledScope(targetPath == null))
@@ -1518,6 +1551,22 @@ namespace TowerDefense.Editor
                 }
             }
 
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(targetPath == null))
+                {
+                    if (GUILayout.Button("删除当前路径生成道路"))
+                    {
+                        ClearGeneratedRoadsForCurrentPath();
+                    }
+                }
+
+                if (GUILayout.Button("删除当前地图全部生成道路"))
+                {
+                    ClearAllGeneratedRoadsInActiveScene();
+                }
+            }
+
             if (_generatedRoadGroups.Count > 0)
             {
                 EditorGUILayout.Space(6f);
@@ -1525,6 +1574,23 @@ namespace TowerDefense.Editor
                 foreach (GeneratedRoadGroupInfo groupInfo in _generatedRoadGroups)
                 {
                     EditorGUILayout.HelpBox($"{groupInfo.GroupName} | Segments: {groupInfo.SegmentCount}", MessageType.None);
+                }
+            }
+
+            EditorGUILayout.Space(6f);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(targetPath == null))
+                {
+                    if (GUILayout.Button("删除当前路径生成道路"))
+                    {
+                        ClearGeneratedRoadsForCurrentPath();
+                    }
+                }
+
+                if (GUILayout.Button("删除当前地图全部生成道路"))
+                {
+                    ClearAllGeneratedRoadsInActiveScene();
                 }
             }
         }
@@ -1616,6 +1682,26 @@ namespace TowerDefense.Editor
                 brushActive = !brushActive;
                 _isBrushDragging = false;
                 SceneView.RepaintAll();
+            }
+
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.HelpBox(
+                "如果画笔拖错了，可以直接清理当前 BuildZone 下的工具生成形状，或清理当前地图中的工具生成禁建区矩形。",
+                MessageType.Warning);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                using (new EditorGUI.DisabledScope(targetBuildZone == null))
+                {
+                    if (GUILayout.Button("删除当前 BuildZone 全部形状"))
+                    {
+                        ClearAllBuildZoneShapes();
+                    }
+                }
+
+                if (GUILayout.Button("删除当前地图工具生成禁建区"))
+                {
+                    ClearGeneratedPlacementBlockersInActiveScene();
+                }
             }
         }
 
@@ -2090,17 +2176,27 @@ namespace TowerDefense.Editor
                     continue;
                 }
 
+                Vector3 start = waypoints[index].position;
+                Vector3 end = waypoints[index + 1].position;
+                bool isOrthogonalSpan = Mathf.Abs(start.x - end.x) <= 0.001f || Mathf.Abs(start.y - end.y) <= 0.001f;
+
+                if (!isOrthogonalSpan)
+                {
+                    generatedSegments.AddRange(TowerDefenseMapToolkitUtility.BuildFreeformSegments(start, end));
+                    continue;
+                }
+
                 GeneratedTurnMode effectiveTurnMode = autoFitGeneratedTurnsToExistingRoads
                     ? TowerDefenseMapToolkitUtility.ChooseBestGeneratedTurnMode(
-                        waypoints[index].position,
-                        waypoints[index + 1].position,
+                        start,
+                        end,
                         referenceRoadSegments,
                         generatedTurnMode)
                     : generatedTurnMode;
 
                 generatedSegments.AddRange(TowerDefenseMapToolkitUtility.BuildOrthogonalSegments(
-                    waypoints[index].position,
-                    waypoints[index + 1].position,
+                    start,
+                    end,
                     effectiveTurnMode));
             }
 
@@ -2109,16 +2205,24 @@ namespace TowerDefense.Editor
                 (Vector3 start, Vector3 end) = generatedSegments[segmentIndex];
                 Vector3 center = (start + end) * 0.5f;
                 bool horizontal = Mathf.Abs(start.y - end.y) <= 0.001f;
+                bool vertical = Mathf.Abs(start.x - end.x) <= 0.001f;
+                float length = Vector3.Distance(start, end);
                 Vector2 size = horizontal
                     ? new Vector2(Mathf.Abs(end.x - start.x) + effectiveRoadThickness, effectiveRoadThickness)
-                    : new Vector2(effectiveRoadThickness, Mathf.Abs(end.y - start.y) + effectiveRoadThickness);
+                    : vertical
+                        ? new Vector2(effectiveRoadThickness, Mathf.Abs(end.y - start.y) + effectiveRoadThickness)
+                        : new Vector2(length + effectiveRoadThickness, effectiveRoadThickness);
 
                 string segmentName = TowerDefenseMapToolkitUtility.BuildGeneratedSegmentName(
                     generatedSegmentPrefix,
                     generatedSegmentStartIndex,
                     segmentIndex,
                     useTwoDigitSegmentNumbering);
-                TowerDefenseMapToolkitUtility.CreateRoadSegmentInstance(scene, parent, roadTemplate, segmentName, center, size);
+                GameObject createdSegment = TowerDefenseMapToolkitUtility.CreateRoadSegmentInstance(scene, parent, roadTemplate, segmentName, center, size);
+                if (createdSegment != null && !horizontal && !vertical)
+                {
+                    createdSegment.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(end.y - start.y, end.x - start.x) * Mathf.Rad2Deg);
+                }
             }
 
             if (parent != null)
@@ -2133,6 +2237,106 @@ namespace TowerDefense.Editor
             List<PathSurfaceSegment> generatedRoadSegments = TowerDefenseMapToolkitUtility.CollectPathSurfaceSegments(scene);
             SnapRouteEndpointsAfterRoadGeneration(enemyPath, generatedRoadSegments);
             EditorSceneManager.MarkSceneDirty(scene);
+        }
+
+        private void ClearGeneratedRoadsForCurrentPath()
+        {
+            if (targetPath == null)
+            {
+                return;
+            }
+
+            Scene scene = targetPath.gameObject.scene;
+            string expectedGroupName = TowerDefenseMapToolkitUtility.BuildGeneratedRoadGroupName(generatedRoadGroupPrefix, targetPath);
+            GameObject existingGroup = TowerDefenseMapToolkitUtility.FindObjectByName(scene, expectedGroupName);
+            if (existingGroup != null)
+            {
+                Undo.DestroyObjectImmediate(existingGroup);
+                EditorSceneManager.MarkSceneDirty(scene);
+                return;
+            }
+
+            Transform parent = roadParent != null ? roadParent : TowerDefenseMapToolkitUtility.FindObjectByName(scene, "BattlefieldDecor")?.transform;
+            if (parent == null)
+            {
+                return;
+            }
+
+            List<GameObject> existingSegments = parent.Cast<Transform>()
+                .Where(child => child != null && child.name.StartsWith(generatedSegmentPrefix, StringComparison.Ordinal))
+                .Select(child => child.gameObject)
+                .ToList();
+            foreach (GameObject existingSegment in existingSegments)
+            {
+                Undo.DestroyObjectImmediate(existingSegment);
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+        }
+
+        private void ClearAllGeneratedRoadsInActiveScene()
+        {
+            Scene activeScene = SceneManager.GetActiveScene();
+            List<GameObject> generatedGroups = TowerDefenseMapToolkitUtility.EnumerateSceneObjects(activeScene)
+                .Where(sceneObject => sceneObject != null && sceneObject.name.StartsWith(generatedRoadGroupPrefix, StringComparison.Ordinal))
+                .ToList();
+            foreach (GameObject generatedGroup in generatedGroups)
+            {
+                Undo.DestroyObjectImmediate(generatedGroup);
+            }
+
+            List<GameObject> looseGeneratedSegments = TowerDefenseMapToolkitUtility.EnumerateSceneObjects(activeScene)
+                .Where(sceneObject =>
+                    sceneObject != null &&
+                    sceneObject.name.StartsWith(generatedSegmentPrefix, StringComparison.Ordinal) &&
+                    sceneObject.transform.parent != null &&
+                    !sceneObject.transform.parent.name.StartsWith(generatedRoadGroupPrefix, StringComparison.Ordinal))
+                .ToList();
+            foreach (GameObject looseGeneratedSegment in looseGeneratedSegments)
+            {
+                Undo.DestroyObjectImmediate(looseGeneratedSegment);
+            }
+
+            EditorSceneManager.MarkSceneDirty(activeScene);
+        }
+
+        private void ClearAllBuildZoneShapes()
+        {
+            if (targetBuildZone == null)
+            {
+                return;
+            }
+
+            Transform zoneRoot = TowerDefenseMapToolkitUtility.EnsureZoneShapeRoot(targetBuildZone);
+            if (zoneRoot == null)
+            {
+                return;
+            }
+
+            foreach (Transform child in zoneRoot.Cast<Transform>().ToList())
+            {
+                if (child != null)
+                {
+                    Undo.DestroyObjectImmediate(child.gameObject);
+                }
+            }
+
+            targetBuildZone.CollectZoneShapeColliders();
+            EditorUtility.SetDirty(targetBuildZone);
+            EditorSceneManager.MarkSceneDirty(targetBuildZone.gameObject.scene);
+        }
+
+        private void ClearGeneratedPlacementBlockersInActiveScene()
+        {
+            Scene activeScene = SceneManager.GetActiveScene();
+            foreach (GameObject sceneObject in TowerDefenseMapToolkitUtility.EnumerateSceneObjects(activeScene)
+                         .Where(sceneObject => sceneObject != null && sceneObject.name.StartsWith("PlacementBlocker_Box", StringComparison.Ordinal))
+                         .ToList())
+            {
+                Undo.DestroyObjectImmediate(sceneObject);
+            }
+
+            EditorSceneManager.MarkSceneDirty(activeScene);
         }
 
         /// <summary>
@@ -2644,11 +2848,12 @@ namespace TowerDefense.Editor
 
         private void TryAdoptSceneContext()
         {
+            TowerDefenseAuthoringSceneContext context = TowerDefenseAuthoringSceneContext.CaptureActiveSceneContext();
             Scene activeScene = SceneManager.GetActiveScene();
-            targetMap = targetMap != null ? targetMap : TowerDefenseMapToolkitUtility.FindFirstComponentInScene<BattlefieldMapDefinition>(activeScene);
-            targetPath = targetPath != null ? targetPath : TowerDefenseMapToolkitUtility.FindFirstComponentInScene<EnemyPath>(activeScene);
-            targetWaveSpawner = targetWaveSpawner != null ? targetWaveSpawner : TowerDefenseMapToolkitUtility.FindFirstComponentInScene<WaveSpawner>(activeScene);
-            targetBuildZone = targetBuildZone != null ? targetBuildZone : TowerDefenseMapToolkitUtility.FindFirstComponentInScene<BuildZone>(activeScene);
+            targetMap = context.CurrentMap;
+            targetPath = context.CurrentPath;
+            targetWaveSpawner = context.CurrentWaveSpawner;
+            targetBuildZone = context.CurrentBuildZone;
             roadParent = roadParent != null ? roadParent : TowerDefenseMapToolkitUtility.FindObjectByName(activeScene, "BattlefieldDecor")?.transform;
             blockerBrushParent = blockerBrushParent != null ? blockerBrushParent : roadParent;
         }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -44,6 +44,7 @@ namespace TowerDefense.Editor
         [SerializeField] private float defaultRoadArtThickness = 1.8f;
         [SerializeField] private string roadArtRootName = "RoadArt";
         [SerializeField] private string roadArtSegmentPrefix = "RoadArt";
+        [SerializeField] private Vector2 scrollPosition;
 
         [MenuItem("Tools/Tower Defense/Authoring/道路美术铺设工具")]
         public static void OpenWindow()
@@ -66,43 +67,75 @@ namespace TowerDefense.Editor
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("道路美术铺设工具", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox(
-                "在正式路径上铺设独立的道路美术层。这个工具只生成视觉对象，不会改动功能性 PathSegment、碰撞或禁建逻辑。",
-                MessageType.Info);
-
-            targetPath = (EnemyPath)EditorGUILayout.ObjectField("目标 EnemyPath", targetPath, typeof(EnemyPath), true);
-            roadArtRootOverride = (Transform)EditorGUILayout.ObjectField("道路美术根覆盖", roadArtRootOverride, typeof(Transform), true);
-            straightRoadArtTemplate = (GameObject)EditorGUILayout.ObjectField("直线路面模板", straightRoadArtTemplate, typeof(GameObject), false);
-            cornerRoadArtTemplate = (GameObject)EditorGUILayout.ObjectField("拐角模板", cornerRoadArtTemplate, typeof(GameObject), false);
-            endCapRoadArtTemplate = (GameObject)EditorGUILayout.ObjectField("端点模板", endCapRoadArtTemplate, typeof(GameObject), false);
-            clearExistingRoadArt = EditorGUILayout.Toggle("生成前清空旧美术层", clearExistingRoadArt);
-            groupRoadArtByPath = EditorGUILayout.Toggle("按路径分组", groupRoadArtByPath);
-            createCornerMarkers = EditorGUILayout.Toggle("生成拐角标记", createCornerMarkers);
-            createEndCaps = EditorGUILayout.Toggle("生成起终点盖板", createEndCaps);
-            defaultRoadArtThickness = EditorGUILayout.FloatField("默认路面厚度", defaultRoadArtThickness);
-            roadArtRootName = EditorGUILayout.TextField("道路美术根名称", roadArtRootName);
-            roadArtSegmentPrefix = EditorGUILayout.TextField("对象名前缀", roadArtSegmentPrefix);
-
-            using (new EditorGUILayout.HorizontalScope())
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+            try
             {
-                using (new EditorGUI.DisabledScope(targetPath == null))
+                if (targetPath == null)
                 {
-                    if (GUILayout.Button("为当前路径生成"))
+                    TowerDefenseAuthoringSceneContext sharedContext = TowerDefenseAuthoringSceneContext.GetOrCreate();
+                    targetPath = sharedContext.CurrentPath;
+                }
+
+                EditorGUILayout.LabelField("道路美术铺设工具", EditorStyles.boldLabel);
+                EditorGUILayout.HelpBox(
+                    TowerDefenseAuthoringSceneContext.GetOrCreate().BuildSummary() +
+                    "\n如需切换到当前活动场景里的共享路径，请先在任一窗口点“接管当前场景”。",
+                    MessageType.None);
+                EditorGUILayout.HelpBox(
+                    "在正式路径上铺设独立的道路美术层。这个工具只生成视觉对象，不会改动功能性 PathSegment、碰撞或禁建逻辑。",
+                    MessageType.Info);
+
+                targetPath = (EnemyPath)EditorGUILayout.ObjectField("目标 EnemyPath", targetPath, typeof(EnemyPath), true);
+                roadArtRootOverride = (Transform)EditorGUILayout.ObjectField("道路美术根覆盖", roadArtRootOverride, typeof(Transform), true);
+                straightRoadArtTemplate = (GameObject)EditorGUILayout.ObjectField("直线路面模板", straightRoadArtTemplate, typeof(GameObject), false);
+                cornerRoadArtTemplate = (GameObject)EditorGUILayout.ObjectField("拐角模板", cornerRoadArtTemplate, typeof(GameObject), false);
+                endCapRoadArtTemplate = (GameObject)EditorGUILayout.ObjectField("端点模板", endCapRoadArtTemplate, typeof(GameObject), false);
+                clearExistingRoadArt = EditorGUILayout.Toggle("生成前清空旧美术层", clearExistingRoadArt);
+                groupRoadArtByPath = EditorGUILayout.Toggle("按路径分组", groupRoadArtByPath);
+                createCornerMarkers = EditorGUILayout.Toggle("生成拐角标记", createCornerMarkers);
+                createEndCaps = EditorGUILayout.Toggle("生成起终点盖板", createEndCaps);
+                defaultRoadArtThickness = EditorGUILayout.FloatField("默认路面厚度", defaultRoadArtThickness);
+                roadArtRootName = EditorGUILayout.TextField("道路美术根名称", roadArtRootName);
+                roadArtSegmentPrefix = EditorGUILayout.TextField("对象名前缀", roadArtSegmentPrefix);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("接管当前场景"))
                     {
-                        GenerateForPath(targetPath);
+                        TowerDefenseAuthoringSceneContext sharedContext = TowerDefenseAuthoringSceneContext.CaptureActiveSceneContext();
+                        targetPath = sharedContext.CurrentPath;
+                    }
+
+                    using (new EditorGUI.DisabledScope(targetPath == null))
+                    {
+                        if (GUILayout.Button("为当前路径生成"))
+                        {
+                            GenerateForPath(targetPath);
+                        }
+                    }
+
+                    if (GUILayout.Button("为当前场景全部路径生成"))
+                    {
+                        GenerateForAllPathsInActiveScene();
                     }
                 }
 
-                if (GUILayout.Button("为当前场景全部路径生成"))
+                if (GUILayout.Button("清空当前场景已生成道路美术"))
                 {
-                    GenerateForAllPathsInActiveScene();
+                    ClearGeneratedRoadArtInActiveScene();
+                }
+
+                using (new EditorGUI.DisabledScope(targetPath == null))
+                {
+                    if (GUILayout.Button("清空当前路径道路美术"))
+                    {
+                        ClearGeneratedRoadArtForCurrentPath();
+                    }
                 }
             }
-
-            if (GUILayout.Button("清空当前场景已生成道路美术"))
+            finally
             {
-                ClearGeneratedRoadArtInActiveScene();
+                EditorGUILayout.EndScrollView();
             }
         }
 
@@ -347,6 +380,29 @@ namespace TowerDefense.Editor
             EditorSceneManager.MarkSceneDirty(activeScene);
         }
 
+        private void ClearGeneratedRoadArtForCurrentPath()
+        {
+            if (targetPath == null)
+            {
+                return;
+            }
+
+            Scene activeScene = SceneManager.GetActiveScene();
+            Transform root = ResolveRoadArtRoot(activeScene);
+            if (root == null)
+            {
+                return;
+            }
+
+            string expectedGroupName = $"{roadArtSegmentPrefix}_{targetPath.name}";
+            Transform group = root.Find(expectedGroupName);
+            if (group != null)
+            {
+                Undo.DestroyObjectImmediate(group.gameObject);
+                EditorSceneManager.MarkSceneDirty(activeScene);
+            }
+        }
+
         private static void ClearGeneratedChildren(Transform parent)
         {
             if (parent == null)
@@ -422,3 +478,5 @@ namespace TowerDefense.Editor
         }
     }
 }
+
+

@@ -7,7 +7,7 @@ namespace TowerDefense.Editor
     /// `RelayTower` 的作者检查器。
     ///
     /// 主要强化两件事：
-    /// - 作者一眼看见当前供电核心参数和视觉入口
+    /// - 作者一眼看见当前供电核心参数和主体渲染器入口
     /// - Play 模式下直接看到当前运行负载和剩余容量
     /// </summary>
     [CustomEditor(typeof(RelayTower))]
@@ -19,7 +19,7 @@ namespace TowerDefense.Editor
 
             RelayTower relayTower = (RelayTower)target;
             EditorGUILayout.HelpBox(
-                $"供电范围：{relayTower.SupplyRange:0.0}\n供电容量：{relayTower.SupplyCapacity}\n视觉根节点：{GetVisualRootName()}",
+                $"供电范围：{relayTower.SupplyRange:0.0}\n供电容量：{relayTower.SupplyCapacity}\n主体渲染器：{GetBodyRendererName()}",
                 MessageType.Info);
 
             if (Application.isPlaying)
@@ -33,12 +33,12 @@ namespace TowerDefense.Editor
             serializedObject.ApplyModifiedProperties();
         }
 
-        private string GetVisualRootName()
+        private string GetBodyRendererName()
         {
-            SerializedProperty property = serializedObject.FindProperty("visualRootReference");
+            SerializedProperty property = serializedObject.FindProperty("bodyRendererReference");
             if (property == null || property.objectReferenceValue == null)
             {
-                return "（根对象）";
+                return "（根对象 SpriteRenderer）";
             }
 
             return property.objectReferenceValue.name;

@@ -28,28 +28,9 @@ public partial class RelayTower
     [SerializeField] private int upgradeCostPerLevel = 12;
 
     [Header("Visual References")]
-
-    /// <summary>
-    /// 继电器的视觉根节点。
-    ///
-    /// 这让原型根对象可以继续承担玩法脚本和稳定身份，
-    /// 而真正可替换的外观可以下沉到独立子物体里。
-    /// 后续如果你要给继电器补正式美术、额外装饰或发光层，
-    /// 直接围绕这个根节点继续扩展会更清楚。
-    /// </summary>
-    [SerializeField] private Transform visualRootReference;
-
-    /// <summary>
-    /// 当前真正代表继电器本体外观的主渲染器。
-    ///
-    /// 如果已经明确指定了 `visualRootReference`，
-    /// 这里优先读取那个根节点上的 `SpriteRenderer`。
-    /// </summary>
     [SerializeField] private SpriteRenderer bodyRendererReference;
 
     [Header("Visuals")]
-    [SerializeField] private Color normalColor = new Color(1f, 0.85f, 0.2f, 1f);
-    [SerializeField] private Color saturatedColor = new Color(1f, 0.5f, 0.18f, 1f);
     [SerializeField] private Color gizmoColor = new Color(1f, 0.78f, 0.28f, 0.8f);
 
     private SpriteRenderer _spriteRenderer;
@@ -75,11 +56,6 @@ public partial class RelayTower
 
     private void OnValidate()
     {
-        if (visualRootReference == null && bodyRendererReference != null && bodyRendererReference.transform != transform)
-        {
-            visualRootReference = bodyRendererReference.transform;
-        }
-
         if (bodyRendererReference == null)
         {
             bodyRendererReference = ResolveBodyRenderer();
@@ -145,33 +121,20 @@ public partial class RelayTower
             return;
         }
 
-        _spriteRenderer.color = RemainingCapacity > 0 ? normalColor : saturatedColor;
+        _spriteRenderer.color = Color.white;
     }
 
     /// <summary>
-    /// 统一解析当前应该使用哪个 `SpriteRenderer` 作为继电器主体外观。
+    /// Resolves the relay's main body renderer.
     ///
-    /// 优先级是：
-    /// 1. 显式指定的 `bodyRendererReference`
-    /// 2. `visualRootReference` 上的渲染器
-    /// 3. 根对象自己的渲染器
-    ///
-    /// 这样既兼容旧原型，也让新整理出的 `VisualRoot` 可以立刻生效。
+    /// After removing the dedicated child-art workflow, the relay goes back to a simpler rule:
+    /// prefer the explicit serialized renderer reference, otherwise fall back to the root renderer.
     /// </summary>
     private SpriteRenderer ResolveBodyRenderer()
     {
         if (bodyRendererReference != null)
         {
             return bodyRendererReference;
-        }
-
-        if (visualRootReference != null)
-        {
-            SpriteRenderer visualRootRenderer = visualRootReference.GetComponent<SpriteRenderer>();
-            if (visualRootRenderer != null)
-            {
-                return visualRootRenderer;
-            }
         }
 
         return GetComponent<SpriteRenderer>();

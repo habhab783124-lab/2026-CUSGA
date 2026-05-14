@@ -43,6 +43,7 @@ namespace TowerDefense.Editor
         [SerializeField] private bool showWaveAuthoring = true;
         [SerializeField] private bool showEnemyCatalog = false;
         [SerializeField] private bool showSmokeTest = true;
+        [SerializeField] private bool showAuthoringRecovery = true;
         [SerializeField] private bool showToolShortcuts = true;
         [SerializeField] private bool replaceExistingShellRoots = true;
         [SerializeField] private string latestSmokeSummary = "暂无烟测结果。";
@@ -80,54 +81,65 @@ namespace TowerDefense.Editor
             DrawHeader();
 
             scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
-            showSceneBootstrap = EditorGUILayout.Foldout(showSceneBootstrap, "关卡壳层创建器", true);
-            if (showSceneBootstrap)
+            try
             {
-                DrawSceneBootstrapSection();
-            }
-            showSceneContext = EditorGUILayout.Foldout(showSceneContext, "当前场景上下文", true);
-            if (showSceneContext)
-            {
-                DrawSceneContextSection();
-            }
+                showSceneBootstrap = EditorGUILayout.Foldout(showSceneBootstrap, "关卡壳层创建器", true);
+                if (showSceneBootstrap)
+                {
+                    DrawSceneBootstrapSection();
+                }
+                showSceneContext = EditorGUILayout.Foldout(showSceneContext, "当前场景上下文", true);
+                if (showSceneContext)
+                {
+                    DrawSceneContextSection();
+                }
 
-            showMapShell = EditorGUILayout.Foldout(showMapShell, "地图骨架与场景参数", true);
-            if (showMapShell)
-            {
-                DrawMapShellSection();
-            }
+                showMapShell = EditorGUILayout.Foldout(showMapShell, "地图骨架与场景参数", true);
+                if (showMapShell)
+                {
+                    DrawMapShellSection();
+                }
 
-            showEconomyAndStarterZone = EditorGUILayout.Foldout(showEconomyAndStarterZone, "开局资源与放置规则", true);
-            if (showEconomyAndStarterZone)
-            {
-                DrawEconomyAndStarterZoneSection();
-            }
+                showEconomyAndStarterZone = EditorGUILayout.Foldout(showEconomyAndStarterZone, "开局资源与放置规则", true);
+                if (showEconomyAndStarterZone)
+                {
+                    DrawEconomyAndStarterZoneSection();
+                }
 
-            showWaveAuthoring = EditorGUILayout.Foldout(showWaveAuthoring, "波次与刷怪参数", true);
-            if (showWaveAuthoring)
-            {
-                DrawWaveAuthoringSection();
-            }
+                showWaveAuthoring = EditorGUILayout.Foldout(showWaveAuthoring, "波次与刷怪参数", true);
+                if (showWaveAuthoring)
+                {
+                    DrawWaveAuthoringSection();
+                }
 
-            showEnemyCatalog = EditorGUILayout.Foldout(showEnemyCatalog, "敌人目录参数", true);
-            if (showEnemyCatalog)
-            {
-                DrawEnemyCatalogSection();
-            }
+                showEnemyCatalog = EditorGUILayout.Foldout(showEnemyCatalog, "敌人目录参数", true);
+                if (showEnemyCatalog)
+                {
+                    DrawEnemyCatalogSection();
+                }
 
-            showSmokeTest = EditorGUILayout.Foldout(showSmokeTest, "运行态烟测", true);
-            if (showSmokeTest)
-            {
-                DrawSmokeTestSection();
-            }
+                showSmokeTest = EditorGUILayout.Foldout(showSmokeTest, "运行态烟测", true);
+                if (showSmokeTest)
+                {
+                    DrawSmokeTestSection();
+                }
 
-            showToolShortcuts = EditorGUILayout.Foldout(showToolShortcuts, "专项工具快捷入口", true);
-            if (showToolShortcuts)
-            {
-                DrawToolShortcutsSection();
-            }
+                showAuthoringRecovery = EditorGUILayout.Foldout(showAuthoringRecovery, "作者快照与回退", true);
+                if (showAuthoringRecovery)
+                {
+                    DrawAuthoringRecoverySection();
+                }
 
-            EditorGUILayout.EndScrollView();
+                showToolShortcuts = EditorGUILayout.Foldout(showToolShortcuts, "专项工具快捷入口", true);
+                if (showToolShortcuts)
+                {
+                    DrawToolShortcutsSection();
+                }
+            }
+            finally
+            {
+                EditorGUILayout.EndScrollView();
+            }
         }
 
         /// <summary>
@@ -201,6 +213,7 @@ namespace TowerDefense.Editor
 
         private void DrawSceneContextSection()
         {
+            EditorGUILayout.HelpBox(TowerDefenseAuthoringSceneContext.GetOrCreate().BuildSummary(), MessageType.None);
             currentGame = (TowerDefenseGame)EditorGUILayout.ObjectField("总控", currentGame, typeof(TowerDefenseGame), true);
             currentWaveSpawner = (WaveSpawner)EditorGUILayout.ObjectField("刷怪器", currentWaveSpawner, typeof(WaveSpawner), true);
             currentMap = (BattlefieldMapDefinition)EditorGUILayout.ObjectField("地图入口", currentMap, typeof(BattlefieldMapDefinition), true);
@@ -452,6 +465,51 @@ namespace TowerDefense.Editor
             }
         }
 
+        private void DrawAuthoringRecoverySection()
+        {
+            EditorGUILayout.HelpBox(
+                "在执行批量生成、批量清理、拓扑重构或大规模路段重建前，建议先留一个作者快照。恢复最近快照会直接把当前场景文件替换回最近一次快照版本，所以这是高风险动作。",
+                MessageType.Warning);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("创建当前场景快照", GUILayout.Height(28f)))
+                {
+                    if (TowerDefenseAuthoringSnapshotUtility.TryCreateSnapshotForActiveScene(out string snapshotPath, out string errorMessage))
+                    {
+                        EditorUtility.DisplayDialog("快照已创建", $"已创建作者快照：\n{snapshotPath}", "确定");
+                    }
+                    else
+                    {
+                        EditorUtility.DisplayDialog("快照创建失败", errorMessage, "确定");
+                    }
+                }
+
+                if (GUILayout.Button("恢复最近快照", GUILayout.Height(28f)))
+                {
+                    bool confirmed = EditorUtility.DisplayDialog(
+                        "恢复最近快照",
+                        "这个操作会用最近的作者快照直接覆盖当前场景文件。是否继续？",
+                        "继续",
+                        "取消");
+                    if (!confirmed)
+                    {
+                        return;
+                    }
+
+                    if (TowerDefenseAuthoringSnapshotUtility.TryRestoreLatestSnapshotForActiveScene(out string restoredFromPath, out string errorMessage))
+                    {
+                        AdoptCurrentSceneContext();
+                        EditorUtility.DisplayDialog("已恢复最近快照", $"已从以下快照恢复场景：\n{restoredFromPath}", "确定");
+                    }
+                    else
+                    {
+                        EditorUtility.DisplayDialog("恢复失败", errorMessage, "确定");
+                    }
+                }
+            }
+        }
+
         private void RefreshSmokeTestReport()
         {
             if (!LevelSceneSanityProbe.TryBuildLatestSummary(out latestSmokeSummary, out latestSmokeMessageType))
@@ -535,12 +593,12 @@ namespace TowerDefense.Editor
 
         private void AdoptCurrentSceneContext()
         {
-            Scene activeScene = SceneManager.GetActiveScene();
-            currentGame = FindFirstComponentInScene<TowerDefenseGame>(activeScene);
-            currentWaveSpawner = FindFirstComponentInScene<WaveSpawner>(activeScene);
-            currentMap = FindFirstComponentInScene<BattlefieldMapDefinition>(activeScene);
-            currentBuildZone = FindFirstComponentInScene<BuildZone>(activeScene);
-            currentCamera = FindFirstComponentInScene<Camera>(activeScene);
+            TowerDefenseAuthoringSceneContext context = TowerDefenseAuthoringSceneContext.CaptureActiveSceneContext();
+            currentGame = context.CurrentGame;
+            currentWaveSpawner = context.CurrentWaveSpawner;
+            currentMap = context.CurrentMap;
+            currentBuildZone = context.CurrentBuildZone;
+            currentCamera = context.CurrentCamera;
         }
 
         private static T FindFirstComponentInScene<T>(Scene scene) where T : Component

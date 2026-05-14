@@ -107,6 +107,7 @@ namespace TowerDefense.Editor
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 EditorGUILayout.LabelField("场景归属", EditorStyles.boldLabel);
+                EditorGUILayout.HelpBox(TowerDefenseAuthoringSceneContext.GetOrCreate().BuildSummary(), MessageType.None);
                 targetMap = (BattlefieldMapDefinition)EditorGUILayout.ObjectField("目标地图", targetMap, typeof(BattlefieldMapDefinition), true);
                 autoAdoptActiveScene = EditorGUILayout.Toggle("自动接管当前场景", autoAdoptActiveScene);
                 sortEntriesByName = EditorGUILayout.Toggle("按名称排序", sortEntriesByName);
@@ -191,6 +192,28 @@ namespace TowerDefense.Editor
                     if (GUILayout.Button("创建敌人路径"))
                     {
                         CreateEnemyPath(scene);
+                    }
+                }
+
+                EditorGUILayout.Space(6f);
+                EditorGUILayout.HelpBox(
+                    "下面这些删除按钮只针对关卡拓扑结构本身：出怪口、防御点、敌人路径。适合在拓扑搭乱后快速删干净重来。",
+                    MessageType.Warning);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("删除全部出怪口"))
+                    {
+                        DeleteAllSpawnGates(scene);
+                    }
+
+                    if (GUILayout.Button("删除全部防御点"))
+                    {
+                        DeleteAllDefensePoints(scene);
+                    }
+
+                    if (GUILayout.Button("删除全部敌人路径"))
+                    {
+                        DeleteAllEnemyPaths(scene);
                     }
                 }
             }
@@ -447,6 +470,45 @@ namespace TowerDefense.Editor
             EditorGUIUtility.PingObject(pathObject);
         }
 
+        private void DeleteAllSpawnGates(Scene scene)
+        {
+            foreach (EnemySpawnGate spawnGate in CollectSpawnGates(scene))
+            {
+                if (spawnGate != null)
+                {
+                    Undo.DestroyObjectImmediate(spawnGate.gameObject);
+                }
+            }
+
+            CollectSceneReferencesOnTargetMap();
+        }
+
+        private void DeleteAllDefensePoints(Scene scene)
+        {
+            foreach (DefensePointFlag defensePoint in CollectDefensePoints(scene))
+            {
+                if (defensePoint != null)
+                {
+                    Undo.DestroyObjectImmediate(defensePoint.gameObject);
+                }
+            }
+
+            CollectSceneReferencesOnTargetMap();
+        }
+
+        private void DeleteAllEnemyPaths(Scene scene)
+        {
+            foreach (EnemyPath enemyPath in CollectEnemyPaths(scene))
+            {
+                if (enemyPath != null)
+                {
+                    Undo.DestroyObjectImmediate(enemyPath.gameObject);
+                }
+            }
+
+            CollectSceneReferencesOnTargetMap();
+        }
+
         private void TryAdoptActiveSceneMap(bool force = false)
         {
             if (!force && !autoAdoptActiveScene && targetMap != null)
@@ -454,16 +516,10 @@ namespace TowerDefense.Editor
                 return;
             }
 
-            Scene activeScene = SceneManager.GetActiveScene();
-            if (!activeScene.IsValid())
+            TowerDefenseAuthoringSceneContext context = TowerDefenseAuthoringSceneContext.CaptureActiveSceneContext();
+            if (context.CurrentMap != null)
             {
-                return;
-            }
-
-            BattlefieldMapDefinition sceneMap = TowerDefenseMapToolkitUtility.FindFirstComponentInScene<BattlefieldMapDefinition>(activeScene);
-            if (sceneMap != null)
-            {
-                targetMap = sceneMap;
+                targetMap = context.CurrentMap;
             }
         }
 

@@ -97,6 +97,7 @@ namespace TowerDefense.Editor
         [SerializeField] private float waveIntervalMultiplier = 0.95f;
         [SerializeField] private float buildCostMultiplier = 1.1f;
         [SerializeField] private float upgradeCostMultiplier = 1.1f;
+        [SerializeField] private Vector2 scrollPosition;
 
         [MenuItem("Tools/Tower Defense/Authoring/关卡数值调参台")]
         public static void OpenWindow()
@@ -113,81 +114,89 @@ namespace TowerDefense.Editor
 
         private void OnGUI()
         {
-            DrawHeader();
-            EditorGUILayout.Space(8f);
-
-            if (currentGame == null && currentWaveSpawner == null && currentMap == null)
+            scrollPosition = EditorGUILayout.BeginScrollView(scrollPosition);
+            try
             {
-                EditorGUILayout.HelpBox(
-                    "当前还没有接管关卡上下文。请先打开一个战斗关卡场景，再点“接管当前场景”。",
-                    MessageType.Warning);
-                return;
+                DrawHeader();
+                EditorGUILayout.Space(8f);
+
+                if (currentGame == null && currentWaveSpawner == null && currentMap == null)
+                {
+                    EditorGUILayout.HelpBox(
+                        "当前还没有接管关卡上下文。请先打开一个战斗关卡场景，再点“接管当前场景”。",
+                        MessageType.Warning);
+                    return;
+                }
+
+                DrawSceneSummary();
+                EditorGUILayout.Space(8f);
+
+                showPresets = EditorGUILayout.Foldout(showPresets, "难度预设", true);
+                if (showPresets)
+                {
+                    DrawPresetSection();
+                }
+
+                showCoreEconomy = EditorGUILayout.Foldout(showCoreEconomy, "核心经济与部署规则", true);
+                if (showCoreEconomy)
+                {
+                    DrawCoreEconomySection();
+                }
+
+                showWaveTuning = EditorGUILayout.Foldout(showWaveTuning, "波次调参", true);
+                if (showWaveTuning)
+                {
+                    DrawWaveSection();
+                }
+
+                showRelayTuning = EditorGUILayout.Foldout(showRelayTuning, "继电器原型调参", true);
+                if (showRelayTuning)
+                {
+                    DrawRelaySection();
+                }
+
+                showSingleTargetTuning = EditorGUILayout.Foldout(showSingleTargetTuning, "单体塔调参", true);
+                if (showSingleTargetTuning)
+                {
+                    DrawDefenseTowerSection(
+                        "singleTargetTowerPrototypeReference",
+                        "singleTargetTuning",
+                        "单体塔原型资源");
+                }
+
+                showSlowFieldTuning = EditorGUILayout.Foldout(showSlowFieldTuning, "减速塔调参", true);
+                if (showSlowFieldTuning)
+                {
+                    DrawDefenseTowerSection(
+                        "slowFieldTowerPrototypeReference",
+                        "slowFieldTuning",
+                        "减速塔原型资源");
+                }
+
+                showBombardTuning = EditorGUILayout.Foldout(showBombardTuning, "炸弹塔调参", true);
+                if (showBombardTuning)
+                {
+                    DrawDefenseTowerSection(
+                        "bombardTowerPrototypeReference",
+                        "bombardTuning",
+                        "炸弹塔原型资源");
+                }
+
+                showQuickBatchTools = EditorGUILayout.Foldout(showQuickBatchTools, "批量调参快捷工具", true);
+                if (showQuickBatchTools)
+                {
+                    DrawQuickBatchSection();
+                }
+
+                showAdvancedRawEditors = EditorGUILayout.Foldout(showAdvancedRawEditors, "高级原始参数面板", true);
+                if (showAdvancedRawEditors)
+                {
+                    DrawAdvancedRawEditors();
+                }
             }
-
-            DrawSceneSummary();
-            EditorGUILayout.Space(8f);
-
-            showPresets = EditorGUILayout.Foldout(showPresets, "难度预设", true);
-            if (showPresets)
+            finally
             {
-                DrawPresetSection();
-            }
-
-            showCoreEconomy = EditorGUILayout.Foldout(showCoreEconomy, "核心经济与部署规则", true);
-            if (showCoreEconomy)
-            {
-                DrawCoreEconomySection();
-            }
-
-            showWaveTuning = EditorGUILayout.Foldout(showWaveTuning, "波次调参", true);
-            if (showWaveTuning)
-            {
-                DrawWaveSection();
-            }
-
-            showRelayTuning = EditorGUILayout.Foldout(showRelayTuning, "继电器原型调参", true);
-            if (showRelayTuning)
-            {
-                DrawRelaySection();
-            }
-
-            showSingleTargetTuning = EditorGUILayout.Foldout(showSingleTargetTuning, "单体塔调参", true);
-            if (showSingleTargetTuning)
-            {
-                DrawDefenseTowerSection(
-                    "singleTargetTowerPrototypeReference",
-                    "singleTargetTuning",
-                    "单体塔原型资源");
-            }
-
-            showSlowFieldTuning = EditorGUILayout.Foldout(showSlowFieldTuning, "减速塔调参", true);
-            if (showSlowFieldTuning)
-            {
-                DrawDefenseTowerSection(
-                    "slowFieldTowerPrototypeReference",
-                    "slowFieldTuning",
-                    "减速塔原型资源");
-            }
-
-            showBombardTuning = EditorGUILayout.Foldout(showBombardTuning, "炸弹塔调参", true);
-            if (showBombardTuning)
-            {
-                DrawDefenseTowerSection(
-                    "bombardTowerPrototypeReference",
-                    "bombardTuning",
-                    "炸弹塔原型资源");
-            }
-
-            showQuickBatchTools = EditorGUILayout.Foldout(showQuickBatchTools, "批量调参快捷工具", true);
-            if (showQuickBatchTools)
-            {
-                DrawQuickBatchSection();
-            }
-
-            showAdvancedRawEditors = EditorGUILayout.Foldout(showAdvancedRawEditors, "高级原始参数面板", true);
-            if (showAdvancedRawEditors)
-            {
-                DrawAdvancedRawEditors();
+                EditorGUILayout.EndScrollView();
             }
         }
 
@@ -224,6 +233,7 @@ namespace TowerDefense.Editor
         {
             Scene activeScene = SceneManager.GetActiveScene();
             string sceneName = string.IsNullOrWhiteSpace(activeScene.name) ? "(无场景)" : activeScene.name;
+            TowerDefenseAuthoringSceneContext sharedContext = TowerDefenseAuthoringSceneContext.GetOrCreate();
 
             int gateCount = currentMap != null ? currentMap.SpawnGateCount : 0;
             int defenseCount = currentMap != null ? currentMap.DefensePointCount : 0;
@@ -234,6 +244,8 @@ namespace TowerDefense.Editor
                 $"出怪口：{gateCount} | 防御点：{defenseCount} | 继电器上限：{relayLimit}\n" +
                 $"这个窗口会直接修改当前关卡场景，以及该场景引用到的原型 Prefab / 资产。",
                 MessageType.Info);
+
+            EditorGUILayout.HelpBox(sharedContext.BuildSummary(), MessageType.None);
         }
 
         /// <summary>
@@ -881,10 +893,10 @@ namespace TowerDefense.Editor
 
         private void AdoptCurrentSceneContext()
         {
-            Scene activeScene = SceneManager.GetActiveScene();
-            currentGame ??= FindFirstComponentInScene<TowerDefenseGame>(activeScene);
-            currentWaveSpawner ??= FindFirstComponentInScene<WaveSpawner>(activeScene);
-            currentMap ??= FindFirstComponentInScene<BattlefieldMapDefinition>(activeScene);
+            TowerDefenseAuthoringSceneContext context = TowerDefenseAuthoringSceneContext.CaptureActiveSceneContext();
+            currentGame = context.CurrentGame;
+            currentWaveSpawner = context.CurrentWaveSpawner;
+            currentMap = context.CurrentMap;
         }
 
         private RelayTower ResolveRelayPrototype()

@@ -14,6 +14,7 @@ Scope: 仅用于本项目 `【塔防开发】` 相关任务
 - 地图工具手册：`docs/map-development-tools-manual.md`
 - 地图工具图解手册：`docs/map-toolchain-complete-level-workflow-illustrated.md`
 - 当前任务卡：`docs/current-task-card.md`
+- 当前任务卡 JSON：`docs/current-task-card.json`
 - 工作流上下文包：`docs/workflow-context-packages.md`
 - 上下文压缩与知识沉淀方案：`docs/context-compression-and-knowledge-plan.md`
 - 记忆整理检查清单：`docs/dream-maintenance-checklist.md`
@@ -101,10 +102,12 @@ Scope: 仅用于本项目 `【塔防开发】` 相关任务
 | `docs/ai-memory/td-memory-hygiene-and-lifecycle.md` | 66 | 分层记忆、轻量整理、历史检索与压缩方法 |
 | `docs/ai-workspace-bootstrap-methodology.md` | 74 | AI 工作区搭建、同步和方法论文档 |
 | `docs/current-task-card.md` | 21 | 当前轮任务卡，约束本轮只做什么/不做什么 |
+| `docs/current-task-card.json` | 10 | 机器可检查的最小任务闸门数据 |
 | `docs/workflow-context-packages.md` | 70 | 按任务域装配最小上下文的上下文包文档 |
 | `docs/context-compression-and-knowledge-plan.md` | 55 | L1/L2/L3 协同、人工压缩和长期知识沉淀方案 |
 | `docs/dream-maintenance-checklist.md` | 40 | 定期整理记忆与 skill 层的人工 checklist |
 | `docs/ai-memory/td-decision-log.md` | 42 | 长期决策日志与变更原因记录 |
+| `tools/check-task-gate.ps1` | 40 | 高风险写操作前的机器可检查执行闸门 |
 | `docs/map-development-tools-manual.md` | 552 | 地图工具详细使用手册 |
 | `docs/map-toolchain-complete-level-workflow.md` | 455 | 从 0 到 1 制作完整关卡的操作教程 |
 | `docs/map-toolchain-complete-level-workflow-illustrated.md` | 262 | 配图版地图工具链工作流教程 |
@@ -118,6 +121,7 @@ Scope: 仅用于本项目 `【塔防开发】` 相关任务
 - 如果任务涉及接单确认、范围复述、执行边界：读 `td-agent-task-intake-protocol.md`
 - 如果任务涉及分层记忆、清理、压缩和历史检索：读 `td-memory-hygiene-and-lifecycle.md`
 - 如果任务涉及当前轮边界和完成标准：读 `docs/current-task-card.md`
+- 如果任务涉及机器可检查的执行闸门：读 `docs/current-task-card.json` 和 `tools/check-task-gate.ps1`
 - 如果任务涉及按任务域装配最小上下文：读 `docs/workflow-context-packages.md`
 - 如果任务涉及知识沉淀、L1/L2/L3 分工或压缩策略：读 `docs/context-compression-and-knowledge-plan.md`
 - 如果任务涉及定期清理和规则收口：读 `docs/dream-maintenance-checklist.md`

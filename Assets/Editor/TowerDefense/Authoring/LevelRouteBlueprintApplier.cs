@@ -69,18 +69,6 @@ namespace TowerDefense.Editor
             public Vector2 Position;
         }
 
-        [MenuItem("Tools/Tower Defense/Authoring/Apply Level03 Advanced Blueprint")]
-        public static void ApplyLevel03AdvancedBlueprintMenu()
-        {
-            ApplyLevel03AdvancedBlueprint();
-        }
-
-        [MenuItem("Tools/Tower Defense/Authoring/Apply Level04 Expanded Blueprint")]
-        public static void ApplyLevel04ExpandedBlueprintMenu()
-        {
-            ApplyLevel04ExpandedBlueprint();
-        }
-
         /// <summary>
         /// Lets the already-open Unity editor apply the blueprint automatically once.
         ///
@@ -168,10 +156,12 @@ namespace TowerDefense.Editor
                 Transform pathVisualsRoot = FindRequiredTransform(scene, PathVisualsName);
                 Camera mainCamera = FindRequiredComponent<Camera>(scene, MainCameraName);
 
-                // The new Level03 target is a much harder three-gate single-core map.
-                // The space is expanded so the three routes can stay separate for longer.
-                buildZone.transform.localScale = new Vector3(80f, 44f, 1f);
-                mainCamera.orthographicSize = 18.5f;
+                // Level03 should only step slightly beyond Level02:
+                // - keep three spawn gates
+                // - keep one defense point
+                // - add a modest third lane instead of exploding route complexity
+                buildZone.transform.localScale = new Vector3(52f, 32f, 1f);
+                mainCamera.orthographicSize = 10.8f;
 
                 RouteBlueprint[] routes =
                 {
@@ -182,19 +172,16 @@ namespace TowerDefense.Editor
                         GateDisplayName = "Upper Main Spawn Gate",
                         PathObjectName = "EnemyPath",
                         DefensePointObjectName = "DefensePoint_Core",
-                        WaypointNames = BuildWaypointNames("Waypoint_", 10),
+                        WaypointNames = BuildWaypointNames("Waypoint_", 7),
                         Waypoints = new[]
                         {
-                            new Vector2(-32f, 14f),
-                            new Vector2(-20f, 14f),
-                            new Vector2(-20f, 6f),
-                            new Vector2(-2f, 6f),
-                            new Vector2(-2f, 14f),
-                            new Vector2(12f, 14f),
-                            new Vector2(12f, 0f),
-                            new Vector2(24f, 0f),
-                            new Vector2(24f, -12f),
-                            new Vector2(30f, -12f)
+                            new Vector2(-20f, 8f),
+                            new Vector2(-12f, 8f),
+                            new Vector2(-12f, 3f),
+                            new Vector2(2f, 3f),
+                            new Vector2(2f, -1f),
+                            new Vector2(16f, -1f),
+                            new Vector2(24f, -6f)
                         }
                     },
                     new RouteBlueprint
@@ -204,18 +191,15 @@ namespace TowerDefense.Editor
                         GateDisplayName = "Lower Backstreet Spawn Gate",
                         PathObjectName = "EnemyPath_B",
                         DefensePointObjectName = "DefensePoint_Core",
-                        WaypointNames = BuildWaypointNames("Waypoint_B", 9),
+                        WaypointNames = BuildWaypointNames("Waypoint_B", 6),
                         Waypoints = new[]
                         {
-                            new Vector2(-32f, -14f),
-                            new Vector2(-32f, -2f),
-                            new Vector2(-18f, -2f),
-                            new Vector2(-18f, -14f),
-                            new Vector2(4f, -14f),
-                            new Vector2(4f, -6f),
-                            new Vector2(16f, -6f),
-                            new Vector2(16f, -12f),
-                            new Vector2(30f, -12f)
+                            new Vector2(-20f, -8f),
+                            new Vector2(-20f, -3f),
+                            new Vector2(-6f, -3f),
+                            new Vector2(-6f, -6f),
+                            new Vector2(10f, -6f),
+                            new Vector2(24f, -6f)
                         }
                     },
                     new RouteBlueprint
@@ -225,18 +209,15 @@ namespace TowerDefense.Editor
                         GateDisplayName = "Upper Mid Fast Spawn Gate",
                         PathObjectName = "EnemyPath_C",
                         DefensePointObjectName = "DefensePoint_Core",
-                        WaypointNames = BuildWaypointNames("Waypoint_C", 9),
+                        WaypointNames = BuildWaypointNames("Waypoint_C", 6),
                         Waypoints = new[]
                         {
-                            new Vector2(-10f, 16f),
-                            new Vector2(-10f, 8f),
-                            new Vector2(2f, 8f),
-                            new Vector2(2f, 16f),
-                            new Vector2(18f, 16f),
-                            new Vector2(18f, -4f),
-                            new Vector2(26f, -4f),
-                            new Vector2(26f, -12f),
-                            new Vector2(30f, -12f)
+                            new Vector2(-8f, 10f),
+                            new Vector2(-8f, 4f),
+                            new Vector2(8f, 4f),
+                            new Vector2(8f, -2f),
+                            new Vector2(20f, -2f),
+                            new Vector2(24f, -6f)
                         }
                     }
                 };
@@ -248,7 +229,7 @@ namespace TowerDefense.Editor
                         ObjectName = "DefensePoint_Core",
                         PointId = "Core",
                         DisplayName = "Core Defense Point",
-                        Position = new Vector2(30f, -12f)
+                        Position = new Vector2(24f, -6f)
                     }
                 };
 
@@ -259,7 +240,7 @@ namespace TowerDefense.Editor
                     pathVisualsRoot,
                     routes,
                     defenses,
-                    relayLimit: 7);
+                    relayLimit: 6);
             }
 
             RefreshSceneAuthoringVisuals(scene);
@@ -276,11 +257,12 @@ namespace TowerDefense.Editor
                 Transform pathVisualsRoot = FindRequiredTransform(scene, PathVisualsName);
                 Camera mainCamera = FindRequiredComponent<Camera>(scene, MainCameraName);
 
-                // The new Level04 target is intentionally huge.
-                // The user asked for roughly double the map area plus more route curvature,
-                // so both the build zone and the camera framing must grow with the route plan.
-                buildZone.transform.localScale = new Vector3(140f, 84f, 1f);
-                mainCamera.orthographicSize = 22f;
+                // Level04 should be the next step after Level03, not a giant difficulty spike:
+                // - keep four spawn gates and two defense points
+                // - simplify the route bends
+                // - keep the map only modestly larger than Level03
+                buildZone.transform.localScale = new Vector3(68f, 40f, 1f);
+                mainCamera.orthographicSize = 13.2f;
 
                 RouteBlueprint[] routes =
                 {
@@ -291,20 +273,16 @@ namespace TowerDefense.Editor
                         GateDisplayName = "North Outer Spawn Gate",
                         PathObjectName = "EnemyPath",
                         DefensePointObjectName = "DefensePoint_Alpha",
-                        WaypointNames = BuildWaypointNames("Waypoint_", 11),
+                        WaypointNames = BuildWaypointNames("Waypoint_", 7),
                         Waypoints = new[]
                         {
-                            new Vector2(-50f, 24f),
-                            new Vector2(-36f, 24f),
-                            new Vector2(-36f, 10f),
-                            new Vector2(-20f, 10f),
-                            new Vector2(-20f, 20f),
-                            new Vector2(-4f, 20f),
-                            new Vector2(-4f, 8f),
-                            new Vector2(14f, 8f),
-                            new Vector2(14f, 14f),
-                            new Vector2(30f, 14f),
-                            new Vector2(46f, 14f)
+                            new Vector2(-28f, 12f),
+                            new Vector2(-16f, 12f),
+                            new Vector2(-16f, 6f),
+                            new Vector2(0f, 6f),
+                            new Vector2(0f, 10f),
+                            new Vector2(18f, 10f),
+                            new Vector2(28f, 10f)
                         }
                     },
                     new RouteBlueprint
@@ -314,18 +292,14 @@ namespace TowerDefense.Editor
                         GateDisplayName = "Upper Exchange Spawn Gate",
                         PathObjectName = "EnemyPath_C",
                         DefensePointObjectName = "DefensePoint_Alpha",
-                        WaypointNames = BuildWaypointNames("Waypoint_C", 9),
+                        WaypointNames = BuildWaypointNames("Waypoint_C", 5),
                         Waypoints = new[]
                         {
-                            new Vector2(-12f, 28f),
-                            new Vector2(-12f, 16f),
-                            new Vector2(0f, 16f),
-                            new Vector2(0f, 4f),
-                            new Vector2(18f, 4f),
-                            new Vector2(18f, 10f),
-                            new Vector2(28f, 10f),
-                            new Vector2(28f, 14f),
-                            new Vector2(46f, 14f)
+                            new Vector2(-6f, 14f),
+                            new Vector2(-6f, 8f),
+                            new Vector2(10f, 8f),
+                            new Vector2(10f, 10f),
+                            new Vector2(28f, 10f)
                         }
                     },
                     new RouteBlueprint
@@ -335,20 +309,16 @@ namespace TowerDefense.Editor
                         GateDisplayName = "South Outer Spawn Gate",
                         PathObjectName = "EnemyPath_B",
                         DefensePointObjectName = "DefensePoint_Beta",
-                        WaypointNames = BuildWaypointNames("Waypoint_B", 11),
+                        WaypointNames = BuildWaypointNames("Waypoint_B", 7),
                         Waypoints = new[]
                         {
-                            new Vector2(-50f, -24f),
-                            new Vector2(-36f, -24f),
-                            new Vector2(-36f, -10f),
-                            new Vector2(-20f, -10f),
-                            new Vector2(-20f, -20f),
-                            new Vector2(-4f, -20f),
-                            new Vector2(-4f, -8f),
-                            new Vector2(14f, -8f),
-                            new Vector2(14f, -14f),
-                            new Vector2(30f, -14f),
-                            new Vector2(46f, -14f)
+                            new Vector2(-28f, -12f),
+                            new Vector2(-16f, -12f),
+                            new Vector2(-16f, -6f),
+                            new Vector2(0f, -6f),
+                            new Vector2(0f, -10f),
+                            new Vector2(18f, -10f),
+                            new Vector2(28f, -10f)
                         }
                     },
                     new RouteBlueprint
@@ -358,18 +328,14 @@ namespace TowerDefense.Editor
                         GateDisplayName = "Lower Exchange Spawn Gate",
                         PathObjectName = "EnemyPath_D",
                         DefensePointObjectName = "DefensePoint_Beta",
-                        WaypointNames = BuildWaypointNames("Waypoint_D", 9),
+                        WaypointNames = BuildWaypointNames("Waypoint_D", 5),
                         Waypoints = new[]
                         {
-                            new Vector2(-12f, -28f),
-                            new Vector2(-12f, -16f),
-                            new Vector2(0f, -16f),
-                            new Vector2(0f, -4f),
-                            new Vector2(18f, -4f),
-                            new Vector2(18f, -10f),
-                            new Vector2(28f, -10f),
-                            new Vector2(28f, -14f),
-                            new Vector2(46f, -14f)
+                            new Vector2(-6f, -14f),
+                            new Vector2(-6f, -8f),
+                            new Vector2(10f, -8f),
+                            new Vector2(10f, -10f),
+                            new Vector2(28f, -10f)
                         }
                     }
                 };
@@ -381,14 +347,14 @@ namespace TowerDefense.Editor
                         ObjectName = "DefensePoint_Alpha",
                         PointId = "Alpha",
                         DisplayName = "Upper Core",
-                        Position = new Vector2(46f, 14f)
+                        Position = new Vector2(28f, 10f)
                     },
                     new DefenseBlueprint
                     {
                         ObjectName = "DefensePoint_Beta",
                         PointId = "Beta",
                         DisplayName = "Lower Core",
-                        Position = new Vector2(46f, -14f)
+                        Position = new Vector2(28f, -10f)
                     }
                 };
 
@@ -399,7 +365,7 @@ namespace TowerDefense.Editor
                     pathVisualsRoot,
                     routes,
                     defenses,
-                    relayLimit: 8);
+                    relayLimit: 7);
             }
 
             RefreshSceneAuthoringVisuals(scene);
