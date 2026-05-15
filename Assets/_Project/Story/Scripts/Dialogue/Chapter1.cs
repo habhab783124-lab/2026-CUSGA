@@ -51,6 +51,7 @@ public sealed class Chapter1 : MonoBehaviour
     [SerializeField] private bool loopMusic = true;
 
     private AudioSource audioSource;
+    private NarrationPresenter narrationPresenter;
     private Canvas overlayCanvas;
     private TextMeshProUGUI npcText;
     private CanvasGroup npcTextCanvasGroup;
@@ -61,7 +62,6 @@ public sealed class Chapter1 : MonoBehaviour
     private bool isNpcTyping;
     private bool isNpcPaused;
     private string currentNpcFullText = string.Empty;
-    private DialogueInlineEffects.ParsedLine currentNpcParsedLine;
     private DialogueLine pendingPlayerLine;
     private Chapter1AdvanceStage advanceStage;
     private AudioSource npcTypingAudioSource;
@@ -73,11 +73,9 @@ public sealed class Chapter1 : MonoBehaviour
         EnsureDialogueRunner();
         EnsurePlayerAnchor();
         EnsureCenterBubbleScreen();
-        EnsureNpcTextUi();
+        EnsureNarrationPresenter();
+        ConfigureNarrationPresenter();
         EnsureAudioSource();
-        EnsureNpcTypingAudioSource();
-        ApplyFont();
-        ApplyNpcTextStyle();
         UpdatePlayerBubbleAnchor();
         HideNpcTextImmediate();
 
@@ -94,11 +92,10 @@ public sealed class Chapter1 : MonoBehaviour
         {
             EnsurePlayerAnchor();
             EnsureCenterBubbleScreen();
-            EnsureNpcTextUi();
+            EnsureNarrationPresenter();
         }
 
-        ApplyFont();
-        ApplyNpcTextStyle();
+        ConfigureNarrationPresenter();
 
         if (audioSource != null)
         {
@@ -117,7 +114,7 @@ public sealed class Chapter1 : MonoBehaviour
         if (dialogueFontAsset == null)
         {
             dialogueFontAsset = TryLoadDialogueFont();
-            ApplyFont();
+            ConfigureNarrationPresenter();
         }
 
         PlayMusic();
@@ -133,16 +130,12 @@ public sealed class Chapter1 : MonoBehaviour
             return;
         }
 
-        if (isNpcTyping)
+        if (narrationPresenter != null && narrationPresenter.IsTyping)
         {
-            if (isNpcPaused)
+            if (narrationPresenter.TryHandleAdvanceInput())
             {
-                ResumeNpcTyping();
                 return;
             }
-
-            CompleteNpcTyping();
-            return;
         }
 
         if (!waitingForAdvanceClick)
@@ -506,7 +499,6 @@ public sealed class Chapter1 : MonoBehaviour
         advanceStage = Chapter1AdvanceStage.WaitingPlayerStart;
         waitingForAdvanceClick = true;
         currentNpcFullText = string.Empty;
-        currentNpcParsedLine = null;
     }
 
     private void EndDialogue()
@@ -532,120 +524,42 @@ public sealed class Chapter1 : MonoBehaviour
 
     private void ShowNpcText(string content)
     {
-        EnsureNpcTextUi();
-        ApplyFont();
-        ApplyNpcTextStyle();
         currentNpcFullText = content ?? string.Empty;
-        currentNpcParsedLine = ParseNpcLine(currentNpcFullText);
-        npcText.text = string.Empty;
-        npcText.maxVisibleCharacters = 0;
-        npcText.gameObject.SetActive(true);
-        if (npcTextCanvasGroup != null)
-        {
-            npcTextCanvasGroup.alpha = 1f;
-        }
     }
 
     private void StartNpcTyping(string content)
     {
-        StopNpcTypingRoutine();
         currentNpcFullText = content ?? string.Empty;
-        currentNpcParsedLine = ParseNpcLine(currentNpcFullText);
-        npcTypingSfxPlayer?.Reset();
-        npcTypingRoutine = StartCoroutine(TypeNpcTextRoutine(currentNpcParsedLine));
-    }
-
-    private IEnumerator TypeNpcTextRoutine(DialogueInlineEffects.ParsedLine parsedLine)
-    {
-        isNpcTyping = true;
-        isNpcPaused = false;
-
-        if (npcText == null)
+        if (narrationPresenter != null)
         {
-            isNpcTyping = false;
-            npcTypingRoutine = null;
-            yield break;
+            narrationPresenter.PlayText(currentNpcFullText, OnNpcTypingFinished);
+            return;
         }
 
-        string displayText = parsedLine != null ? parsedLine.DisplayText : string.Empty;
-        List<DialogueInlineEffects.VisibleCharacter> visibleCharacters =
-            parsedLine != null ? parsedLine.VisibleCharacters : null;
-
-        npcText.richText = true;
-        npcText.text = displayText;
-        npcText.maxVisibleCharacters = 0;
-        npcText.ForceMeshUpdate();
-
-        if (visibleCharacters == null || visibleCharacters.Count == 0)
-        {
-            isNpcTyping = false;
-            waitingForAdvanceClick = true;
-            advanceStage = Chapter1AdvanceStage.WaitingLineAdvance;
-            npcTypingRoutine = null;
-            yield break;
-        }
-
-        int visible = 0;
-        int lastPauseIndex = -1;
-        while (visible < visibleCharacters.Count)
-        {
-            if (isNpcPaused)
-            {
-                yield return null;
-                continue;
-            }
-
-            DialogueInlineEffects.VisibleCharacter visibleCharacter = visibleCharacters[visible];
-            if (visibleCharacter.PauseBefore && lastPauseIndex != visible)
-            {
-                isNpcPaused = true;
-                lastPauseIndex = visible;
-                continue;
-            }
-
-            npcTypingSfxPlayer?.ApplyPool(visibleCharacter.TypingSfxPoolId);
-            visible++;
-            npcText.maxVisibleCharacters = visible;
-            npcTypingSfxPlayer?.Play(npcText, visible - 1, visibleCharacter.FontSizeScale);
-
-            float delay = Mathf.Max(0f, visibleCharacter.SecondsPerCharacter);
-            if (delay > 0f)
-            {
-                yield return new WaitForSeconds(delay);
-            }
-            else
-            {
-                yield return null;
-            }
-        }
-
-        npcText.maxVisibleCharacters = int.MaxValue;
-        isNpcTyping = false;
-        isNpcPaused = false;
-        waitingForAdvanceClick = true;
-        advanceStage = Chapter1AdvanceStage.WaitingLineAdvance;
-        npcTypingRoutine = null;
+        OnNpcTypingFinished();
     }
 
     private void CompleteNpcTyping()
     {
-        StopNpcTypingRoutine();
-        if (npcText != null)
+        if (narrationPresenter != null)
         {
-            npcText.richText = true;
-            npcText.text = currentNpcParsedLine != null ? currentNpcParsedLine.DisplayText : string.Empty;
-            npcText.maxVisibleCharacters = int.MaxValue;
+            narrationPresenter.CompleteTyping();
+            return;
         }
 
-        isNpcTyping = false;
-        isNpcPaused = false;
-        waitingForAdvanceClick = true;
-        advanceStage = Chapter1AdvanceStage.WaitingLineAdvance;
+        OnNpcTypingFinished();
     }
 
-    private void ResumeNpcTyping()
+    private void HideNpcTextImmediate()
     {
-        isNpcPaused = false;
+        narrationPresenter?.Hide();
+        currentNpcFullText = string.Empty;
+    }
+
+    private void OnNpcTypingFinished()
+    {
+        waitingForAdvanceClick = true;
+        advanceStage = Chapter1AdvanceStage.WaitingLineAdvance;
     }
 
     private void StopNpcTypingRoutine()
@@ -660,29 +574,43 @@ public sealed class Chapter1 : MonoBehaviour
         isNpcPaused = false;
     }
 
-    private void HideNpcTextImmediate()
+    private void EnsureNarrationPresenter()
     {
-        StopNpcTypingRoutine();
-        currentNpcFullText = string.Empty;
-        currentNpcParsedLine = null;
-
-        if (npcText != null)
+        if (narrationPresenter == null)
         {
-            npcText.gameObject.SetActive(false);
-            npcText.text = string.Empty;
-            npcText.maxVisibleCharacters = 0;
+            narrationPresenter = GetComponent<NarrationPresenter>();
         }
 
-        if (npcTextCanvasGroup != null)
+        if (narrationPresenter == null)
         {
-            npcTextCanvasGroup.alpha = 0f;
+            narrationPresenter = gameObject.AddComponent<NarrationPresenter>();
         }
     }
 
-    private DialogueInlineEffects.ParsedLine ParseNpcLine(string content)
+    private void ConfigureNarrationPresenter()
     {
-        float baseFontSize = npcText != null && npcText.fontSize > 0f ? npcText.fontSize : npcTextFontSize;
-        return DialogueInlineEffects.Parse(content, npcSecondsPerCharacter, baseFontSize);
+        if (narrationPresenter == null)
+        {
+            return;
+        }
+
+        narrationPresenter.SetUiNames("Chapter1Canvas", "NpcDialogueBox", "NpcDialogueText");
+        narrationPresenter.ConfigureAppearance(
+            dialogueFontAsset,
+            npcTextSize,
+            npcTextScreenPosition,
+            0f,
+            Color.black,
+            npcTextColor,
+            npcTextFontSize,
+            npcTextFontSize,
+            Vector2.zero);
+        narrationPresenter.ConfigureLayout(
+            new Vector2(0.5f, 0.5f),
+            new Vector2(0.5f, 0.5f),
+            new Vector2(0.5f, 0.5f),
+            npcTextScreenPosition);
+        narrationPresenter.ConfigureTyping(npcSecondsPerCharacter, playerBubblePrefab, "Chapter1NpcTypingSfx");
     }
 
     private void UpdatePlayerBubbleAnchor()

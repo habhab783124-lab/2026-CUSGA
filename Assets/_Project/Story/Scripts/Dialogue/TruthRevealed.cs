@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -6,7 +5,7 @@ using UnityEngine.UI;
 
 public sealed class TruthRevealed : MonoBehaviour
 {
-    private static readonly List<DialogueLine> DefaultLines = new()
+    private static readonly List<DialogueLine> DefaultLines = new List<DialogueLine>
     {
         new DialogueLine { speaker = DialogueSpeaker.NPC, text = "末世事件发生后，可利用资源骤减至旧纪元时期的约百分之三。" },
         new DialogueLine { speaker = DialogueSpeaker.NPC, text = "伊甸地区在经历数年资源冲突与势力整合后，在原址上建立起封闭式都市系统——“伊甸”。" },
@@ -22,69 +21,61 @@ public sealed class TruthRevealed : MonoBehaviour
         new DialogueLine { speaker = DialogueSpeaker.NPC, text = "所以他们攻击城墙。他们要活下去。这是人类最本能的求生反应。" },
         new DialogueLine { speaker = DialogueSpeaker.NPC, text = "而城内的人，为了保护自己，为了保护“文明的种子”，开始杀戮。" },
         new DialogueLine { speaker = DialogueSpeaker.NPC, text = "决策者给清理者装上认知滤镜，让他们以为自己在杀怪物。" },
-        new DialogueLine { speaker = DialogueSpeaker.NPC, text = "因为如果清理者知道自己杀的是同胞，战后创伤会摧毁他们。而伊甸需要他们像机器一样运转，心无杂念地杀敌。" },
+        new DialogueLine { speaker = DialogueSpeaker.NPC, text = "如果清理者知道自己杀的是同胞，战后创伤会摧毁他们。而伊甸需要他们像机器一样运转，心无杂念地杀敌。" },
         new DialogueLine { speaker = DialogueSpeaker.NPC, text = "城内与城外。秩序与生存。理性与本能。" },
         new DialogueLine { speaker = DialogueSpeaker.NPC, text = "没有对错。只有选择。" }
     };
-
-    [Header("字体")]
+    [Header("Font")]
     [SerializeField] private TMP_FontAsset dialogueFontAsset;
 
-    [Header("台词")]
+    [Header("Lines")]
     [SerializeField] private bool useScriptDefaultLines = true;
-    [SerializeField] private List<DialogueLine> lines = new();
+    [SerializeField] private List<DialogueLine> lines = new List<DialogueLine>();
 
-    [Header("底部文本框")]
-    [SerializeField] private Vector2 boxSize = new(1280f, 220f);
-    [SerializeField] private Vector2 bottomOffset = new(0f, 120f);
+    [Header("Narration Box")]
+    [SerializeField] private Vector2 boxSize = new Vector2(1280f, 220f);
+    [SerializeField] private Vector2 bottomOffset = new Vector2(0f, 120f);
     [SerializeField] [Range(0f, 1f)] private float backgroundAlpha = 0.6f;
     [SerializeField] private Color backgroundColor = Color.black;
     [SerializeField] private Color textColor = Color.white;
     [SerializeField] private float minFontSize = 24f;
     [SerializeField] private float maxFontSize = 42f;
-    [SerializeField] private Vector2 textPadding = new(40f, 25f);
+    [SerializeField] private Vector2 textPadding = new Vector2(40f, 25f);
 
-    [Header("打字机")]
+    [Header("Typing")]
     [SerializeField] private float secondsPerChar = 0.03f;
     [SerializeField] private int mouseButton = 0;
     [SerializeField] private DialogueBubbleView typingSfxReferenceBubble;
 
-    [Header("过场")]
+    [Header("Transition")]
     [SerializeField] private SpriteRenderer background1;
     [SerializeField] private Image background1Image;
     [SerializeField] private float background1FadeDuration = 1f;
 
-    private Canvas canvas;
-    private RectTransform textBox;
-    private Image background;
-    private TextMeshProUGUI dialogueText;
-    private Coroutine typingRoutine;
+    private NarrationPresenter narrationPresenter;
     private Coroutine backgroundFadeRoutine;
-    private int currentLineIndex;
-    private bool isTyping;
-    private bool isTypingPaused;
-    private bool skipTyping;
-    private DialogueInlineEffects.ParsedLine currentParsedLine;
-    private AudioSource typingAudioSource;
-    private DialogueBubbleView.ExternalTypingSfxPlayer typingSfxPlayer;
 
-    public bool IsTyping => isTyping;
-    public bool HasReachedConversationEnd => lines != null && lines.Count > 0 && currentLineIndex >= lines.Count - 1;
+    public bool IsTyping => narrationPresenter != null && narrationPresenter.IsTyping;
+    public bool HasReachedConversationEnd => narrationPresenter != null && narrationPresenter.HasReachedEnd;
 
     private void Awake()
     {
         ApplyDefaultLinesIfNeeded();
-        EnsureVisuals();
         TryResolveSceneReferences();
-        EnsureTypingSfxSupport();
-        ApplyStyle();
+        EnsureNarrationPresenter();
+        ConfigureNarrationPresenter();
     }
 
     private void OnValidate()
     {
         ApplyDefaultLinesIfNeeded();
-        ApplyStyle();
-        RefreshShownText();
+        if (!Application.isPlaying)
+        {
+            EnsureNarrationPresenter();
+        }
+
+        ConfigureNarrationPresenter();
+        narrationPresenter?.RefreshShownText();
     }
 
     private void Start()
@@ -92,10 +83,10 @@ public sealed class TruthRevealed : MonoBehaviour
         if (dialogueFontAsset == null)
         {
             dialogueFontAsset = TryLoadDialogueFont();
-            ApplyStyle();
+            ConfigureNarrationPresenter();
         }
 
-        ShowLine(0);
+        narrationPresenter?.ShowLine(0);
     }
 
     private void Update()
@@ -105,21 +96,14 @@ public sealed class TruthRevealed : MonoBehaviour
             return;
         }
 
-        if (isTyping)
+        if (narrationPresenter != null && narrationPresenter.TryHandleAdvanceInput())
         {
-            if (isTypingPaused)
-            {
-                isTypingPaused = false;
-                return;
-            }
-
-            skipTyping = true;
             return;
         }
 
-        int nextLineIndex = currentLineIndex + 1;
-        HandleLineTransition(currentLineIndex, nextLineIndex);
-        ShowLine(nextLineIndex);
+        int nextLineIndex = (narrationPresenter != null ? narrationPresenter.CurrentLineIndex : -1) + 1;
+        HandleLineTransition(narrationPresenter != null ? narrationPresenter.CurrentLineIndex : -1, nextLineIndex);
+        narrationPresenter?.ShowLine(nextLineIndex);
     }
 
     private void ApplyDefaultLinesIfNeeded()
@@ -160,6 +144,41 @@ public sealed class TruthRevealed : MonoBehaviour
         }
     }
 
+    private void EnsureNarrationPresenter()
+    {
+        if (narrationPresenter == null)
+        {
+            narrationPresenter = GetComponent<NarrationPresenter>();
+        }
+
+        if (narrationPresenter == null)
+        {
+            narrationPresenter = gameObject.AddComponent<NarrationPresenter>();
+        }
+    }
+
+    private void ConfigureNarrationPresenter()
+    {
+        if (narrationPresenter == null)
+        {
+            return;
+        }
+
+        narrationPresenter.SetUiNames("TruthRevealedCanvas", "DialogueBox", "DialogueText");
+        narrationPresenter.ConfigureAppearance(
+            dialogueFontAsset,
+            boxSize,
+            bottomOffset,
+            backgroundAlpha,
+            backgroundColor,
+            textColor,
+            minFontSize,
+            maxFontSize,
+            textPadding);
+        narrationPresenter.ConfigureTyping(secondsPerChar, typingSfxReferenceBubble, "TruthRevealedTypingSfx");
+        narrationPresenter.SetLines(lines);
+    }
+
     private void TryResolveSceneReferences()
     {
         GameObject target = GameObject.Find("Background1");
@@ -180,89 +199,6 @@ public sealed class TruthRevealed : MonoBehaviour
             {
                 background1Image = target.GetComponentInChildren<Image>(true);
             }
-        }
-    }
-
-    private void EnsureVisuals()
-    {
-        canvas = GetComponentInChildren<Canvas>(true);
-        if (canvas == null)
-        {
-            GameObject canvasObject = new GameObject("TruthRevealedCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-            canvasObject.transform.SetParent(transform, false);
-            canvas = canvasObject.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-
-            CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-        }
-
-        Transform existingBox = canvas.transform.Find("DialogueBox");
-        if (existingBox == null)
-        {
-            GameObject boxObject = new GameObject("DialogueBox", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            boxObject.transform.SetParent(canvas.transform, false);
-            textBox = boxObject.GetComponent<RectTransform>();
-            background = boxObject.GetComponent<Image>();
-
-            GameObject textObject = new GameObject("DialogueText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-            textObject.transform.SetParent(boxObject.transform, false);
-            dialogueText = textObject.GetComponent<TextMeshProUGUI>();
-        }
-        else
-        {
-            textBox = existingBox as RectTransform;
-            background = existingBox.GetComponent<Image>();
-            dialogueText = existingBox.GetComponentInChildren<TextMeshProUGUI>(true);
-        }
-    }
-
-    private void ApplyStyle()
-    {
-        if (canvas != null)
-        {
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        }
-
-        if (textBox != null)
-        {
-            textBox.anchorMin = new Vector2(0.5f, 0f);
-            textBox.anchorMax = new Vector2(0.5f, 0f);
-            textBox.pivot = new Vector2(0.5f, 0.5f);
-            textBox.anchoredPosition = bottomOffset;
-            textBox.sizeDelta = boxSize;
-        }
-
-        if (background != null)
-        {
-            Color color = backgroundColor;
-            color.a = backgroundAlpha;
-            background.color = color;
-            background.raycastTarget = false;
-        }
-
-        if (dialogueText != null)
-        {
-            RectTransform textRect = dialogueText.rectTransform;
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = new Vector2(textPadding.x, textPadding.y);
-            textRect.offsetMax = new Vector2(-textPadding.x, -textPadding.y);
-
-            if (dialogueFontAsset != null)
-            {
-                dialogueText.font = dialogueFontAsset;
-            }
-
-            dialogueText.color = textColor;
-            dialogueText.enableAutoSizing = true;
-            dialogueText.fontSizeMin = minFontSize;
-            dialogueText.fontSizeMax = maxFontSize;
-            dialogueText.richText = true;
-            dialogueText.enableWordWrapping = true;
-            dialogueText.alignment = TextAlignmentOptions.MidlineLeft;
-            dialogueText.raycastTarget = false;
         }
     }
 
@@ -289,116 +225,7 @@ public sealed class TruthRevealed : MonoBehaviour
         backgroundFadeRoutine = StartCoroutine(FadeBackground1Routine());
     }
 
-    private void ShowLine(int lineIndex)
-    {
-        if (lines == null || lines.Count == 0)
-        {
-            if (dialogueText != null)
-            {
-                dialogueText.text = string.Empty;
-            }
-
-            return;
-        }
-
-        if (lineIndex >= lines.Count)
-        {
-            return;
-        }
-
-        currentLineIndex = Mathf.Max(0, lineIndex);
-        string fullText = lines[currentLineIndex]?.text ?? string.Empty;
-
-        if (typingRoutine != null)
-        {
-            StopCoroutine(typingRoutine);
-        }
-
-        currentParsedLine = DialogueInlineEffects.Parse(
-            fullText,
-            secondsPerChar,
-            dialogueText != null && dialogueText.fontSize > 0f ? dialogueText.fontSize : maxFontSize);
-        typingSfxPlayer?.Reset();
-        typingRoutine = StartCoroutine(TypeLineRoutine(fullText));
-    }
-
-    private IEnumerator TypeLineRoutine(string fullText)
-    {
-        isTyping = true;
-        isTypingPaused = false;
-        skipTyping = false;
-
-        if (dialogueText == null)
-        {
-            yield break;
-        }
-
-        dialogueText.richText = true;
-        dialogueText.text = currentParsedLine != null ? currentParsedLine.DisplayText : string.Empty;
-        dialogueText.maxVisibleCharacters = 0;
-        dialogueText.ForceMeshUpdate();
-
-        List<DialogueInlineEffects.VisibleCharacter> visibleCharacters =
-            currentParsedLine != null ? currentParsedLine.VisibleCharacters : null;
-        if (visibleCharacters == null || visibleCharacters.Count == 0)
-        {
-            dialogueText.maxVisibleCharacters = int.MaxValue;
-            isTyping = false;
-            isTypingPaused = false;
-            skipTyping = false;
-            typingRoutine = null;
-            yield break;
-        }
-
-        int visible = 0;
-        int lastPauseIndex = -1;
-        while (visible < visibleCharacters.Count)
-        {
-            if (skipTyping)
-            {
-                dialogueText.maxVisibleCharacters = int.MaxValue;
-                break;
-            }
-
-            if (isTypingPaused)
-            {
-                yield return null;
-                continue;
-            }
-
-            DialogueInlineEffects.VisibleCharacter visibleCharacter = visibleCharacters[visible];
-            if (visibleCharacter.PauseBefore && lastPauseIndex != visible)
-            {
-                isTypingPaused = true;
-                lastPauseIndex = visible;
-                continue;
-            }
-
-            visible++;
-            dialogueText.maxVisibleCharacters = visible;
-            typingSfxPlayer?.ApplyPool(visibleCharacter.TypingSfxPoolId);
-            typingSfxPlayer?.Play(dialogueText, visible - 1, visibleCharacter.FontSizeScale);
-
-            float delay = Mathf.Max(0f, visibleCharacter.SecondsPerCharacter);
-            if (delay > 0f)
-            {
-                yield return new WaitForSeconds(delay);
-            }
-            else
-            {
-                yield return null;
-            }
-        }
-
-        dialogueText.text = currentParsedLine != null ? currentParsedLine.DisplayText : string.Empty;
-        dialogueText.maxVisibleCharacters = int.MaxValue;
-        isTyping = false;
-        isTypingPaused = false;
-        skipTyping = false;
-        typingRoutine = null;
-    }
-
-    private IEnumerator FadeBackground1Routine()
+    private System.Collections.IEnumerator FadeBackground1Routine()
     {
         float safeDuration = Mathf.Max(0.01f, background1FadeDuration);
         float time = 0f;
@@ -443,30 +270,6 @@ public sealed class TruthRevealed : MonoBehaviour
         }
 
         backgroundFadeRoutine = null;
-    }
-
-    private void RefreshShownText()
-    {
-        if (dialogueText == null || lines == null || lines.Count == 0)
-        {
-            return;
-        }
-
-        int clampedIndex = Mathf.Clamp(currentLineIndex, 0, lines.Count - 1);
-        string raw = lines[clampedIndex]?.text ?? string.Empty;
-        dialogueText.richText = true;
-        dialogueText.text = DialogueInlineEffects.Parse(
-            raw,
-            secondsPerChar,
-            dialogueText.fontSize > 0f ? dialogueText.fontSize : maxFontSize).DisplayText;
-        dialogueText.maxVisibleCharacters = int.MaxValue;
-    }
-
-    private void EnsureTypingSfxSupport()
-    {
-        typingSfxReferenceBubble = DialogueBubbleView.ResolveTypingSfxReference(typingSfxReferenceBubble);
-        typingAudioSource = DialogueBubbleView.EnsureExternalTypingAudioSource(this, "TruthRevealedTypingSfx");
-        typingSfxPlayer = DialogueBubbleView.CreateExternalTypingSfxPlayer(typingSfxReferenceBubble, typingAudioSource);
     }
 
     private static TMP_FontAsset TryLoadDialogueFont()

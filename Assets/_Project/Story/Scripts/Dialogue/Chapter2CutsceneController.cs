@@ -88,15 +88,8 @@ public sealed class Chapter2CutsceneController : MonoBehaviour
             return;
         }
 
-        if (centerBubbleController != null && centerBubbleController.IsTyping)
+        if (centerBubbleController != null && centerBubbleController.TryHandleAdvanceInput())
         {
-            if (centerBubbleController.IsPaused)
-            {
-                centerBubbleController.ResumeTyping();
-                return;
-            }
-
-            centerBubbleController.CompleteTyping();
             return;
         }
 
