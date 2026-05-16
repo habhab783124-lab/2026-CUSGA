@@ -126,8 +126,30 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private int slowFieldTowerCost = 50;
     [SerializeField] private int bombardTowerCost = 62;
 
-    [Header("Placement Rules")]
+    [Header("Placement Rules (Legacy Compatibility)")]
+
+    /// <summary>
+    /// Legacy compatibility field.
+    ///
+    /// This value is no longer the authoritative source for relay footprint / placement blocking.
+    /// The current authoritative source is the `CircleCollider2D` configured directly on the
+    /// relay runtime prefab.
+    ///
+    /// We intentionally keep this serialized field for one transition period so old scenes do not
+    /// immediately lose data or break deserialization, but new tuning work should not use it.
+    /// </summary>
     [SerializeField] private float relayPlacementRadius = 0.52f;
+
+    /// <summary>
+    /// Legacy compatibility field.
+    ///
+    /// This value is no longer the authoritative source for combat-tower footprint / placement
+    /// blocking. The current authoritative source is the `CircleCollider2D` configured directly on
+    /// each combat-tower runtime prefab.
+    ///
+    /// We intentionally keep this serialized field for one transition period so old scenes do not
+    /// immediately lose data or break deserialization, but new tuning work should not use it.
+    /// </summary>
     [SerializeField] private float defensePlacementRadius = 0.58f;
 
     [Header("Placement Expansion")]
@@ -761,6 +783,7 @@ public class TowerDefenseGame : MonoBehaviour
 
         _placementRules = new TowerPlacementRules(
             towerType => _placementSupportCoordinator != null ? _placementSupportCoordinator.GetPlacementRadius(towerType) : 0.5f,
+            towerType => _placementSupportCoordinator != null ? _placementSupportCoordinator.GetPlacementCenterOffset(towerType) : Vector2.zero,
             towerType => _placementSupportCoordinator != null ? _placementSupportCoordinator.GetExpansionSquareSize(towerType) : 4.5f);
         _placementSupportCoordinator = new TowerPlacementSupportCoordinator(
             initialPlacementSquareCenter,

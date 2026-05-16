@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using TMPro;
 using UnityEditor;
@@ -52,6 +53,26 @@ namespace TowerDefense.Editor
     {
         BuildZoneShape,
         PlacementBlocker
+    }
+
+    /// <summary>
+    /// Describes which geometric footprint the scene brush should create.
+    ///
+    /// We intentionally split "what this brush creates" from "which authoring layer it belongs to":
+    /// - `AuthoringBrushMode` answers "buildable area or placement blocker?"
+    /// - `AuthoringBrushShape` answers "what shape should the user paint right now?"
+    ///
+    /// This keeps the user-facing workflow easy to reason about:
+    /// first choose the layer, then choose the geometry.
+    /// </summary>
+    internal enum AuthoringBrushShape
+    {
+        Box,
+        Circle,
+        Ellipse,
+        CapsuleHorizontal,
+        CapsuleVertical,
+        FreeformPolygon
     }
 
     /// <summary>
@@ -527,7 +548,7 @@ namespace TowerDefense.Editor
         ///
         /// If no explicit template is provided, we first try to clone an existing `PathSegment_*`
         /// object from the scene so the generated road automatically matches the current art style.
-        /// Only when that fails do we fall back to a minimal blocker-only rectangle.
+        /// Only when that fails do we fall back to a minimal plain road rectangle.
         /// </summary>
         internal static GameObject CreateRoadSegmentInstance(
             Scene scene,
@@ -555,7 +576,6 @@ namespace TowerDefense.Editor
                 segmentObject = new GameObject(objectName);
                 segmentObject.AddComponent<SpriteRenderer>();
                 segmentObject.AddComponent<BoxCollider2D>();
-                segmentObject.AddComponent<PlacementBlocker>();
             }
 
             Undo.RegisterCreatedObjectUndo(segmentObject, "鐢熸垚璺緞璺");
@@ -564,6 +584,12 @@ namespace TowerDefense.Editor
             segmentObject.transform.position = center;
             segmentObject.transform.rotation = Quaternion.identity;
             segmentObject.transform.localScale = new Vector3(size.x, size.y, 1f);
+
+            PlacementBlocker placementBlocker = segmentObject.GetComponent<PlacementBlocker>();
+            if (placementBlocker != null)
+            {
+                Object.DestroyImmediate(placementBlocker);
+            }
 
             BoxCollider2D blockerCollider = segmentObject.GetComponent<BoxCollider2D>();
             if (blockerCollider != null)
@@ -680,6 +706,173 @@ namespace TowerDefense.Editor
             return createdObject;
         }
 
+        internal static GameObject CreateBrushCircleLikeShape(
+            Scene scene,
+            AuthoringBrushMode brushMode,
+            AuthoringBrushShape brushShape,
+            Transform parent,
+            Rect worldRect,
+            string blockerReason,
+            Color previewColor)
+        {
+            Vector3 worldCenter = new Vector3(worldRect.center.x, worldRect.center.y, 0f);
+            Vector2 worldSize = new Vector2(Mathf.Max(0.2f, worldRect.width), Mathf.Max(0.2f, worldRect.height));
+
+            string objectName = brushMode == AuthoringBrushMode.BuildZoneShape
+                ? $"ZoneShape_{brushShape}"
+                : $"PlacementBlocker_{brushShape}";
+
+            GameObject createdObject = new GameObject(objectName);
+            Undo.RegisterCreatedObjectUndo(createdObject, $"创建 {brushShape} 画笔形状");
+            SceneManager.MoveGameObjectToScene(createdObject, scene);
+            createdObject.transform.SetParent(parent, false);
+            createdObject.transform.localScale = Vector3.one;
+
+            Vector3 localCenter = parent != null ? parent.InverseTransformPoint(worldCenter) : worldCenter;
+            Vector3 lossyScale = parent != null ? parent.lossyScale : Vector3.one;
+            float safeScaleX = Mathf.Abs(lossyScale.x) > 0.0001f ? Mathf.Abs(lossyScale.x) : 1f;
+            float safeScaleY = Mathf.Abs(lossyScale.y) > 0.0001f ? Mathf.Abs(lossyScale.y) : 1f;
+            Vector2 localSize = new Vector2(worldSize.x / safeScaleX, worldSize.y / safeScaleY);
+
+            createdObject.transform.localPosition = localCenter;
+
+            switch (brushShape)
+            {
+                case AuthoringBrushShape.Circle:
+                {
+                    CircleCollider2D circle = createdObject.AddComponent<CircleCollider2D>();
+                    circle.isTrigger = true;
+                    circle.radius = Mathf.Min(localSize.x, localSize.y) * 0.5f;
+                    break;
+                }
+
+                case AuthoringBrushShape.Ellipse:
+                {
+                    PolygonCollider2D ellipseCollider = createdObject.AddComponent<PolygonCollider2D>();
+                    ellipseCollider.isTrigger = true;
+                    ellipseCollider.SetPath(0, BuildEllipsePolygonPoints(localSize, 32));
+                    break;
+                }
+
+                case AuthoringBrushShape.CapsuleHorizontal:
+                case AuthoringBrushShape.CapsuleVertical:
+                {
+                    CapsuleCollider2D capsule = createdObject.AddComponent<CapsuleCollider2D>();
+                    capsule.isTrigger = true;
+                    capsule.size = localSize;
+                    capsule.direction = brushShape == AuthoringBrushShape.CapsuleVertical
+                        ? CapsuleDirection2D.Vertical
+                        : CapsuleDirection2D.Horizontal;
+                    break;
+                }
+
+                default:
+                    return CreateBrushRectangle(scene, brushMode, parent, worldRect, blockerReason, previewColor);
+            }
+
+            SpriteRenderer spriteRenderer = createdObject.AddComponent<SpriteRenderer>();
+            spriteRenderer.color = previewColor;
+
+            if (brushMode == AuthoringBrushMode.PlacementBlocker)
+            {
+                PlacementBlocker placementBlocker = createdObject.AddComponent<PlacementBlocker>();
+                SerializedObject serializedBlocker = new SerializedObject(placementBlocker);
+                SerializedProperty reasonProperty = serializedBlocker.FindProperty("blockerReason");
+                if (reasonProperty != null)
+                {
+                    reasonProperty.stringValue = string.IsNullOrWhiteSpace(blockerReason)
+                        ? "敌人路径区域，这里不能部署建筑。"
+                        : blockerReason;
+                    serializedBlocker.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
+
+            return createdObject;
+        }
+
+        private static Vector2[] BuildEllipsePolygonPoints(Vector2 localSize, int segmentCount)
+        {
+            int safeSegmentCount = Mathf.Max(12, segmentCount);
+            float radiusX = Mathf.Max(0.1f, localSize.x * 0.5f);
+            float radiusY = Mathf.Max(0.1f, localSize.y * 0.5f);
+            Vector2[] points = new Vector2[safeSegmentCount];
+
+            for (int index = 0; index < safeSegmentCount; index++)
+            {
+                float angle = Mathf.PI * 2f * index / safeSegmentCount;
+                points[index] = new Vector2(
+                    Mathf.Cos(angle) * radiusX,
+                    Mathf.Sin(angle) * radiusY);
+            }
+
+            return points;
+        }
+
+        internal static GameObject CreateBrushFreeformPolygon(
+            Scene scene,
+            AuthoringBrushMode brushMode,
+            Transform parent,
+            IReadOnlyList<Vector3> worldPoints,
+            string blockerReason,
+            Color previewColor)
+        {
+            if (worldPoints == null || worldPoints.Count < 3)
+            {
+                return null;
+            }
+
+            string objectName = brushMode == AuthoringBrushMode.BuildZoneShape ? "ZoneShape_Polygon" : "PlacementBlocker_Polygon";
+            GameObject createdObject = new GameObject(objectName);
+            Undo.RegisterCreatedObjectUndo(createdObject, "创建自由形状画笔");
+            SceneManager.MoveGameObjectToScene(createdObject, scene);
+            createdObject.transform.SetParent(parent, false);
+            createdObject.transform.localScale = Vector3.one;
+
+            Vector3 worldCenter = Vector3.zero;
+            for (int index = 0; index < worldPoints.Count; index++)
+            {
+                worldCenter += worldPoints[index];
+            }
+
+            worldCenter /= worldPoints.Count;
+            Vector3 localCenter = parent != null ? parent.InverseTransformPoint(worldCenter) : worldCenter;
+            createdObject.transform.localPosition = localCenter;
+
+            PolygonCollider2D polygonCollider = createdObject.AddComponent<PolygonCollider2D>();
+            polygonCollider.isTrigger = true;
+
+            Vector3 lossyScale = parent != null ? parent.lossyScale : Vector3.one;
+            float safeScaleX = Mathf.Abs(lossyScale.x) > 0.0001f ? Mathf.Abs(lossyScale.x) : 1f;
+            float safeScaleY = Mathf.Abs(lossyScale.y) > 0.0001f ? Mathf.Abs(lossyScale.y) : 1f;
+            Vector2[] localPoints = new Vector2[worldPoints.Count];
+            for (int index = 0; index < worldPoints.Count; index++)
+            {
+                Vector3 relative = worldPoints[index] - worldCenter;
+                localPoints[index] = new Vector2(relative.x / safeScaleX, relative.y / safeScaleY);
+            }
+
+            polygonCollider.SetPath(0, localPoints);
+
+            SpriteRenderer spriteRenderer = createdObject.AddComponent<SpriteRenderer>();
+            spriteRenderer.color = previewColor;
+
+            if (brushMode == AuthoringBrushMode.PlacementBlocker)
+            {
+                PlacementBlocker placementBlocker = createdObject.AddComponent<PlacementBlocker>();
+                SerializedObject serializedBlocker = new SerializedObject(placementBlocker);
+                SerializedProperty reasonProperty = serializedBlocker.FindProperty("blockerReason");
+                if (reasonProperty != null)
+                {
+                    reasonProperty.stringValue = string.IsNullOrWhiteSpace(blockerReason)
+                        ? "敌人路径区域，这里不能部署建筑。"
+                        : blockerReason;
+                    serializedBlocker.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
+
+            return createdObject;
+        }
+
         /// <summary>
         /// Syncs the shared HUD root and core scene references from SampleScene into a target scene.
         ///
@@ -687,9 +880,9 @@ namespace TowerDefense.Editor
         /// we replace / rebuild shared UI and rebind scene references, but we deliberately do not
         /// touch path coordinates, defense point positions, or hand-authored blocker layouts.
         /// </summary>
-        internal static void SyncSceneFromSample(Scene sampleScene, Scene targetScene)
+        internal static void SyncSceneFromTemplate(Scene templateScene, Scene targetScene)
         {
-            GameObject sampleHud = FindObjectByName(sampleScene, "HUDCanvas");
+            GameObject sampleHud = FindObjectByName(templateScene, "HUDCanvas");
             GameObject targetHud = FindObjectByName(targetScene, "HUDCanvas");
             if (sampleHud != null)
             {
@@ -825,7 +1018,7 @@ namespace TowerDefense.Editor
             ClearAuthoredMapContentForFreshScene(targetScene);
             EnsureNamedRoot(targetScene, "BattlefieldDecor");
             EnsureNamedRoot(targetScene, "PathVisuals");
-            SyncSceneFromSample(sampleScene, targetScene);
+            SyncSceneFromTemplate(sampleScene, targetScene);
             EditorSceneManager.MarkSceneDirty(targetScene);
         }
 
@@ -910,7 +1103,7 @@ namespace TowerDefense.Editor
 
              if (waveSpawner.WaveCatalogAsset != null && waveSpawner.EnemyCatalogAsset != null && waveSpawner.WaveCatalogAsset.Waves.Length > 0)
             {
-                return BuildWavePreviewFromCatalog(waveSpawner.WaveCatalogAsset, waveSpawner.EnemyCatalogAsset, mapDefinition);
+                return BuildWavePreviewFromCatalog(waveSpawner.WaveCatalogAsset, waveSpawner.EnemyCatalogAsset, mapDefinition, waveSpawner);
             }
 
             SerializedObject serializedSpawner = new SerializedObject(waveSpawner);
@@ -925,11 +1118,12 @@ namespace TowerDefense.Editor
                 SerializedProperty waveProperty = wavesProperty.GetArrayElementAtIndex(waveIndex);
                 int enemyCount = Mathf.Max(0, waveProperty.FindPropertyRelative("enemyCount")?.intValue ?? 0);
                 int scrapReward = Mathf.Max(0, waveProperty.FindPropertyRelative("enemyScrapReward")?.intValue ?? 0);
+                int pathSequence = Mathf.Max(0, waveProperty.FindPropertyRelative("pathSequence")?.intValue ?? 0);
                 Dictionary<string, int> gateCounts = new Dictionary<string, int>();
                 for (int enemyIndex = 0; enemyIndex < enemyCount; enemyIndex++)
                 {
                     string gateName = "回退路径";
-                    if (mapDefinition != null && mapDefinition.TryGetSpawnGateBySequence(enemyIndex, out EnemySpawnGate spawnGate) && spawnGate != null)
+                    if (mapDefinition != null && mapDefinition.TryGetSpawnGateBySequence(pathSequence, out EnemySpawnGate spawnGate) && spawnGate != null)
                     {
                         gateName = spawnGate.DisplayName;
                     }
@@ -943,7 +1137,7 @@ namespace TowerDefense.Editor
                     TotalEnemies = enemyCount,
                     TotalScrap = enemyCount * scrapReward,
                     GateBreakdown = string.Join(" / ", gateCounts.Select(pair => $"{pair.Key}: {pair.Value}")),
-                    Note = $"移动速度={waveProperty.FindPropertyRelative("moveSpeed")?.floatValue ?? 0f:0.00}，生命值={waveProperty.FindPropertyRelative("enemyHealth")?.intValue ?? 0}"
+                    Note = $"路径序号={pathSequence} | 移动速度={waveProperty.FindPropertyRelative("moveSpeed")?.floatValue ?? 0f:0.00}，生命值={waveProperty.FindPropertyRelative("enemyHealth")?.intValue ?? 0}"
                 });
             }
 
@@ -960,7 +1154,8 @@ namespace TowerDefense.Editor
         internal static List<WavePreviewRow> BuildWavePreviewFromCatalog(
             WaveCatalogAsset catalogAsset,
             EnemyCatalogAsset enemyCatalogAsset,
-            BattlefieldMapDefinition mapDefinition)
+            BattlefieldMapDefinition mapDefinition,
+            WaveSpawner sourceSpawner = null)
         {
             List<WavePreviewRow> rows = new List<WavePreviewRow>();
             if (catalogAsset == null)
@@ -977,8 +1172,9 @@ namespace TowerDefense.Editor
                 int totalEnemies = 0;
                 int totalScrap = 0;
 
-                foreach (WaveCatalogAsset.SpawnGroup spawnGroup in wave.SpawnGroups)
+                for (int groupIndex = 0; groupIndex < wave.SpawnGroups.Length; groupIndex++)
                 {
+                    WaveCatalogAsset.SpawnGroup spawnGroup = wave.SpawnGroups[groupIndex];
                     if (spawnGroup == null)
                     {
                         continue;
@@ -990,16 +1186,25 @@ namespace TowerDefense.Editor
                         groupScrapReward = definition.ScrapReward;
                     }
 
+                    string groupGateName = "回退路径";
+                    EnemyPath boundPath = spawnGroup.EnemyPathReference;
+                    if (boundPath == null && sourceSpawner != null)
+                    {
+                        boundPath = sourceSpawner.ResolveCatalogBinding(waveIndex, groupIndex);
+                    }
+
+                    if (boundPath != null)
+                    {
+                        groupGateName = ResolveSpawnGateDisplayNameForPath(mapDefinition, boundPath);
+                    }
+                    else if (mapDefinition != null && mapDefinition.TryGetSpawnGateBySequence(spawnGroup.PathSequence, out EnemySpawnGate assignedSpawnGate) && assignedSpawnGate != null)
+                    {
+                        groupGateName = assignedSpawnGate.DisplayName;
+                    }
+
                     for (int enemyIndex = 0; enemyIndex < spawnGroup.EnemyCount; enemyIndex++)
                     {
-                        string gateName = "回退路径";
-                        if (mapDefinition != null && mapDefinition.TryGetSpawnGateBySequence(gateSequence, out EnemySpawnGate spawnGate) && spawnGate != null)
-                        {
-                            gateName = spawnGate.DisplayName;
-                        }
-
-                        gateCounts[gateName] = gateCounts.TryGetValue(gateName, out int existing) ? existing + 1 : 1;
-                        gateSequence++;
+                        gateCounts[groupGateName] = gateCounts.TryGetValue(groupGateName, out int existing) ? existing + 1 : 1;
                         totalEnemies++;
                         totalScrap += groupScrapReward;
                     }
@@ -1011,11 +1216,29 @@ namespace TowerDefense.Editor
                     TotalEnemies = totalEnemies,
                     TotalScrap = totalScrap,
                     GateBreakdown = string.Join(" / ", gateCounts.Select(pair => $"{pair.Key}: {pair.Value}")),
-                    Note = wave.DesignerNote
+                    Note = string.IsNullOrWhiteSpace(wave.DesignerNote) ? string.Empty : wave.DesignerNote
                 });
             }
 
             return rows;
+        }
+
+        private static string ResolveSpawnGateDisplayNameForPath(BattlefieldMapDefinition mapDefinition, EnemyPath enemyPath)
+        {
+            if (mapDefinition == null || enemyPath == null || !mapDefinition.HasAnyValidSpawnGate())
+            {
+                return enemyPath != null ? enemyPath.name : "回退路径";
+            }
+
+            for (int gateIndex = 0; gateIndex < mapDefinition.SpawnGateCount; gateIndex++)
+            {
+                if (mapDefinition.TryGetSpawnGateBySequence(gateIndex, out EnemySpawnGate spawnGate) && spawnGate != null && spawnGate.EnemyPath == enemyPath)
+                {
+                    return spawnGate.DisplayName;
+                }
+            }
+
+            return enemyPath.name;
         }
 
         private static void TryAddComponentRoot<T>(Scene scene, ISet<GameObject> roots) where T : Component
@@ -1304,11 +1527,15 @@ namespace TowerDefense.Editor
         [SerializeField] private bool syncLevel04 = true;
         [SerializeField] private bool syncHudCanvas = true;
         [SerializeField] private bool syncCoreReferences = true;
+        [SerializeField] private SceneAsset uiTemplateSceneAsset;
+        [SerializeField] private bool syncAllTowerDefenseLevels = true;
         [SerializeField] private AuthoringBrushMode brushMode = AuthoringBrushMode.BuildZoneShape;
+        [SerializeField] private AuthoringBrushShape brushShape = AuthoringBrushShape.Box;
         [SerializeField] private Transform blockerBrushParent;
         [SerializeField] private string blockerBrushReason = "敌人路径区域，这里不能部署建筑。";
         [SerializeField] private Color brushPreviewColor = new Color(1f, 0.5f, 0.2f, 0.18f);
         [SerializeField] private bool brushActive;
+        [SerializeField] private List<PlacementBlocker> blockerBrushTargets = new List<PlacementBlocker>();
         [SerializeField] private string healthReportFolder = "Assets/Docs/MapHealthReports";
         [SerializeField] private string levelReportFolder = "Assets/Docs/LevelReports";
         [SerializeField] private bool showHealthInfoIssues = true;
@@ -1322,6 +1549,7 @@ namespace TowerDefense.Editor
         private Vector3 _brushStartWorld;
         private Vector3 _brushCurrentWorld;
         private bool _isBrushDragging;
+        private readonly List<Vector3> _freeformBrushWorldPoints = new List<Vector3>();
 
         [MenuItem("Tools/Tower Defense/地图开发工具箱")]
         public static void OpenWindow()
@@ -1540,7 +1768,7 @@ namespace TowerDefense.Editor
             useTwoDigitSegmentNumbering = EditorGUILayout.Toggle("使用两位数编号", useTwoDigitSegmentNumbering);
 
             EditorGUILayout.HelpBox(
-                "推荐流程：先用路径点工具整理好 waypoint 顺序，再回到这里生成或重建功能性道路段。正交放置会生成横平竖直道路；随意放置会生成允许旋转的直连道路段。生成器会自动补 BoxCollider2D 和 PlacementBlocker，让地图仍然可玩。",
+                "推荐流程：先用路径点工具整理好 waypoint 顺序，再回到这里生成或重建功能性道路段。正交放置会生成横平竖直道路；随意放置会生成允许旋转的直连道路段。生成器只负责道路本身，不再自动补禁建区，禁建区请改用下方区域画笔手工绘制。",
                 MessageType.Info);
 
             using (new EditorGUI.DisabledScope(targetPath == null))
@@ -1597,18 +1825,20 @@ namespace TowerDefense.Editor
 
         private void DrawTemplateSyncTab()
         {
-            EditorGUILayout.LabelField("SampleScene 模板同步", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("UI 模板场景同步", EditorStyles.boldLabel);
+            uiTemplateSceneAsset = (SceneAsset)EditorGUILayout.ObjectField("UI 模板场景", uiTemplateSceneAsset, typeof(SceneAsset), false);
             syncHudCanvas = EditorGUILayout.Toggle("同步 HUDCanvas", syncHudCanvas);
             syncCoreReferences = EditorGUILayout.Toggle("同步核心场景引用", syncCoreReferences);
+            syncAllTowerDefenseLevels = EditorGUILayout.Toggle("应用到全部塔防关卡", syncAllTowerDefenseLevels);
             syncLevel02 = EditorGUILayout.ToggleLeft("应用到 Level02", syncLevel02);
             syncLevel03 = EditorGUILayout.ToggleLeft("应用到 Level03", syncLevel03);
             syncLevel04 = EditorGUILayout.ToggleLeft("应用到 Level04", syncLevel04);
 
             EditorGUILayout.HelpBox(
-                "这个同步只处理共享壳层：HUD、塔按钮、原型引用、PlacedTowers、PlacementPreviewRoot，以及 TowerDefenseGame / WaveSpawner 的共享接线。它不会移动 waypoint、道路坐标、塔位或你手工摆好的地图装饰。",
+                "这个同步只处理共享 UI 壳层：HUD、EventSystem、塔按钮、以及 TowerDefenseGame / WaveSpawner 的 UI 相关接线。它不会移动 waypoint、道路坐标、塔位或你手工摆好的地图装饰。你可以指定一个专门的 UI 模板场景，而不是只从 SampleScene 同步。",
                 MessageType.Warning);
 
-            if (GUILayout.Button("从 SampleScene 同步所选场景"))
+            if (GUILayout.Button("把 UI 模板应用到所选关卡"))
             {
                 SyncScenesFromSample();
             }
@@ -1667,13 +1897,14 @@ namespace TowerDefense.Editor
         {
             EditorGUILayout.LabelField("BuildZone / 禁建区画笔", EditorStyles.boldLabel);
             brushMode = (AuthoringBrushMode)EditorGUILayout.EnumPopup("画笔模式", brushMode);
+            brushShape = (AuthoringBrushShape)EditorGUILayout.EnumPopup("画笔形状", brushShape);
             targetBuildZone = (BuildZone)EditorGUILayout.ObjectField("目标 BuildZone", targetBuildZone, typeof(BuildZone), true);
             blockerBrushParent = (Transform)EditorGUILayout.ObjectField("禁建区父节点", blockerBrushParent, typeof(Transform), true);
             blockerBrushReason = EditorGUILayout.TextField("禁建原因", blockerBrushReason);
             brushPreviewColor = EditorGUILayout.ColorField("预览颜色", brushPreviewColor);
 
             EditorGUILayout.HelpBox(
-                "启动画笔后，直接在 Scene 视图里拖一个矩形。BuildZone 模式会在 ZoneShapes 下创建 BoxCollider2D，禁建区模式会创建 PlacementBlocker 矩形。",
+                "启动画笔后，直接在 Scene 视图里拖拽或点选。你现在可以选择矩形、圆形、椭圆、胶囊，以及自由多边形。BuildZone 模式会把形状创建到 ZoneShapes 下，禁建区模式会创建 PlacementBlocker 形状。",
                 MessageType.Info);
 
             string toggleLabel = brushActive ? "停止画笔" : "启动画笔";
@@ -1681,7 +1912,32 @@ namespace TowerDefense.Editor
             {
                 brushActive = !brushActive;
                 _isBrushDragging = false;
+                _freeformBrushWorldPoints.Clear();
                 SceneView.RepaintAll();
+            }
+
+            if (brushActive && brushShape == AuthoringBrushShape.FreeformPolygon)
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    using (new EditorGUI.DisabledScope(_freeformBrushWorldPoints.Count < 3))
+                    {
+                        if (GUILayout.Button("完成当前自由形状"))
+                        {
+                            CreateBrushResult();
+                            _isBrushDragging = false;
+                            _freeformBrushWorldPoints.Clear();
+                            SceneView.RepaintAll();
+                        }
+                    }
+
+                    if (GUILayout.Button("取消当前自由形状"))
+                    {
+                        _isBrushDragging = false;
+                        _freeformBrushWorldPoints.Clear();
+                        SceneView.RepaintAll();
+                    }
+                }
             }
 
             EditorGUILayout.Space(6f);
@@ -1701,6 +1957,43 @@ namespace TowerDefense.Editor
                 if (GUILayout.Button("删除当前地图工具生成禁建区"))
                 {
                     ClearGeneratedPlacementBlockersInActiveScene();
+                }
+            }
+
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.LabelField("禁建区列表", EditorStyles.boldLabel);
+            RefreshPlacementBlockerTargetsForScene();
+            SerializedObject serializedWindow = new SerializedObject(this);
+            serializedWindow.Update();
+            SerializedProperty blockerTargetsProperty = serializedWindow.FindProperty("blockerBrushTargets");
+            if (blockerTargetsProperty != null)
+            {
+                EditorGUILayout.PropertyField(blockerTargetsProperty, new GUIContent("当前禁建区数组"), includeChildren: true);
+            }
+
+            serializedWindow.ApplyModifiedPropertiesWithoutUndo();
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("刷新禁建区数组"))
+                {
+                    RefreshPlacementBlockerTargetsForScene();
+                }
+
+                using (new EditorGUI.DisabledScope(blockerBrushTargets == null || blockerBrushTargets.Count == 0))
+                {
+                    if (GUILayout.Button("删除数组中空项"))
+                    {
+                        blockerBrushTargets.RemoveAll(candidate => candidate == null);
+                    }
+                }
+            }
+
+            using (new EditorGUI.DisabledScope(blockerBrushTargets == null || blockerBrushTargets.Count == 0))
+            {
+                if (GUILayout.Button("一键删除当前数组中的禁建区"))
+                {
+                    DeletePlacementBlockersFromArray();
                 }
             }
         }
@@ -2330,12 +2623,39 @@ namespace TowerDefense.Editor
         {
             Scene activeScene = SceneManager.GetActiveScene();
             foreach (GameObject sceneObject in TowerDefenseMapToolkitUtility.EnumerateSceneObjects(activeScene)
-                         .Where(sceneObject => sceneObject != null && sceneObject.name.StartsWith("PlacementBlocker_Box", StringComparison.Ordinal))
+                         .Where(sceneObject => sceneObject != null && sceneObject.name.StartsWith("PlacementBlocker_", StringComparison.Ordinal))
                          .ToList())
             {
                 Undo.DestroyObjectImmediate(sceneObject);
             }
 
+            EditorSceneManager.MarkSceneDirty(activeScene);
+        }
+
+        private void RefreshPlacementBlockerTargetsForScene()
+        {
+            Scene activeScene = SceneManager.GetActiveScene();
+            blockerBrushTargets = TowerDefenseMapToolkitUtility.EnumerateSceneObjects(activeScene)
+                .Select(sceneObject => sceneObject != null ? sceneObject.GetComponent<PlacementBlocker>() : null)
+                .Where(blocker => blocker != null)
+                .OrderBy(blocker => blocker.name)
+                .ToList();
+        }
+
+        private void DeletePlacementBlockersFromArray()
+        {
+            if (blockerBrushTargets == null || blockerBrushTargets.Count == 0)
+            {
+                return;
+            }
+
+            Scene activeScene = SceneManager.GetActiveScene();
+            foreach (PlacementBlocker placementBlocker in blockerBrushTargets.Where(candidate => candidate != null).ToList())
+            {
+                Undo.DestroyObjectImmediate(placementBlocker.gameObject);
+            }
+
+            blockerBrushTargets.Clear();
             EditorSceneManager.MarkSceneDirty(activeScene);
         }
 
@@ -2442,7 +2762,14 @@ namespace TowerDefense.Editor
             }
 
             Scene originalActiveScene = SceneManager.GetActiveScene();
-            Scene sampleScene = EditorSceneManager.OpenScene(TowerDefenseMapToolkitUtility.SampleScenePath, OpenSceneMode.Additive);
+            string templateScenePath = ResolveUiTemplateScenePath();
+            if (string.IsNullOrWhiteSpace(templateScenePath) || !File.Exists(templateScenePath))
+            {
+                EditorUtility.DisplayDialog("UI 模板同步失败", "当前没有可用的 UI 模板场景。请先指定一个 SceneAsset，或保留 SampleScene 作为默认模板。", "确定");
+                return;
+            }
+
+            Scene sampleScene = EditorSceneManager.OpenScene(templateScenePath, OpenSceneMode.Additive);
 
             try
             {
@@ -2453,7 +2780,7 @@ namespace TowerDefense.Editor
                     {
                         if (syncHudCanvas || syncCoreReferences)
                         {
-                            TowerDefenseMapToolkitUtility.SyncSceneFromSample(sampleScene, targetScene);
+                            TowerDefenseMapToolkitUtility.SyncSceneFromTemplate(sampleScene, targetScene);
                         }
 
                         EditorSceneManager.SaveScene(targetScene);
@@ -2767,6 +3094,21 @@ namespace TowerDefense.Editor
 
             if (currentEvent.type == EventType.MouseDown && currentEvent.button == 0 && !currentEvent.alt)
             {
+                if (brushShape == AuthoringBrushShape.FreeformPolygon)
+                {
+                    if (!_isBrushDragging)
+                    {
+                        _freeformBrushWorldPoints.Clear();
+                        _isBrushDragging = true;
+                    }
+
+                    _freeformBrushWorldPoints.Add(worldPoint);
+                    _brushCurrentWorld = worldPoint;
+                    currentEvent.Use();
+                    SceneView.RepaintAll();
+                    return;
+                }
+
                 _brushStartWorld = worldPoint;
                 _brushCurrentWorld = worldPoint;
                 _isBrushDragging = true;
@@ -2778,7 +3120,7 @@ namespace TowerDefense.Editor
                 currentEvent.Use();
                 SceneView.RepaintAll();
             }
-            else if (currentEvent.type == EventType.MouseUp && _isBrushDragging && currentEvent.button == 0)
+            else if (currentEvent.type == EventType.MouseUp && _isBrushDragging && currentEvent.button == 0 && brushShape != AuthoringBrushShape.FreeformPolygon)
             {
                 _brushCurrentWorld = worldPoint;
                 CreateBrushResult();
@@ -2787,16 +3129,97 @@ namespace TowerDefense.Editor
                 SceneView.RepaintAll();
             }
 
+            if (_isBrushDragging && brushShape == AuthoringBrushShape.FreeformPolygon && currentEvent.type == EventType.MouseDown && currentEvent.button == 1)
+            {
+                if (_freeformBrushWorldPoints.Count >= 3)
+                {
+                    CreateBrushResult();
+                }
+
+                _isBrushDragging = false;
+                _freeformBrushWorldPoints.Clear();
+                currentEvent.Use();
+                SceneView.RepaintAll();
+                return;
+            }
+
+            if (_isBrushDragging && brushShape == AuthoringBrushShape.FreeformPolygon)
+            {
+                if (currentEvent.type == EventType.KeyDown && currentEvent.keyCode == KeyCode.Return)
+                {
+                    CreateBrushResult();
+                    _isBrushDragging = false;
+                    _freeformBrushWorldPoints.Clear();
+                    currentEvent.Use();
+                    SceneView.RepaintAll();
+                }
+                else if (currentEvent.type == EventType.KeyDown && currentEvent.keyCode == KeyCode.Escape)
+                {
+                    _isBrushDragging = false;
+                    _freeformBrushWorldPoints.Clear();
+                    currentEvent.Use();
+                    SceneView.RepaintAll();
+                }
+            }
+
             if (_isBrushDragging)
             {
-                Rect rect = BuildRect(_brushStartWorld, _brushCurrentWorld);
-                DrawBrushPreview(rect);
+                if (brushShape == AuthoringBrushShape.FreeformPolygon)
+                {
+                    DrawFreeformBrushPreview();
+                }
+                else
+                {
+                    Rect rect = BuildRect(_brushStartWorld, _brushCurrentWorld);
+                    DrawBrushPreview(rect);
+                }
             }
         }
 
         private void CreateBrushResult()
         {
             Scene activeScene = SceneManager.GetActiveScene();
+            if (brushShape == AuthoringBrushShape.FreeformPolygon)
+            {
+                if (_freeformBrushWorldPoints.Count < 3)
+                {
+                    return;
+                }
+
+                if (brushMode == AuthoringBrushMode.BuildZoneShape)
+                {
+                    Transform zoneRoot = TowerDefenseMapToolkitUtility.EnsureZoneShapeRoot(targetBuildZone);
+                    if (zoneRoot == null)
+                    {
+                        Debug.LogWarning("BuildZone brush requires a target BuildZone.");
+                        return;
+                    }
+
+                    GameObject createdFreeformObject = TowerDefenseMapToolkitUtility.CreateBrushFreeformPolygon(activeScene, AuthoringBrushMode.BuildZoneShape, zoneRoot, _freeformBrushWorldPoints, string.Empty, brushPreviewColor);
+                    targetBuildZone.CollectZoneShapeColliders();
+                    EditorUtility.SetDirty(targetBuildZone);
+                    EditorSceneManager.MarkSceneDirty(activeScene);
+                    FocusCreatedBrushObject(createdFreeformObject);
+                    return;
+                }
+
+                Transform polygonParent = blockerBrushParent != null
+                    ? blockerBrushParent
+                    : targetMap != null
+                        ? targetMap.transform
+                        : null;
+                if (polygonParent == null)
+                {
+                    polygonParent = TowerDefenseMapToolkitUtility.EnsureNamedRoot(activeScene, "BattlefieldDecor");
+                }
+
+                GameObject createdObject = TowerDefenseMapToolkitUtility.CreateBrushFreeformPolygon(activeScene, AuthoringBrushMode.PlacementBlocker, polygonParent, _freeformBrushWorldPoints, blockerBrushReason, brushPreviewColor);
+                RefreshPlacementBlockerTargetsForScene();
+                EditorSceneManager.MarkSceneDirty(activeScene);
+                FocusCreatedBrushObject(createdObject);
+                return;
+            }
+
             Rect worldRect = BuildRect(_brushStartWorld, _brushCurrentWorld);
             if (worldRect.width <= 0.05f || worldRect.height <= 0.05f)
             {
@@ -2812,7 +3235,16 @@ namespace TowerDefense.Editor
                     return;
                 }
 
-                TowerDefenseMapToolkitUtility.CreateBrushRectangle(activeScene, AuthoringBrushMode.BuildZoneShape, zoneRoot, worldRect, string.Empty, brushPreviewColor);
+                if (brushShape == AuthoringBrushShape.Box)
+                {
+                    GameObject createdObject = TowerDefenseMapToolkitUtility.CreateBrushRectangle(activeScene, AuthoringBrushMode.BuildZoneShape, zoneRoot, worldRect, string.Empty, brushPreviewColor);
+                    FocusCreatedBrushObject(createdObject);
+                }
+                else
+                {
+                    GameObject createdObject = TowerDefenseMapToolkitUtility.CreateBrushCircleLikeShape(activeScene, AuthoringBrushMode.BuildZoneShape, brushShape, zoneRoot, worldRect, string.Empty, brushPreviewColor);
+                    FocusCreatedBrushObject(createdObject);
+                }
                 targetBuildZone.CollectZoneShapeColliders();
                 EditorUtility.SetDirty(targetBuildZone);
                 EditorSceneManager.MarkSceneDirty(activeScene);
@@ -2829,12 +3261,46 @@ namespace TowerDefense.Editor
                 parent = TowerDefenseMapToolkitUtility.EnsureNamedRoot(activeScene, "BattlefieldDecor");
             }
 
-            TowerDefenseMapToolkitUtility.CreateBrushRectangle(activeScene, AuthoringBrushMode.PlacementBlocker, parent, worldRect, blockerBrushReason, brushPreviewColor);
+            if (brushShape == AuthoringBrushShape.Box)
+            {
+                GameObject createdObject = TowerDefenseMapToolkitUtility.CreateBrushRectangle(activeScene, AuthoringBrushMode.PlacementBlocker, parent, worldRect, blockerBrushReason, brushPreviewColor);
+                FocusCreatedBrushObject(createdObject);
+            }
+            else
+            {
+                GameObject createdObject = TowerDefenseMapToolkitUtility.CreateBrushCircleLikeShape(activeScene, AuthoringBrushMode.PlacementBlocker, brushShape, parent, worldRect, blockerBrushReason, brushPreviewColor);
+                FocusCreatedBrushObject(createdObject);
+            }
+
+            RefreshPlacementBlockerTargetsForScene();
             EditorSceneManager.MarkSceneDirty(activeScene);
         }
 
         private void DrawBrushPreview(Rect worldRect)
         {
+            if (brushShape == AuthoringBrushShape.Circle || brushShape == AuthoringBrushShape.Ellipse || brushShape == AuthoringBrushShape.CapsuleHorizontal || brushShape == AuthoringBrushShape.CapsuleVertical)
+            {
+                Color fillColor = new Color(brushPreviewColor.r, brushPreviewColor.g, brushPreviewColor.b, 0.12f);
+                Handles.color = fillColor;
+                Vector3 center = new Vector3(worldRect.center.x, worldRect.center.y, 0f);
+                float radiusX = worldRect.width * 0.5f;
+                float radiusY = worldRect.height * 0.5f;
+                List<Vector3> points = new List<Vector3>(33);
+                for (int index = 0; index <= 32; index++)
+                {
+                    float angle = Mathf.PI * 2f * index / 32f;
+                    points.Add(new Vector3(
+                        center.x + Mathf.Cos(angle) * radiusX,
+                        center.y + Mathf.Sin(angle) * radiusY,
+                        0f));
+                }
+
+                Handles.DrawAAConvexPolygon(points.ToArray());
+                Handles.color = brushPreviewColor;
+                Handles.DrawAAPolyLine(2.2f, points.ToArray());
+                return;
+            }
+
             Handles.color = new Color(brushPreviewColor.r, brushPreviewColor.g, brushPreviewColor.b, 0.95f);
             Vector3 bottomLeft = new Vector3(worldRect.xMin, worldRect.yMin, 0f);
             Vector3 bottomRight = new Vector3(worldRect.xMax, worldRect.yMin, 0f);
@@ -2844,6 +3310,41 @@ namespace TowerDefense.Editor
                 new[] { bottomLeft, bottomRight, topRight, topLeft },
                 new Color(brushPreviewColor.r, brushPreviewColor.g, brushPreviewColor.b, 0.12f),
                 brushPreviewColor);
+        }
+
+        private void DrawFreeformBrushPreview()
+        {
+            if (_freeformBrushWorldPoints.Count == 0)
+            {
+                return;
+            }
+
+            Handles.color = brushPreviewColor;
+            for (int index = 0; index < _freeformBrushWorldPoints.Count; index++)
+            {
+                Handles.DrawSolidDisc(_freeformBrushWorldPoints[index], Vector3.forward, 0.08f);
+                if (index > 0)
+                {
+                    Handles.DrawLine(_freeformBrushWorldPoints[index - 1], _freeformBrushWorldPoints[index]);
+                }
+            }
+
+            if (_freeformBrushWorldPoints.Count >= 3)
+            {
+                Handles.DrawLine(_freeformBrushWorldPoints[_freeformBrushWorldPoints.Count - 1], _freeformBrushWorldPoints[0]);
+            }
+        }
+
+        private static void FocusCreatedBrushObject(GameObject createdObject)
+        {
+            if (createdObject == null)
+            {
+                return;
+            }
+
+            Selection.activeGameObject = createdObject;
+            EditorGUIUtility.PingObject(createdObject);
+            SceneView.lastActiveSceneView?.Frame(new Bounds(createdObject.transform.position, Vector3.one * 2f), false);
         }
 
         private void TryAdoptSceneContext()
@@ -2856,6 +3357,7 @@ namespace TowerDefense.Editor
             targetBuildZone = context.CurrentBuildZone;
             roadParent = roadParent != null ? roadParent : TowerDefenseMapToolkitUtility.FindObjectByName(activeScene, "BattlefieldDecor")?.transform;
             blockerBrushParent = blockerBrushParent != null ? blockerBrushParent : roadParent;
+            RefreshPlacementBlockerTargetsForScene();
         }
 
         private static bool IssueBelongsToPath(ToolkitIssue issue, EnemyPath enemyPath)
@@ -2886,6 +3388,18 @@ namespace TowerDefense.Editor
 
         private string[] BuildSelectedTemplateTargets()
         {
+            if (syncAllTowerDefenseLevels)
+            {
+                return new[]
+                {
+                    TowerDefenseMapToolkitUtility.SampleScenePath,
+                    TowerDefenseMapToolkitUtility.Level02ScenePath,
+                    TowerDefenseMapToolkitUtility.Level03ScenePath,
+                    TowerDefenseMapToolkitUtility.Level04ScenePath,
+                    "Assets/Scenes/Level05.unity"
+                };
+            }
+
             List<string> targets = new List<string>();
             if (syncLevel02)
             {
@@ -2903,6 +3417,20 @@ namespace TowerDefense.Editor
             }
 
             return targets.ToArray();
+        }
+
+        private string ResolveUiTemplateScenePath()
+        {
+            if (uiTemplateSceneAsset != null)
+            {
+                string assetPath = AssetDatabase.GetAssetPath(uiTemplateSceneAsset);
+                if (!string.IsNullOrWhiteSpace(assetPath))
+                {
+                    return assetPath;
+                }
+            }
+
+            return TowerDefenseMapToolkitUtility.SampleScenePath;
         }
 
         private Rect BuildRect(Vector3 start, Vector3 end)

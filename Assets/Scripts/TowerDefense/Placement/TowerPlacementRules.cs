@@ -22,6 +22,7 @@ using UnityEngine;
 public sealed class TowerPlacementRules
 {
     private readonly Func<TowerType, float> _getPlacementRadius;
+    private readonly Func<TowerType, Vector2> _getPlacementCenterOffset;
     private readonly Func<TowerType, float> _getExpansionSquareSize;
     private readonly Collider2D[] _placementValidationOverlapBuffer = new Collider2D[64];
 
@@ -30,9 +31,11 @@ public sealed class TowerPlacementRules
 
     public TowerPlacementRules(
         Func<TowerType, float> getPlacementRadius,
+        Func<TowerType, Vector2> getPlacementCenterOffset,
         Func<TowerType, float> getExpansionSquareSize)
     {
         _getPlacementRadius = getPlacementRadius;
+        _getPlacementCenterOffset = getPlacementCenterOffset;
         _getExpansionSquareSize = getExpansionSquareSize;
     }
 
@@ -91,7 +94,9 @@ public sealed class TowerPlacementRules
         }
 
         float placementRadius = _getPlacementRadius != null ? _getPlacementRadius(towerType) : 0f;
-        int overlapCount = Physics2D.OverlapCircleNonAlloc(worldPosition, placementRadius, _placementValidationOverlapBuffer);
+        Vector2 centerOffset = _getPlacementCenterOffset != null ? _getPlacementCenterOffset(towerType) : Vector2.zero;
+        Vector2 overlapCenter = (Vector2)worldPosition + centerOffset;
+        int overlapCount = Physics2D.OverlapCircleNonAlloc(overlapCenter, placementRadius, _placementValidationOverlapBuffer);
         for (int i = 0; i < overlapCount; i++)
         {
             Collider2D overlap = _placementValidationOverlapBuffer[i];
