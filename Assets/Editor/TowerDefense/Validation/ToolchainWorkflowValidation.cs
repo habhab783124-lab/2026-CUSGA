@@ -204,7 +204,7 @@ namespace TowerDefense.Editor
             Scene sampleScene = EditorSceneManager.OpenScene(SampleScenePath, OpenSceneMode.Additive);
             try
             {
-                TowerDefenseMapToolkitUtility.SyncSceneFromSample(sampleScene, targetScene);
+                TowerDefenseMapToolkitUtility.SyncSceneFromTemplate(sampleScene, targetScene);
             }
             finally
             {

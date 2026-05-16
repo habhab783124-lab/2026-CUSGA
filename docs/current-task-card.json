@@ -1,28 +1,27 @@
 {
   "status": "approved",
   "task_source": "user_latest_request",
-  "source_excerpt": "帮我push一次到图片中的这个分支上",
+  "source_excerpt": "帮我push一次到这个分支，备注为第二次更新地图开发工具",
   "selected_historical_excerpt_used": false,
   "do_scope": [
-    "检查当前工作区状态与目标分支是否存在",
-    "将当前改动整理成一次提交",
-    "push 到 origin/优化地图开发工具并修复关卡场景"
+    "检查当前 Git 状态",
+    "排除明显的临时缓存和无关临时目录",
+    "提交当前有效项目改动，提交备注为第二次更新地图开发工具",
+    "push 到目标分支"
   ],
   "not_do_scope": [
     "不顺带改代码逻辑",
-    "不顺带改关卡内容",
-    "不处理无关分支",
-    "不做额外功能开发"
+    "不顺带清理无关文件",
+    "不处理别的分支"
   ],
   "affected_targets": [
+    "当前工作区中的已修改项目文件",
     "docs/current-task-card.md",
-    "docs/current-task-card.json",
-    "git commit",
-    "origin/优化地图开发工具并修复关卡场景"
+    "docs/current-task-card.json"
   ],
   "success_criteria": [
-    "当前改动完成一次提交",
-    "成功 push 到 origin/优化地图开发工具并修复关卡场景"
+    "当前有效改动完成一次 Git 提交",
+    "该提交成功 push 到 origin/优化地图开发工具并修复关卡场景"
   ],
   "approved": true
 }

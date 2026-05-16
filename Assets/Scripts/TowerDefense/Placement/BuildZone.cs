@@ -58,7 +58,28 @@ public class BuildZone : MonoBehaviour
     /// 对外暴露这个只读属性，
     /// 主要是为了以后如果你想做调试显示或编辑器工具时能方便取到范围数据。
     /// </summary>
-    public Bounds WorldBounds => _boxCollider != null ? _boxCollider.bounds : new Bounds(transform.position, Vector3.zero);
+    public Bounds WorldBounds
+    {
+        get
+        {
+            CacheReference();
+
+            List<Collider2D> validShapes = new List<Collider2D>();
+            if (CollectValidZoneShapes(validShapes) > 0)
+            {
+                Bounds combinedBounds = validShapes[0].bounds;
+                for (int index = 1; index < validShapes.Count; index++)
+                {
+                    combinedBounds.Encapsulate(validShapes[index].bounds.min);
+                    combinedBounds.Encapsulate(validShapes[index].bounds.max);
+                }
+
+                return combinedBounds;
+            }
+
+            return _boxCollider != null ? _boxCollider.bounds : new Bounds(transform.position, Vector3.zero);
+        }
+    }
     public Transform ZoneShapeRoot => zoneShapeRootReference;
     public int ZoneShapeCount => CollectValidZoneShapes(null);
 
@@ -284,12 +305,95 @@ public class BuildZone : MonoBehaviour
     private void OnDrawGizmos()
     {
         CacheReference();
+        Gizmos.color = gizmoColor;
+
+        if (CollectValidZoneShapes(null) > 0)
+        {
+            for (int index = 0; index < zoneShapeColliders.Length; index++)
+            {
+                DrawColliderGizmo(zoneShapeColliders[index]);
+            }
+
+            return;
+        }
+
         if (_boxCollider == null)
         {
             return;
         }
 
-        Gizmos.color = gizmoColor;
-        Gizmos.DrawWireCube(_boxCollider.bounds.center, _boxCollider.bounds.size);
+        DrawColliderGizmo(_boxCollider);
+    }
+
+    private void DrawColliderGizmo(Collider2D collider)
+    {
+        if (collider == null)
+        {
+            return;
+        }
+
+        switch (collider)
+        {
+            case BoxCollider2D boxCollider:
+                DrawBoxColliderGizmo(boxCollider);
+                return;
+
+            case CircleCollider2D circleCollider:
+                DrawCircleColliderGizmo(circleCollider);
+                return;
+
+            case PolygonCollider2D polygonCollider:
+                DrawPolygonColliderGizmo(polygonCollider);
+                return;
+
+            case CapsuleCollider2D capsuleCollider:
+                DrawCapsuleColliderGizmo(capsuleCollider);
+                return;
+        }
+
+        Gizmos.DrawWireCube(collider.bounds.center, collider.bounds.size);
+    }
+
+    private void DrawBoxColliderGizmo(BoxCollider2D collider)
+    {
+        Matrix4x4 previousMatrix = Gizmos.matrix;
+        Gizmos.matrix = collider.transform.localToWorldMatrix;
+        Gizmos.DrawWireCube(collider.offset, collider.size);
+        Gizmos.matrix = previousMatrix;
+    }
+
+    private void DrawCircleColliderGizmo(CircleCollider2D collider)
+    {
+        Matrix4x4 previousMatrix = Gizmos.matrix;
+        Gizmos.matrix = collider.transform.localToWorldMatrix;
+        Gizmos.DrawWireSphere(collider.offset, collider.radius);
+        Gizmos.matrix = previousMatrix;
+    }
+
+    private void DrawCapsuleColliderGizmo(CapsuleCollider2D collider)
+    {
+        Matrix4x4 previousMatrix = Gizmos.matrix;
+        Gizmos.matrix = collider.transform.localToWorldMatrix;
+        Gizmos.DrawWireCube(collider.offset, collider.size);
+        Gizmos.matrix = previousMatrix;
+    }
+
+    private void DrawPolygonColliderGizmo(PolygonCollider2D collider)
+    {
+        for (int pathIndex = 0; pathIndex < collider.pathCount; pathIndex++)
+        {
+            Vector2[] path = collider.GetPath(pathIndex);
+            if (path == null || path.Length < 2)
+            {
+                continue;
+            }
+
+            for (int pointIndex = 0; pointIndex < path.Length; pointIndex++)
+            {
+                Vector3 start = collider.transform.TransformPoint(path[pointIndex]);
+                Vector3 end = collider.transform.TransformPoint(path[(pointIndex + 1) % path.Length]);
+                Gizmos.DrawLine(start, end);
+            }
+        }
     }
 }

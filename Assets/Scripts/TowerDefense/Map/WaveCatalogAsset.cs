@@ -24,10 +24,14 @@ public sealed class WaveCatalogAsset : ScriptableObject
         [SerializeField, InspectorName("敌人类型")] private EnemyArchetypeId enemyType = EnemyArchetypeId.Scavenger; // 中文：敌人类型
         [SerializeField, Min(0), InspectorName("数量")] private int enemyCount = 4; // 中文：敌人数量
         [SerializeField, Min(0.05f), InspectorName("刷新间隔")] private float spawnInterval = 1f; // 中文：出怪间隔
+        [SerializeField, HideInInspector, InspectorName("EnemyPath")] private EnemyPath enemyPathReference = null; // 中文：EnemyPath 引用
+        [SerializeField, HideInInspector, Min(0), InspectorName("路径序号")] private int pathSequence = 0; // 中文：路径序号
 
         public EnemyArchetypeId EnemyType => enemyType; // 中文：敌人类型
         public int EnemyCount => Mathf.Max(0, enemyCount); // 中文：敌人数量
         public float SpawnInterval => Mathf.Max(0.05f, spawnInterval); // 中文：出怪间隔
+        public EnemyPath EnemyPathReference => enemyPathReference; // 中文：EnemyPath 引用
+        public int PathSequence => Mathf.Max(0, pathSequence); // 中文：路径序号
     }
 
     [Serializable]
