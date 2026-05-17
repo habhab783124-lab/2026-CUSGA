@@ -17,11 +17,11 @@ MonoBehaviour:
     designerNote: Level 1 opening wave. Introduce basic scavengers and a short fast-wolf
       burst.
     spawnGroups:
-    - enemyType: 5
-      enemyCount: 5
+    - enemyType: 1
+      enemyCount: 10
       spawnInterval: 0.95
-    - enemyType: 2
-      enemyCount: 2
+    - enemyType: 8
+      enemyCount: 10
       spawnInterval: 0.55
   - displayName: "\u7B2C 02 \u6CE2"
     designerNote: Level 1 second wave. Introduce shield support and stealth pressure.
