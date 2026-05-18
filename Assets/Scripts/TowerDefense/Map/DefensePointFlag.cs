@@ -28,6 +28,7 @@ public sealed class DefensePointFlag : MonoBehaviour
     [SerializeField] private Material readabilityMaterialOverride;
     [SerializeField] private Color coreColor = new Color(0.2f, 0.95f, 1f, 0.98f);
     [SerializeField] private Color defenseZoneColor = new Color(0.72f, 1f, 0.98f, 0.92f);
+    [SerializeField] private bool showDefenseZoneInPlayMode = false;
     [SerializeField] private float coreRingRadius = 0.42f;
     [SerializeField] private float defenseZoneRadius = 1.2f;
     [SerializeField] private float frameHalfSize = 0.56f;
@@ -172,20 +173,32 @@ public sealed class DefensePointFlag : MonoBehaviour
 
         readabilityRoot.gameObject.SetActive(true);
 
-        LineRenderer defenseZone = BattlefieldReadabilityVisualUtility.EnsureLineRenderer(
-            readabilityRoot,
-            "DefenseZoneRing",
-            readabilitySortingOrder,
-            0.1f,
-            defenseZoneColor,
-            loop: true,
-            sharedMaterialOverride: readabilityMaterialOverride);
-        BattlefieldReadabilityVisualUtility.SetCircle(
-            defenseZone,
-            defenseZoneRadius,
-            28,
-            0.1f,
-            defenseZoneColor);
+        if (ShouldShowDefenseZone())
+        {
+            LineRenderer defenseZone = BattlefieldReadabilityVisualUtility.EnsureLineRenderer(
+                readabilityRoot,
+                "DefenseZoneRing",
+                readabilitySortingOrder,
+                0.1f,
+                defenseZoneColor,
+                loop: true,
+                sharedMaterialOverride: readabilityMaterialOverride);
+            defenseZone.gameObject.SetActive(true);
+            BattlefieldReadabilityVisualUtility.SetCircle(
+                defenseZone,
+                defenseZoneRadius,
+                28,
+                0.1f,
+                defenseZoneColor);
+        }
+        else
+        {
+            Transform existingDefenseZone = readabilityRoot.Find("DefenseZoneRing");
+            if (existingDefenseZone != null)
+            {
+                existingDefenseZone.gameObject.SetActive(false);
+            }
+        }
 
         LineRenderer coreRing = BattlefieldReadabilityVisualUtility.EnsureLineRenderer(
             readabilityRoot,
@@ -241,6 +254,7 @@ public sealed class DefensePointFlag : MonoBehaviour
             hash = hash * 31 + autoCreateReadabilityRoot.GetHashCode();
             hash = hash * 31 + coreColor.GetHashCode();
             hash = hash * 31 + defenseZoneColor.GetHashCode();
+            hash = hash * 31 + showDefenseZoneInPlayMode.GetHashCode();
             hash = hash * 31 + coreRingRadius.GetHashCode();
             hash = hash * 31 + defenseZoneRadius.GetHashCode();
             hash = hash * 31 + frameHalfSize.GetHashCode();
@@ -250,6 +264,11 @@ public sealed class DefensePointFlag : MonoBehaviour
             hash = hash * 31 + (readabilityMaterialOverride != null ? readabilityMaterialOverride.GetInstanceID() : 0);
             return hash;
         }
+    }
+
+    private bool ShouldShowDefenseZone()
+    {
+        return !Application.isPlaying || showDefenseZoneInPlayMode;
     }
 
     private Transform ResolveReadabilityRoot(bool allowCreate)

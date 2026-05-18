@@ -18,24 +18,24 @@ MonoBehaviour:
       fast wolf burst.
     spawnGroups:
     - enemyType: 1
-      enemyCount: 5
-      spawnInterval: 0.95
+      enemyCount: 8
+      spawnInterval: 1
     - enemyType: 2
       enemyCount: 2
-      spawnInterval: 0.55
+      spawnInterval: 0.5
   - displayName: "\u7B2C 02 \u6CE2"
     designerNote: Introduce shield support and stealth pressure while still keeping
       the total count readable.
     spawnGroups:
     - enemyType: 1
-      enemyCount: 4
-      spawnInterval: 0.85
+      enemyCount: 6
+      spawnInterval: 0.95
     - enemyType: 3
       enemyCount: 1
       spawnInterval: 1.1
-    - enemyType: 6
+    - enemyType: 5
       enemyCount: 2
-      spawnInterval: 0.8
+      spawnInterval: 2
   - displayName: "\u7B2C 03 \u6CE2"
     designerNote: Mix heavy armor, repair support and one death-split boss-style
       unit.
@@ -45,7 +45,7 @@ MonoBehaviour:
       spawnInterval: 1
     - enemyType: 4
       enemyCount: 1
-      spawnInterval: 1.15
+      spawnInterval: 1.2
     - enemyType: 7
       enemyCount: 1
       spawnInterval: 1.4
