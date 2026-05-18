@@ -9,7 +9,6 @@ public sealed class Chapter5Controller : MonoBehaviour
     [Header("Bus")]
     [SerializeField] private string busObjectName = "Bus";
     [SerializeField] private float busMoveSpeed = 3f;
-    [SerializeField] private float busExtraLeftBeyondCamera = 4f;
     [SerializeField] private float busArriveEpsilon = 0.02f;
 
     private Transform bus;
@@ -93,7 +92,10 @@ public sealed class Chapter5Controller : MonoBehaviour
             return;
         }
 
-        bus.position = new Vector3(-20f, busTargetPosition.y, busTargetPosition.z);
+        Camera cam = Camera.main;
+        float halfWidth = cam != null && cam.orthographic ? cam.orthographicSize * cam.aspect : 10f;
+        float startX = cam != null ? cam.transform.position.x - halfWidth - 4f : -20f;
+        bus.position = new Vector3(startX, busTargetPosition.y, busTargetPosition.z);
     }
 
     private void StartBusEntrance()

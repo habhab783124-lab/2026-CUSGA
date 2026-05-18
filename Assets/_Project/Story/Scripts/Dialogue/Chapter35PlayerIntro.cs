@@ -395,6 +395,6 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
 
     private static DialogueEmphasis Normal()
     {
-        return new DialogueEmphasis { enabled = false, scaleMultiplier = 1.25f, shakeMagnitude = 0.08f };
+        return DialogueBubbleView.CreateNormalEmphasis();
     }
 }

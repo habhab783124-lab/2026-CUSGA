@@ -2,91 +2,77 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public sealed class Chapter5 : MonoBehaviour
 {
-    [Header("字体")]
+    [Header("Font")]
     [SerializeField] private TMP_FontAsset dialogueFontAsset;
 
-    [Header("底部文本框")]
-    [SerializeField] private Vector2 boxSize = new(1280f, 220f);
-    [SerializeField] private Vector2 bottomOffset = new(0f, 120f);
+    [Header("Narration Box")]
+    [SerializeField] private Vector2 boxSize = new Vector2(1280f, 220f);
+    [SerializeField] private Vector2 bottomOffset = new Vector2(0f, 120f);
     [SerializeField] [Range(0f, 1f)] private float backgroundAlpha = 0.6f;
     [SerializeField] private Color backgroundColor = Color.black;
     [SerializeField] private Color textColor = Color.white;
     [SerializeField] private float minFontSize = 24f;
     [SerializeField] private float maxFontSize = 42f;
-    [SerializeField] private Vector2 textPadding = new(40f, 25f);
+    [SerializeField] private Vector2 textPadding = new Vector2(40f, 25f);
 
-    [Header("打字机")]
+    [Header("Typing")]
     [SerializeField] private bool playOnStart = true;
     [SerializeField] private float secondsPerChar = 0.03f;
     [SerializeField] private int mouseButton = 0;
 
-    [Header("Shen 入场")]
+    [Header("Shen Entrance")]
     [SerializeField] private Transform shen;
     [SerializeField] private Transform shenStopPoint;
     [SerializeField] private float shenMoveSpeed = 3f;
     [SerializeField] private float shenExtraLeftBeyondCamera = 1.2f;
     [SerializeField] private float shenArriveEpsilon = 0.02f;
 
-    [Header("角色对白气泡")]
+    [Header("Character Dialogue Bubble")]
     [SerializeField] private DialogueBubbleView dialogueBubblePrefab;
     [SerializeField] private Transform playerCharacter;
     [SerializeField] private Transform playerBubbleAnchor;
     [SerializeField] private Transform shenBubbleAnchor;
-    [SerializeField] private Vector3 playerBubbleOffset = new(0f, 2.1f, 0f);
-    [SerializeField] private Vector3 shenBubbleOffset = new(0f, 2.1f, 0f);
+    [SerializeField] private Vector3 playerBubbleOffset = new Vector3(0f, 2.1f, 0f);
+    [SerializeField] private Vector3 shenBubbleOffset = new Vector3(0f, 2.1f, 0f);
     [SerializeField] private Vector3 bubbleWorldOffset = Vector3.zero;
-    [SerializeField] private Vector2 bubbleContentPadding = new(0.55f, 0.35f);
+    [SerializeField] private Vector2 bubbleContentPadding = new Vector2(0.55f, 0.35f);
     [SerializeField] private float bubbleMaxWidth = 7.2f;
     [SerializeField] private float bubbleMinWidth = 2f;
     [SerializeField] private float bubbleMinHeight = 1.2f;
     [SerializeField] private float bubbleFontSize = 36f;
 
-    private Canvas overlayCanvas;
-    private RectTransform textBox;
-    private Image background;
-    private TextMeshProUGUI dialogueText;
-    private CanvasGroup textBoxCanvasGroup;
-
-    private Coroutine typingRoutine;
+    private NarrationPresenter narrationPresenter;
     private Coroutine shenEntranceRoutine;
-
     private DialogueBubbleView playerBubble;
     private DialogueBubbleView shenBubble;
-
-    private readonly List<DialogueLine> characterLines = new();
-
+    private readonly List<DialogueLine> characterLines = new List<DialogueLine>();
     private bool hasPlayed;
-    private bool isTyping;
-    private bool skipTyping;
-    private bool waitingForCloseClick;
+    private bool introAwaitingAdvance;
     private bool shenEntranceStarted;
     private bool characterDialogueActive;
-
     private Vector3 shenTargetPosition;
     private bool hasCachedShenTargetPosition;
     private int characterDialogueIndex;
 
     private void Awake()
     {
-        EnsureVisuals();
         ResolveShenReferences();
         ResolvePlayerReference();
         CacheShenTargetPosition(true);
         PlaceShenOffscreenLeft();
 
         EnsureDialogueBubblePrefab();
+        EnsureNarrationPresenter();
         EnsureBubbleAnchors();
         EnsureBubbleInstances();
 
-        ApplyFont();
+        ConfigureNarrationPresenter();
         ApplyBubbleFont();
-        ApplyStyle();
 
-        HideTextImmediate();
+        narrationPresenter?.Hide();
         HideAllCharacterBubbles();
         BuildCharacterDialogueLines();
     }
@@ -96,7 +82,7 @@ public sealed class Chapter5 : MonoBehaviour
         if (dialogueFontAsset == null)
         {
             dialogueFontAsset = TryLoadDialogueFont();
-            ApplyFont();
+            ConfigureNarrationPresenter();
             ApplyBubbleFont();
         }
 
@@ -129,16 +115,15 @@ public sealed class Chapter5 : MonoBehaviour
             return;
         }
 
-        if (isTyping)
+        if (introAwaitingAdvance)
         {
-            skipTyping = true;
-            return;
-        }
+            if (narrationPresenter != null && narrationPresenter.TryHandleAdvanceInput())
+            {
+                return;
+            }
 
-        if (waitingForCloseClick)
-        {
-            waitingForCloseClick = false;
-            HideTextImmediate();
+            introAwaitingAdvance = false;
+            narrationPresenter?.Hide();
             StartShenEntrance();
         }
     }
@@ -151,8 +136,11 @@ public sealed class Chapter5 : MonoBehaviour
         }
 
         hasPlayed = true;
-        ShowTextBox();
-        StartTyping("战斗结束已是午夜。今天是伊甸人工降雨日，人们通过降雨冲刷掉含有辐射的尘埃。");
+        introAwaitingAdvance = true;
+
+        IReadOnlyList<DialogueLine> introLines = Get("chapter5_intro");
+        narrationPresenter?.SetLines(introLines);
+        narrationPresenter?.ShowLine(0);
     }
 
     private void ResolveShenReferences()
@@ -220,13 +208,13 @@ public sealed class Chapter5 : MonoBehaviour
 
         if (shen == null)
         {
-            Debug.LogError("Chapter5: 未指定 Shen，且场景中未找到名为 'Shen' 的对象。", this);
+            Debug.LogError("Chapter5: Missing Shen reference in scene.", this);
             return;
         }
 
         if (!hasCachedShenTargetPosition)
         {
-            Debug.LogError("Chapter5: 未找到 Shen 停靠位置。请指定 Shen Stop Point，或先把 Shen 摆在最终停靠位置。", this);
+            Debug.LogError("Chapter5: Missing Shen stop point.", this);
             return;
         }
 
@@ -257,37 +245,46 @@ public sealed class Chapter5 : MonoBehaviour
         StartCharacterDialogue();
     }
 
-    private void EnsureVisuals()
-    {
-        GameObject canvasObject = new GameObject("Chapter5Canvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-        canvasObject.transform.SetParent(transform, false);
-
-        overlayCanvas = canvasObject.GetComponent<Canvas>();
-        overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-
-        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920f, 1080f);
-
-        GameObject boxObject = new GameObject("DialogueBox", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(CanvasGroup));
-        boxObject.transform.SetParent(overlayCanvas.transform, false);
-
-        textBox = boxObject.GetComponent<RectTransform>();
-        background = boxObject.GetComponent<Image>();
-        textBoxCanvasGroup = boxObject.GetComponent<CanvasGroup>();
-
-        GameObject textObject = new GameObject("DialogueText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        textObject.transform.SetParent(boxObject.transform, false);
-
-        dialogueText = textObject.GetComponent<TextMeshProUGUI>();
-    }
-
     private void EnsureDialogueBubblePrefab()
     {
         if (dialogueBubblePrefab == null)
         {
             dialogueBubblePrefab = Resources.Load<DialogueBubbleView>("DialogueBubble");
         }
+    }
+
+    private void EnsureNarrationPresenter()
+    {
+        if (narrationPresenter == null)
+        {
+            narrationPresenter = GetComponent<NarrationPresenter>();
+        }
+
+        if (narrationPresenter == null)
+        {
+            narrationPresenter = gameObject.AddComponent<NarrationPresenter>();
+        }
+    }
+
+    private void ConfigureNarrationPresenter()
+    {
+        if (narrationPresenter == null)
+        {
+            return;
+        }
+
+        narrationPresenter.SetUiNames("Chapter5Canvas", "DialogueBox", "DialogueText");
+        narrationPresenter.ConfigureAppearance(
+            dialogueFontAsset,
+            boxSize,
+            bottomOffset,
+            backgroundAlpha,
+            backgroundColor,
+            textColor,
+            minFontSize,
+            maxFontSize,
+            textPadding);
+        narrationPresenter.ConfigureTyping(secondsPerChar, dialogueBubblePrefab, "Chapter5IntroTypingSfx");
     }
 
     private void EnsureBubbleAnchors()
@@ -500,104 +497,6 @@ public sealed class Chapter5 : MonoBehaviour
         characterLines.Add(ShenLine("车来了哦～"));
     }
 
-    private void ApplyFont()
-    {
-        if (dialogueText != null && dialogueFontAsset != null)
-        {
-            dialogueText.font = dialogueFontAsset;
-        }
-    }
-
-    private void ApplyStyle()
-    {
-        textBox.anchorMin = new Vector2(0.5f, 0f);
-        textBox.anchorMax = new Vector2(0.5f, 0f);
-        textBox.pivot = new Vector2(0.5f, 0.5f);
-        textBox.anchoredPosition = bottomOffset;
-        textBox.sizeDelta = boxSize;
-
-        Color color = backgroundColor;
-        color.a = backgroundAlpha;
-        background.color = color;
-        background.raycastTarget = false;
-
-        RectTransform textRect = dialogueText.rectTransform;
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = new Vector2(textPadding.x, textPadding.y);
-        textRect.offsetMax = new Vector2(-textPadding.x, -textPadding.y);
-
-        dialogueText.color = textColor;
-        dialogueText.enableAutoSizing = true;
-        dialogueText.fontSizeMin = minFontSize;
-        dialogueText.fontSizeMax = maxFontSize;
-        dialogueText.enableWordWrapping = true;
-        dialogueText.alignment = TextAlignmentOptions.MidlineLeft;
-        dialogueText.overflowMode = TextOverflowModes.Overflow;
-        dialogueText.raycastTarget = false;
-    }
-
-    private void ShowTextBox()
-    {
-        textBox.gameObject.SetActive(true);
-        textBoxCanvasGroup.alpha = 1f;
-    }
-
-    private void HideTextImmediate()
-    {
-        StopTypingRoutine();
-        isTyping = false;
-        skipTyping = false;
-        dialogueText.text = string.Empty;
-        textBox.gameObject.SetActive(false);
-        textBoxCanvasGroup.alpha = 0f;
-    }
-
-    private void StartTyping(string content)
-    {
-        StopTypingRoutine();
-        waitingForCloseClick = false;
-        typingRoutine = StartCoroutine(TypeLineRoutine(content ?? string.Empty));
-    }
-
-    private IEnumerator TypeLineRoutine(string fullText)
-    {
-        isTyping = true;
-        skipTyping = false;
-        dialogueText.text = string.Empty;
-        float delay = Mathf.Max(0.001f, secondsPerChar);
-
-        for (int i = 1; i <= fullText.Length; i++)
-        {
-            if (skipTyping)
-            {
-                dialogueText.text = fullText;
-                break;
-            }
-
-            dialogueText.text = fullText.Substring(0, i);
-            if (i < fullText.Length)
-            {
-                yield return new WaitForSeconds(delay);
-            }
-        }
-
-        dialogueText.text = fullText;
-        isTyping = false;
-        skipTyping = false;
-        waitingForCloseClick = true;
-        typingRoutine = null;
-    }
-
-    private void StopTypingRoutine()
-    {
-        if (typingRoutine != null)
-        {
-            StopCoroutine(typingRoutine);
-            typingRoutine = null;
-        }
-    }
-
     public static IReadOnlyList<DialogueLine> Get(string id)
     {
         switch (id)
@@ -644,12 +543,7 @@ public sealed class Chapter5 : MonoBehaviour
 
     private static DialogueEmphasis Normal()
     {
-        return new DialogueEmphasis
-        {
-            enabled = false,
-            scaleMultiplier = 1.25f,
-            shakeMagnitude = 0.08f
-        };
+        return DialogueBubbleView.CreateNormalEmphasis();
     }
 
     private static TMP_FontAsset TryLoadDialogueFont()

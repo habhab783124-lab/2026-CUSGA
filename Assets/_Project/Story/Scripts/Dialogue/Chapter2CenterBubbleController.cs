@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,6 +20,7 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
     [SerializeField] private FontStyles textFontStyle = FontStyles.Normal;
     [SerializeField] private TextAlignmentOptions textAlignment = TextAlignmentOptions.MidlineLeft;
     [SerializeField] private float secondsPerCharacter = 0.03f;
+    [SerializeField] private DialogueBubbleView typingSfxReferenceBubble;
 
     [Header("展开/关闭")]
     [SerializeField] private float openDuration = 0.32f;
@@ -35,6 +37,7 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
     [SerializeField] private int closeFlickerCount = 2;
     [SerializeField] private float closeFlickerInterval = 0.03f;
 
+    private NarrationPresenter narrationPresenter;
     private Canvas overlayCanvas;
     private TextMeshProUGUI dialogueText;
     private CanvasGroup dialogueTextCanvasGroup;
@@ -46,20 +49,27 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
     private Coroutine typingRoutine;
     private bool isOpen;
     private bool isTyping;
+    private bool isPaused;
     private string currentFullText = string.Empty;
+    private DialogueInlineEffects.ParsedLine currentParsedLine;
     private Action onTypingFinished;
+    private AudioSource typingAudioSource;
+    private DialogueBubbleView.ExternalTypingSfxPlayer typingSfxPlayer;
+    private CenterBubbleTransitionDriver transitionDriver;
 
-    public bool IsOpen => isOpen;
-    public bool IsTransitioning => transitionRoutine != null;
-    public bool IsTyping => isTyping;
+    public bool IsOpen => transitionDriver != null ? transitionDriver.IsOpen : isOpen;
+    public bool IsTransitioning => transitionDriver != null ? transitionDriver.IsTransitioning : transitionRoutine != null;
+    public bool IsTyping => narrationPresenter != null ? narrationPresenter.IsTyping : isTyping;
+    public bool IsPaused => narrationPresenter != null ? narrationPresenter.IsPaused : isPaused;
 
     private void Awake()
     {
         ResolveTargetRenderer();
         CacheInitialVisualStateIfNeeded();
-        EnsureTextUi();
-        ApplyFont();
-        ApplyTextStyle();
+        EnsureTransitionDriver();
+        ConfigureTransitionDriver();
+        EnsureNarrationPresenter();
+        ConfigureNarrationPresenter();
     }
 
     private void OnEnable()
@@ -73,111 +83,90 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
         {
             ResolveTargetRenderer();
             CaptureInitialVisualState();
-
-            EnsureTextUi();
+            EnsureTransitionDriver();
+            ConfigureTransitionDriver();
+            EnsureNarrationPresenter();
         }
 
-        ApplyFont();
-        ApplyTextStyle();
+        ConfigureNarrationPresenter();
+    }
+
+    public void SetTypingSfxReferenceBubble(DialogueBubbleView referenceBubble)
+    {
+        if (referenceBubble != null)
+        {
+            typingSfxReferenceBubble = referenceBubble;
+        }
+
+        ConfigureNarrationPresenter();
+    }
+
+    public bool TryHandleAdvanceInput()
+    {
+        return narrationPresenter != null && narrationPresenter.TryHandleAdvanceInput();
     }
 
     public void ShowNpcLine(string content, Action onComplete = null)
     {
         ResolveTargetRenderer();
         CacheInitialVisualStateIfNeeded();
-        EnsureTextUi();
-        ApplyFont();
-        ApplyTextStyle();
-        onTypingFinished = onComplete;
+        EnsureTransitionDriver();
+        ConfigureTransitionDriver();
         currentFullText = content ?? string.Empty;
+        EnsureNarrationPresenter();
+        ConfigureNarrationPresenter();
 
-        if (dialogueText != null)
+        if (IsOpen)
         {
-            dialogueText.text = string.Empty;
-            dialogueText.gameObject.SetActive(true);
-        }
-
-        if (dialogueTextCanvasGroup != null)
-        {
-            dialogueTextCanvasGroup.alpha = 1f;
-        }
-
-        if (isOpen)
-        {
-            StartTypingCurrentText();
+            narrationPresenter?.PlayText(currentFullText, onComplete);
             return;
         }
 
-        PlayOpen(() => StartTypingCurrentText());
+        PlayOpen(() => narrationPresenter?.PlayText(currentFullText, onComplete));
     }
 
     public void CompleteTyping()
     {
-        StopTypingRoutine();
-        if (dialogueText != null)
-        {
-            dialogueText.text = currentFullText;
-        }
-
-        isTyping = false;
-        onTypingFinished?.Invoke();
-        onTypingFinished = null;
+        narrationPresenter?.CompleteTyping();
     }
 
     public void HideNpcLine(Action onComplete = null)
     {
-        StopTypingRoutine();
         currentFullText = string.Empty;
-        onTypingFinished = null;
-
-        if (!isOpen)
+        narrationPresenter?.Hide();
+        if (!IsOpen)
         {
-            HideTextImmediate();
             onComplete?.Invoke();
             return;
         }
 
         PlayClose(() =>
         {
-            HideTextImmediate();
+            narrationPresenter?.Hide();
             onComplete?.Invoke();
         });
     }
 
     public void SetClosedImmediate()
     {
-        if (transitionRoutine != null)
-        {
-            StopCoroutine(transitionRoutine);
-            transitionRoutine = null;
-        }
-
-        StopTypingRoutine();
-        ResolveTargetRenderer();
-        CacheInitialVisualStateIfNeeded();
-        ApplyVisual(0f, 0f);
-        HideTextImmediate();
-        isOpen = false;
+        EnsureTransitionDriver();
+        ConfigureTransitionDriver();
+        transitionDriver.SetClosedImmediate();
+        narrationPresenter?.Hide();
     }
 
     public void PlayOpen(Action onComplete = null)
     {
-        if (transitionRoutine != null)
-        {
-            StopCoroutine(transitionRoutine);
-        }
-
-        transitionRoutine = StartCoroutine(PlayOpenRoutine(onComplete));
+        EnsureTransitionDriver();
+        ConfigureTransitionDriver();
+        transitionDriver.PlayOpen(onComplete);
     }
 
     public void PlayClose(Action onComplete = null)
     {
-        if (transitionRoutine != null)
-        {
-            StopCoroutine(transitionRoutine);
-        }
-
-        transitionRoutine = StartCoroutine(PlayCloseRoutine(onComplete));
+        EnsureTransitionDriver();
+        ConfigureTransitionDriver();
+        transitionDriver.PlayClose(onComplete);
     }
 
     private void ResolveTargetRenderer()
@@ -327,6 +316,50 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
         return null;
     }
 
+    private void EnsureNarrationPresenter()
+    {
+        if (narrationPresenter == null)
+        {
+            narrationPresenter = GetComponent<NarrationPresenter>();
+        }
+
+        if (narrationPresenter == null)
+        {
+            narrationPresenter = gameObject.AddComponent<NarrationPresenter>();
+        }
+    }
+
+    private void ConfigureNarrationPresenter()
+    {
+        if (dialogueFontAsset == null)
+        {
+            dialogueFontAsset = TryLoadDialogueFont();
+        }
+
+        if (narrationPresenter == null)
+        {
+            return;
+        }
+
+        narrationPresenter.SetUiNames("Chapter2CenterBubbleCanvas", "DialogueBox", "DialogueText");
+        narrationPresenter.ConfigureAppearance(
+            dialogueFontAsset,
+            textSize,
+            textScreenPosition,
+            0f,
+            Color.black,
+            textColor,
+            textFontSize,
+            textFontSize,
+            Vector2.zero);
+        narrationPresenter.ConfigureLayout(
+            new Vector2(0.5f, 0.5f),
+            new Vector2(0.5f, 0.5f),
+            new Vector2(0.5f, 0.5f),
+            textScreenPosition);
+        narrationPresenter.ConfigureTyping(secondsPerCharacter, typingSfxReferenceBubble, "Chapter2CenterBubbleTypingSfx");
+    }
+
     private void ApplyTextStyle()
     {
         if (dialogueText == null)
@@ -345,6 +378,7 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
         dialogueText.color = textColor;
         dialogueText.fontStyle = textFontStyle;
         dialogueText.alignment = textAlignment;
+        dialogueText.richText = true;
         dialogueText.enableWordWrapping = true;
         dialogueText.overflowMode = TextOverflowModes.Overflow;
         dialogueText.raycastTarget = false;
@@ -358,41 +392,84 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
     private void StartTypingCurrentText()
     {
         StopTypingRoutine();
-        typingRoutine = StartCoroutine(TypeTextRoutine(currentFullText));
+        currentParsedLine = ParseCurrentLine();
+        typingRoutine = StartCoroutine(TypeTextRoutine(currentParsedLine));
     }
 
-    private IEnumerator TypeTextRoutine(string content)
+    public void ResumeTyping()
+    {
+        isPaused = false;
+    }
+
+    private IEnumerator TypeTextRoutine(DialogueInlineEffects.ParsedLine parsedLine)
     {
         isTyping = true;
+        isPaused = false;
         if (dialogueText != null)
         {
-            dialogueText.text = string.Empty;
+            dialogueText.richText = true;
+            dialogueText.text = parsedLine != null ? parsedLine.DisplayText : string.Empty;
+            dialogueText.maxVisibleCharacters = 0;
+            dialogueText.ForceMeshUpdate();
         }
 
-        if (string.IsNullOrEmpty(content))
+        List<DialogueInlineEffects.VisibleCharacter> visibleCharacters =
+            parsedLine != null ? parsedLine.VisibleCharacters : null;
+        if (visibleCharacters == null || visibleCharacters.Count == 0)
         {
             isTyping = false;
+            isPaused = false;
             typingRoutine = null;
             onTypingFinished?.Invoke();
             onTypingFinished = null;
             yield break;
         }
 
-        float delay = Mathf.Max(0.001f, secondsPerCharacter);
-        for (int i = 1; i <= content.Length; i++)
+        int visible = 0;
+        int lastPauseIndex = -1;
+        while (visible < visibleCharacters.Count)
         {
-            if (dialogueText != null)
+            if (isPaused)
             {
-                dialogueText.text = content.Substring(0, i);
+                yield return null;
+                continue;
             }
 
-            if (i < content.Length)
+            DialogueInlineEffects.VisibleCharacter visibleCharacter = visibleCharacters[visible];
+            if (visibleCharacter.PauseBefore && lastPauseIndex != visible)
+            {
+                isPaused = true;
+                lastPauseIndex = visible;
+                continue;
+            }
+
+            visible++;
+            if (dialogueText != null)
+            {
+                dialogueText.maxVisibleCharacters = visible;
+            }
+
+            typingSfxPlayer?.ApplyPool(visibleCharacter.TypingSfxPoolId);
+            typingSfxPlayer?.Play(dialogueText, visible - 1, visibleCharacter.FontSizeScale);
+
+            float delay = Mathf.Max(0f, visibleCharacter.SecondsPerCharacter);
+            if (delay > 0f)
             {
                 yield return new WaitForSeconds(delay);
             }
+            else
+            {
+                yield return null;
+            }
+        }
+
+        if (dialogueText != null)
+        {
+            dialogueText.maxVisibleCharacters = int.MaxValue;
         }
 
         isTyping = false;
+        isPaused = false;
         typingRoutine = null;
         onTypingFinished?.Invoke();
         onTypingFinished = null;
@@ -407,6 +484,59 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
         }
 
         isTyping = false;
+        isPaused = false;
+    }
+
+    private DialogueInlineEffects.ParsedLine ParseCurrentLine()
+    {
+        float baseFontSize = dialogueText != null && dialogueText.fontSize > 0f ? dialogueText.fontSize : textFontSize;
+        return DialogueInlineEffects.Parse(currentFullText, secondsPerCharacter, baseFontSize);
+    }
+
+    private void EnsureTypingSfxSupport()
+    {
+        EnsureTypingSfxReference();
+        typingAudioSource = DialogueBubbleView.EnsureExternalTypingAudioSource(this, "Chapter2CenterBubbleTypingSfx");
+        typingSfxPlayer = DialogueBubbleView.CreateExternalTypingSfxPlayer(typingSfxReferenceBubble, typingAudioSource);
+    }
+
+    private void EnsureTransitionDriver()
+    {
+        if (transitionDriver == null)
+        {
+            transitionDriver = new CenterBubbleTransitionDriver(this);
+        }
+    }
+
+    private void ConfigureTransitionDriver()
+    {
+        if (transitionDriver == null)
+        {
+            return;
+        }
+
+        transitionDriver.Configure(
+            targetRenderer,
+            bubbleVisualTransform,
+            new CenterBubbleTransitionDriver.Settings
+            {
+                openDuration = openDuration,
+                closeDuration = closeDuration,
+                widthCurve = widthCurve,
+                alphaCurve = alphaCurve,
+                closeWidthCurve = closeWidthCurve,
+                closeAlphaCurve = closeAlphaCurve,
+                overshootScaleX = overshootScaleX,
+                overshootDuration = overshootDuration,
+                flickerAlphaDrop = flickerAlphaDrop,
+                closeFlickerCount = closeFlickerCount,
+                closeFlickerInterval = closeFlickerInterval
+            });
+    }
+
+    private void EnsureTypingSfxReference()
+    {
+        typingSfxReferenceBubble = DialogueBubbleView.ResolveTypingSfxReference(typingSfxReferenceBubble);
     }
 
     private IEnumerator PlayOpenRoutine(Action onComplete)

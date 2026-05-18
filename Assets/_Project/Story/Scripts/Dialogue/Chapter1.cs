@@ -59,9 +59,13 @@ public sealed class Chapter1 : MonoBehaviour
     private bool isConversationActive;
     private Coroutine npcTypingRoutine;
     private bool isNpcTyping;
+    private bool isNpcPaused;
     private string currentNpcFullText = string.Empty;
+    private DialogueInlineEffects.ParsedLine currentNpcParsedLine;
     private DialogueLine pendingPlayerLine;
     private Chapter1AdvanceStage advanceStage;
+    private AudioSource npcTypingAudioSource;
+    private DialogueBubbleView.ExternalTypingSfxPlayer npcTypingSfxPlayer;
 
     private void Awake()
     {
@@ -71,6 +75,7 @@ public sealed class Chapter1 : MonoBehaviour
         EnsureCenterBubbleScreen();
         EnsureNpcTextUi();
         EnsureAudioSource();
+        EnsureNpcTypingAudioSource();
         ApplyFont();
         ApplyNpcTextStyle();
         UpdatePlayerBubbleAnchor();
@@ -130,6 +135,12 @@ public sealed class Chapter1 : MonoBehaviour
 
         if (isNpcTyping)
         {
+            if (isNpcPaused)
+            {
+                ResumeNpcTyping();
+                return;
+            }
+
             CompleteNpcTyping();
             return;
         }
@@ -300,6 +311,7 @@ public sealed class Chapter1 : MonoBehaviour
         npcText.color = npcTextColor;
         npcText.fontStyle = npcTextFontStyle;
         npcText.alignment = npcTextAlignment;
+        npcText.richText = true;
         npcText.enableWordWrapping = true;
         npcText.overflowMode = TextOverflowModes.Overflow;
         npcText.raycastTarget = false;
@@ -321,6 +333,12 @@ public sealed class Chapter1 : MonoBehaviour
         audioSource.playOnAwake = false;
         audioSource.loop = loopMusic;
         audioSource.volume = musicVolume;
+    }
+
+    private void EnsureNpcTypingAudioSource()
+    {
+        npcTypingAudioSource = DialogueBubbleView.EnsureExternalTypingAudioSource(this, "Chapter1NpcTypingSfx");
+        npcTypingSfxPlayer = DialogueBubbleView.CreateExternalTypingSfxPlayer(playerBubblePrefab, npcTypingAudioSource);
     }
 
     private void PlayMusic()
@@ -488,6 +506,7 @@ public sealed class Chapter1 : MonoBehaviour
         advanceStage = Chapter1AdvanceStage.WaitingPlayerStart;
         waitingForAdvanceClick = true;
         currentNpcFullText = string.Empty;
+        currentNpcParsedLine = null;
     }
 
     private void EndDialogue()
@@ -517,7 +536,9 @@ public sealed class Chapter1 : MonoBehaviour
         ApplyFont();
         ApplyNpcTextStyle();
         currentNpcFullText = content ?? string.Empty;
+        currentNpcParsedLine = ParseNpcLine(currentNpcFullText);
         npcText.text = string.Empty;
+        npcText.maxVisibleCharacters = 0;
         npcText.gameObject.SetActive(true);
         if (npcTextCanvasGroup != null)
         {
@@ -529,15 +550,33 @@ public sealed class Chapter1 : MonoBehaviour
     {
         StopNpcTypingRoutine();
         currentNpcFullText = content ?? string.Empty;
-        npcTypingRoutine = StartCoroutine(TypeNpcTextRoutine(currentNpcFullText));
+        currentNpcParsedLine = ParseNpcLine(currentNpcFullText);
+        npcTypingSfxPlayer?.Reset();
+        npcTypingRoutine = StartCoroutine(TypeNpcTextRoutine(currentNpcParsedLine));
     }
 
-    private IEnumerator TypeNpcTextRoutine(string content)
+    private IEnumerator TypeNpcTextRoutine(DialogueInlineEffects.ParsedLine parsedLine)
     {
         isNpcTyping = true;
-        npcText.text = string.Empty;
+        isNpcPaused = false;
 
-        if (string.IsNullOrEmpty(content))
+        if (npcText == null)
+        {
+            isNpcTyping = false;
+            npcTypingRoutine = null;
+            yield break;
+        }
+
+        string displayText = parsedLine != null ? parsedLine.DisplayText : string.Empty;
+        List<DialogueInlineEffects.VisibleCharacter> visibleCharacters =
+            parsedLine != null ? parsedLine.VisibleCharacters : null;
+
+        npcText.richText = true;
+        npcText.text = displayText;
+        npcText.maxVisibleCharacters = 0;
+        npcText.ForceMeshUpdate();
+
+        if (visibleCharacters == null || visibleCharacters.Count == 0)
         {
             isNpcTyping = false;
             waitingForAdvanceClick = true;
@@ -546,17 +585,43 @@ public sealed class Chapter1 : MonoBehaviour
             yield break;
         }
 
-        float delay = Mathf.Max(0.001f, npcSecondsPerCharacter);
-        for (int i = 1; i <= content.Length; i++)
+        int visible = 0;
+        int lastPauseIndex = -1;
+        while (visible < visibleCharacters.Count)
         {
-            npcText.text = content.Substring(0, i);
-            if (i < content.Length)
+            if (isNpcPaused)
+            {
+                yield return null;
+                continue;
+            }
+
+            DialogueInlineEffects.VisibleCharacter visibleCharacter = visibleCharacters[visible];
+            if (visibleCharacter.PauseBefore && lastPauseIndex != visible)
+            {
+                isNpcPaused = true;
+                lastPauseIndex = visible;
+                continue;
+            }
+
+            npcTypingSfxPlayer?.ApplyPool(visibleCharacter.TypingSfxPoolId);
+            visible++;
+            npcText.maxVisibleCharacters = visible;
+            npcTypingSfxPlayer?.Play(npcText, visible - 1, visibleCharacter.FontSizeScale);
+
+            float delay = Mathf.Max(0f, visibleCharacter.SecondsPerCharacter);
+            if (delay > 0f)
             {
                 yield return new WaitForSeconds(delay);
             }
+            else
+            {
+                yield return null;
+            }
         }
 
+        npcText.maxVisibleCharacters = int.MaxValue;
         isNpcTyping = false;
+        isNpcPaused = false;
         waitingForAdvanceClick = true;
         advanceStage = Chapter1AdvanceStage.WaitingLineAdvance;
         npcTypingRoutine = null;
@@ -567,12 +632,20 @@ public sealed class Chapter1 : MonoBehaviour
         StopNpcTypingRoutine();
         if (npcText != null)
         {
-            npcText.text = currentNpcFullText;
+            npcText.richText = true;
+            npcText.text = currentNpcParsedLine != null ? currentNpcParsedLine.DisplayText : string.Empty;
+            npcText.maxVisibleCharacters = int.MaxValue;
         }
 
         isNpcTyping = false;
+        isNpcPaused = false;
         waitingForAdvanceClick = true;
         advanceStage = Chapter1AdvanceStage.WaitingLineAdvance;
+    }
+
+    private void ResumeNpcTyping()
+    {
+        isNpcPaused = false;
     }
 
     private void StopNpcTypingRoutine()
@@ -584,17 +657,20 @@ public sealed class Chapter1 : MonoBehaviour
         }
 
         isNpcTyping = false;
+        isNpcPaused = false;
     }
 
     private void HideNpcTextImmediate()
     {
         StopNpcTypingRoutine();
         currentNpcFullText = string.Empty;
+        currentNpcParsedLine = null;
 
         if (npcText != null)
         {
             npcText.gameObject.SetActive(false);
             npcText.text = string.Empty;
+            npcText.maxVisibleCharacters = 0;
         }
 
         if (npcTextCanvasGroup != null)
@@ -603,7 +679,13 @@ public sealed class Chapter1 : MonoBehaviour
         }
     }
 
-    private void UpdatePlayerBubbleAnchor()
+    private DialogueInlineEffects.ParsedLine ParseNpcLine(string content)
+    {
+        float baseFontSize = npcText != null && npcText.fontSize > 0f ? npcText.fontSize : npcTextFontSize;
+        return DialogueInlineEffects.Parse(content, npcSecondsPerCharacter, baseFontSize);
+    }
+
+    private void UpdatePlayerBubbleAnchor()//更新气泡位置
     {
         Camera cam = Camera.main;
         if (cam == null || playerBubbleAnchor == null)
@@ -634,8 +716,8 @@ public sealed class Chapter1 : MonoBehaviour
     {
         return new List<DialogueLine>
         {
-            Npc("第三小队，东侧防区出现少量变异体。"),
-            Npc("清理者，凌，编号Urzu7，请立即前往指定火力点，接管外墙防御单元。"),
+            Npc("第三小队，[pause]<size=150%>东侧防区出现少量变异体。</size>"),
+            Npc("[speed=0.05]清理者，凌，编号Urzu7，请立即前往指定火力点，接管外墙防御单元。"),
             Npc("目标威胁等级：低。执行标准清理流程。"),
             Player("收到！为了伊甸！"),
         };
@@ -663,12 +745,12 @@ public sealed class Chapter1 : MonoBehaviour
 
     private static DialogueEmphasis Normal()
     {
-        return new DialogueEmphasis { enabled = false, scaleMultiplier = 1.25f, shakeMagnitude = 0.08f };
+        return DialogueBubbleView.CreateNormalEmphasis();
     }
 
-    private static DialogueEmphasis Strong(float scaleMultiplier = 1.4f, float shakeMagnitude = 0.12f)
+    private static DialogueEmphasis Strong(float scaleMultiplier = 1.0f, float shakeMagnitude = 0.15f)
     {
-        return new DialogueEmphasis { enabled = true, scaleMultiplier = scaleMultiplier, shakeMagnitude = shakeMagnitude };
+        return DialogueBubbleView.CreateStrongEmphasis(scaleMultiplier, shakeMagnitude);
     }
 
     private static TMP_FontAsset TryLoadDialogueFont()

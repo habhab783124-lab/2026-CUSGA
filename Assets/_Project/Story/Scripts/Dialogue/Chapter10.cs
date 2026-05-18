@@ -317,7 +317,7 @@ public sealed class Chapter10 : MonoBehaviour
 
     private static DialogueEmphasis Normal()
     {
-        return new DialogueEmphasis { enabled = false, scaleMultiplier = 1.25f, shakeMagnitude = 0.08f };
+        return DialogueBubbleView.CreateNormalEmphasis();
     }
 
     private static TMP_FontAsset TryLoadDialogueFont()

@@ -4,43 +4,45 @@ using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(DialogueRunner))]
-public sealed class Chapter7SceneController : MonoBehaviour
+public sealed class Chapter7SceneController : StoryCutsceneControllerBase
 {
-    [Header("对白")]
+    [Header("Dialogue")]
     [SerializeField] private DialogueRunner dialogueRunner;
     [SerializeField] private string dialogueId = "chapter7_intro";
     [SerializeField] private bool playOnStart = true;
 
-    [Header("对话气泡")]
+    [Header("Dialogue Bubble")]
     [SerializeField] private DialogueBubbleView dialogueBubblePrefab;
     [SerializeField] private Transform playerBubbleAnchor;
     [SerializeField] private Transform npcBubbleAnchor;
 
-    [Header("气泡位置微调")]
+    [Header("Bubble Offsets")]
     [SerializeField] private Vector3 playerBubbleAnchorOffset = new Vector3(-2f, 1.8f, 0f);
     [SerializeField] private Vector3 npcBubbleAnchorOffset = new Vector3(2f, 1.8f, 0f);
 
-    [Header("可选角色引用")]
+    [Header("Actors")]
     [SerializeField] private PlayerInteractor2D playerInteractor;
     [SerializeField] private Transform player;
     [SerializeField] private Transform npc;
 
-    [Header("开场")]
+    [Header("Opening")]
     [SerializeField] private float dialogueDelayOnStart = 0.1f;
 
     private bool hasPlayed;
     private Transform runtimePlayerBubbleAnchor;
     private Transform runtimeNpcBubbleAnchor;
 
-    private void Reset()
+    protected override void Reset()
     {
+        base.Reset();
         dialogueRunner = GetComponent<DialogueRunner>();
-        playerInteractor = FindObjectOfType<PlayerInteractor2D>(includeInactive: true);
+        playerInteractor = ResolvePlayerInteractor(playerInteractor);
     }
 
-    private void Awake()
+    protected override void Awake()
     {
-        dialogueRunner = GetComponent<DialogueRunner>();
+        base.Awake();
+        dialogueRunner = ResolveDialogueRunner(dialogueRunner);
         ResolveReferences();
         EnsureRuntimeAnchors();
         UpdateRuntimeAnchors();
@@ -66,7 +68,7 @@ public sealed class Chapter7SceneController : MonoBehaviour
             return;
         }
 
-        dialogueRunner = GetComponent<DialogueRunner>();
+        dialogueRunner = ResolveDialogueRunner(dialogueRunner);
         ResolveReferences();
         EnsureRuntimeAnchors();
         UpdateRuntimeAnchors();
@@ -82,105 +84,45 @@ public sealed class Chapter7SceneController : MonoBehaviour
 
     private void ResolveReferences()
     {
-        if (playerInteractor == null)
-        {
-            playerInteractor = FindObjectOfType<PlayerInteractor2D>(includeInactive: true);
-        }
-
-        if (player == null && playerInteractor != null)
-        {
-            player = playerInteractor.transform;
-        }
-
-        if (player == null)
-        {
-            GameObject playerObject = GameObject.Find("Player");
-            if (playerObject != null)
-            {
-                player = playerObject.transform;
-            }
-        }
-
-        if (npc == null)
-        {
-            GameObject npcObject = GameObject.Find("Shen");
-            if (npcObject != null)
-            {
-                npc = npcObject.transform;
-            }
-        }
+        playerInteractor = ResolvePlayerInteractor(playerInteractor);
+        player = ResolvePlayerTransform(player);
+        npc = ResolveActor(npc, "shen", "Shen");
     }
 
     private void EnsureRuntimeAnchors()
     {
-        if (runtimePlayerBubbleAnchor == null)
-        {
-            runtimePlayerBubbleAnchor = CreateRuntimeAnchor("Chapter7PlayerBubbleAnchorRuntime");
-        }
-
-        if (runtimeNpcBubbleAnchor == null)
-        {
-            runtimeNpcBubbleAnchor = CreateRuntimeAnchor("Chapter7NpcBubbleAnchorRuntime");
-        }
-    }
-
-    private Transform CreateRuntimeAnchor(string anchorName)
-    {
-        Transform existing = transform.Find(anchorName);
-        if (existing != null)
-        {
-            return existing;
-        }
-
-        GameObject anchorObject = new GameObject(anchorName);
-        anchorObject.transform.SetParent(transform, false);
-        return anchorObject.transform;
+        EnsureRuntimeAnchor(ref runtimePlayerBubbleAnchor, "Chapter7PlayerBubbleAnchorRuntime");
+        EnsureRuntimeAnchor(ref runtimeNpcBubbleAnchor, "Chapter7NpcBubbleAnchorRuntime");
     }
 
     private void UpdateRuntimeAnchors()
     {
-        if (runtimePlayerBubbleAnchor != null)
-        {
-            runtimePlayerBubbleAnchor.position = ResolveAnchorPosition(playerBubbleAnchor, player, playerBubbleAnchorOffset);
-        }
-
-        if (runtimeNpcBubbleAnchor != null)
-        {
-            runtimeNpcBubbleAnchor.position = ResolveAnchorPosition(npcBubbleAnchor, npc, npcBubbleAnchorOffset);
-        }
-    }
-
-    private Vector3 ResolveAnchorPosition(Transform explicitAnchor, Transform fallbackActor, Vector3 offset)
-    {
-        if (explicitAnchor != null)
-        {
-            return explicitAnchor.position + offset;
-        }
-
-        if (fallbackActor != null)
-        {
-            return fallbackActor.position + offset;
-        }
-
-        return transform.position + offset;
+        UpdateRuntimeAnchor(
+            runtimePlayerBubbleAnchor,
+            playerBubbleAnchor,
+            player,
+            playerBubbleAnchorOffset,
+            "player",
+            "Player");
+        UpdateRuntimeAnchor(
+            runtimeNpcBubbleAnchor,
+            npcBubbleAnchor,
+            npc,
+            npcBubbleAnchorOffset,
+            "shen",
+            "Shen");
     }
 
     private bool ValidateSetup()
     {
-        if (dialogueRunner == null)
+        if (!TryConfigureDialogueRunner(ref dialogueRunner, dialogueBubblePrefab, nameof(Chapter7SceneController)))
         {
-            Debug.LogError("Chapter7SceneController: 当前对象上未挂载 DialogueRunner。", this);
             return false;
-        }
-
-        if (dialogueBubblePrefab != null)
-        {
-            dialogueRunner.SetBubblePrefab(dialogueBubblePrefab);
         }
 
         if (runtimePlayerBubbleAnchor == null || runtimeNpcBubbleAnchor == null)
         {
-            Debug.LogError("Chapter7SceneController: 运行时气泡锚点创建失败。", this);
+            Debug.LogError("Chapter7SceneController: Failed to create runtime dialogue anchors.", this);
             return false;
         }
 
@@ -200,10 +142,11 @@ public sealed class Chapter7SceneController : MonoBehaviour
             yield break;
         }
 
+        IList<DialogueLine> resolvedLines = lines as IList<DialogueLine> ?? new List<DialogueLine>(lines);
         dialogueRunner.PlayConversation(
             playerInteractor,
             runtimePlayerBubbleAnchor,
             runtimeNpcBubbleAnchor,
-            (IList<DialogueLine>)lines);
+            resolvedLines);
     }
 }

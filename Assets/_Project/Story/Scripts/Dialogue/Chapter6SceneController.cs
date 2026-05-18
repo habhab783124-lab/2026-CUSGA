@@ -4,28 +4,28 @@ using UnityEngine;
 
 [DisallowMultipleComponent]
 [RequireComponent(typeof(DialogueRunner))]
-public sealed class Chapter6SceneController : MonoBehaviour
+public sealed class Chapter6SceneController : StoryCutsceneControllerBase
 {
-    [Header("对白")]
+    [Header("Dialogue")]
     [SerializeField] private DialogueRunner dialogueRunner;
     [SerializeField] private string dialogueId = "chapter6_intro";
     [SerializeField] private bool playOnStart = true;
 
-    [Header("对话气泡")]
+    [Header("Dialogue Bubble")]
     [SerializeField] private DialogueBubbleView dialogueBubblePrefab;
     [SerializeField] private Transform playerBubbleAnchor;
     [SerializeField] private Transform shenBubbleAnchor;
 
-    [Header("角色引用")]
+    [Header("Actors")]
     [SerializeField] private PlayerInteractor2D playerInteractor;
     [SerializeField] private Transform player;
     [SerializeField] private Transform shen;
 
-    [Header("角色最终位置")]
+    [Header("Final Positions")]
     [SerializeField] private Transform playerStopPoint;
     [SerializeField] private Transform shenStopPoint;
 
-    [Header("入场移动")]
+    [Header("Entrance Movement")]
     [SerializeField] private float playerMoveSpeed = 3.2f;
     [SerializeField] private float shenMoveSpeed = 3.2f;
     [SerializeField] private float extraOffscreenDistance = 1.5f;
@@ -40,15 +40,17 @@ public sealed class Chapter6SceneController : MonoBehaviour
     private bool hasShenTarget;
     private bool targetPositionsInitialized;
 
-    private void Reset()
+    protected override void Reset()
     {
+        base.Reset();
         dialogueRunner = GetComponent<DialogueRunner>();
-        playerInteractor = FindObjectOfType<PlayerInteractor2D>(includeInactive: true);
+        playerInteractor = ResolvePlayerInteractor(playerInteractor);
     }
 
-    private void Awake()
+    protected override void Awake()
     {
-        dialogueRunner = GetComponent<DialogueRunner>();
+        base.Awake();
+        dialogueRunner = ResolveDialogueRunner(dialogueRunner);
         ResolveReferences();
         CaptureInitialTargetPositionsIfNeeded();
         PlaceCharactersAtStartPositions();
@@ -69,7 +71,7 @@ public sealed class Chapter6SceneController : MonoBehaviour
             return;
         }
 
-        dialogueRunner = GetComponent<DialogueRunner>();
+        dialogueRunner = ResolveDialogueRunner(dialogueRunner);
         ResolveReferences();
         EnsureTargetPositions();
 
@@ -79,12 +81,7 @@ public sealed class Chapter6SceneController : MonoBehaviour
         }
 
         hasPlayed = true;
-
-        if (playerInteractor != null && playerInteractor.Motor != null)
-        {
-            playerInteractor.Motor.SetCutsceneMovementHold(true);
-            playerInteractor.Motor.SetMovementLocked(true);
-        }
+        SetPlayerCutsceneLock(playerInteractor, true);
 
         if (sequenceRoutine != null)
         {
@@ -96,43 +93,11 @@ public sealed class Chapter6SceneController : MonoBehaviour
 
     private void ResolveReferences()
     {
-        if (playerInteractor == null)
-        {
-            playerInteractor = FindObjectOfType<PlayerInteractor2D>(includeInactive: true);
-        }
-
-        if (player == null && playerInteractor != null)
-        {
-            player = playerInteractor.transform;
-        }
-
-        if (player == null)
-        {
-            GameObject playerObject = GameObject.Find("Player");
-            if (playerObject != null)
-            {
-                player = playerObject.transform;
-            }
-        }
-
-        if (shen == null)
-        {
-            GameObject shenObject = GameObject.Find("Shen");
-            if (shenObject != null)
-            {
-                shen = shenObject.transform;
-            }
-        }
-
-        if (playerBubbleAnchor == null)
-        {
-            playerBubbleAnchor = player;
-        }
-
-        if (shenBubbleAnchor == null)
-        {
-            shenBubbleAnchor = shen;
-        }
+        playerInteractor = ResolvePlayerInteractor(playerInteractor);
+        player = ResolvePlayerTransform(player);
+        shen = ResolveActor(shen, "shen", "Shen");
+        playerBubbleAnchor = ResolveDialogueAnchor(playerBubbleAnchor, "player", player, "Player");
+        shenBubbleAnchor = ResolveDialogueAnchor(shenBubbleAnchor, "shen", shen, "Shen");
     }
 
     private void CaptureInitialTargetPositionsIfNeeded()
@@ -219,42 +184,36 @@ public sealed class Chapter6SceneController : MonoBehaviour
 
     private bool ValidateSetup()
     {
-        if (dialogueRunner == null)
+        if (!TryConfigureDialogueRunner(ref dialogueRunner, dialogueBubblePrefab, nameof(Chapter6SceneController)))
         {
-            Debug.LogError("Chapter6SceneController: 当前对象上未挂载 DialogueRunner。", this);
             ReleaseMovementLock();
             return false;
         }
 
-        if (dialogueBubblePrefab != null)
-        {
-            dialogueRunner.SetBubblePrefab(dialogueBubblePrefab);
-        }
-
         if (player == null)
         {
-            Debug.LogError("Chapter6SceneController: 未找到 Player。", this);
+            Debug.LogError("Chapter6SceneController: Missing Player reference.", this);
             ReleaseMovementLock();
             return false;
         }
 
         if (shen == null)
         {
-            Debug.LogError("Chapter6SceneController: 未找到 Shen。", this);
+            Debug.LogError("Chapter6SceneController: Missing Shen reference.", this);
             ReleaseMovementLock();
             return false;
         }
 
         if (!hasPlayerTarget)
         {
-            Debug.LogError("Chapter6SceneController: 未找到 Player 的最终停靠位置。", this);
+            Debug.LogError("Chapter6SceneController: Missing Player final stop position.", this);
             ReleaseMovementLock();
             return false;
         }
 
         if (!hasShenTarget)
         {
-            Debug.LogError("Chapter6SceneController: 未找到 Shen 的最终停靠位置。", this);
+            Debug.LogError("Chapter6SceneController: Missing Shen final stop position.", this);
             ReleaseMovementLock();
             return false;
         }
@@ -286,11 +245,12 @@ public sealed class Chapter6SceneController : MonoBehaviour
             yield break;
         }
 
+        IList<DialogueLine> resolvedLines = lines as IList<DialogueLine> ?? new List<DialogueLine>(lines);
         dialogueRunner.PlayConversation(
             playerInteractor,
             playerBubbleAnchor,
             shenBubbleAnchor,
-            (IList<DialogueLine>)lines,
+            resolvedLines,
             onEnded: ReleaseMovementLock);
 
         sequenceRoutine = null;
@@ -336,10 +296,6 @@ public sealed class Chapter6SceneController : MonoBehaviour
 
     private void ReleaseMovementLock()
     {
-        if (playerInteractor != null && playerInteractor.Motor != null)
-        {
-            playerInteractor.Motor.SetCutsceneMovementHold(false);
-            playerInteractor.Motor.SetMovementLocked(false);
-        }
+        SetPlayerCutsceneLock(playerInteractor, false);
     }
 }
