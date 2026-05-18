@@ -58,3 +58,12 @@ MonoBehaviour:
     iconSprite: {fileID: 0}
     accentColor: {r: 1, g: 0.52, b: 0.41, a: 1}
     interactable: 1
+  - sceneName: Level06
+    scenePath: Assets/Scenes/Level06.unity
+    displayName: LEVEL 06
+    subtitle: CHALKBOARD ROUTE
+    description: Two attack gates on the left, separated upper and lower corridors, and one home point on the right.
+    statusLabel: EDIT READY
+    iconSprite: {fileID: 0}
+    accentColor: {r: 0.72, g: 0.9, b: 0.82, a: 1}
+    interactable: 1

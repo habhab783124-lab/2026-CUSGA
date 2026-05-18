@@ -23,7 +23,7 @@ MonoBehaviour:
     nonPiercingDamageMultiplier: 1
     ignoresSlowEffects: 0
     canBeRepairedByMechanic: 0
-    runtimePrefab: {fileID: 100100000, guid: c02c6ae9c9a44e04bddd4ec15b7cdf72, type: 3}
+    runtimePrefab: {fileID: 5863667738006183233, guid: c02c6ae9c9a44e04bddd4ec15b7cdf72, type: 3}
     bodySpriteOverride: {fileID: 0}
     bodyColor: {r: 0.9, g: 0.25, b: 0.25, a: 1}
     bodyScaleMultiplier: 0.9
@@ -50,7 +50,7 @@ MonoBehaviour:
     nonPiercingDamageMultiplier: 1
     ignoresSlowEffects: 1
     canBeRepairedByMechanic: 0
-    runtimePrefab: {fileID: 100100000, guid: 81fd033f311a422c8cb5a2bd36065840, type: 3}
+    runtimePrefab: {fileID: 5863667738006183233, guid: 81fd033f311a422c8cb5a2bd36065840, type: 3}
     bodySpriteOverride: {fileID: 0}
     bodyColor: {r: 0.92, g: 0.84, b: 0.44, a: 1}
     bodyScaleMultiplier: 0.8
@@ -77,7 +77,7 @@ MonoBehaviour:
     nonPiercingDamageMultiplier: 0.75
     ignoresSlowEffects: 0
     canBeRepairedByMechanic: 0
-    runtimePrefab: {fileID: 100100000, guid: 993157e063b944119f0f1b51f50d49fb, type: 3}
+    runtimePrefab: {fileID: 5863667738006183233, guid: 993157e063b944119f0f1b51f50d49fb, type: 3}
     bodySpriteOverride: {fileID: 0}
     bodyColor: {r: 1, g: 0.58, b: 0.22, a: 1}
     bodyScaleMultiplier: 1.05
@@ -104,7 +104,7 @@ MonoBehaviour:
     nonPiercingDamageMultiplier: 0.78
     ignoresSlowEffects: 0
     canBeRepairedByMechanic: 0
-    runtimePrefab: {fileID: 100100000, guid: 7e0659a5e1344c4cb1f7cb3bc838553d, type: 3}
+    runtimePrefab: {fileID: 5863667738006183233, guid: 7e0659a5e1344c4cb1f7cb3bc838553d, type: 3}
     bodySpriteOverride: {fileID: 0}
     bodyColor: {r: 0.55, g: 0.88, b: 1, a: 1}
     bodyScaleMultiplier: 0.95
@@ -131,7 +131,7 @@ MonoBehaviour:
     nonPiercingDamageMultiplier: 0.18
     ignoresSlowEffects: 0
     canBeRepairedByMechanic: 1
-    runtimePrefab: {fileID: 100100000, guid: cc224b0a4ac14743957cc942ebac5ed0, type: 3}
+    runtimePrefab: {fileID: 5863667738006183233, guid: cc224b0a4ac14743957cc942ebac5ed0, type: 3}
     bodySpriteOverride: {fileID: 0}
     bodyColor: {r: 0.66, g: 0.7, b: 0.76, a: 1}
     bodyScaleMultiplier: 1.2
@@ -158,7 +158,7 @@ MonoBehaviour:
     nonPiercingDamageMultiplier: 1
     ignoresSlowEffects: 0
     canBeRepairedByMechanic: 0
-    runtimePrefab: {fileID: 100100000, guid: 78b7eeefa4534c6080b83b8df189bbe3, type: 3}
+    runtimePrefab: {fileID: 5863667738006183233, guid: 78b7eeefa4534c6080b83b8df189bbe3, type: 3}
     bodySpriteOverride: {fileID: 0}
     bodyColor: {r: 0.72, g: 0.44, b: 0.92, a: 1}
     bodyScaleMultiplier: 0.9
@@ -185,7 +185,7 @@ MonoBehaviour:
     nonPiercingDamageMultiplier: 1
     ignoresSlowEffects: 0
     canBeRepairedByMechanic: 0
-    runtimePrefab: {fileID: 100100000, guid: 56952ecff0f24007bcc01a9cba3ca66c, type: 3}
+    runtimePrefab: {fileID: 5863667738006183233, guid: 56952ecff0f24007bcc01a9cba3ca66c, type: 3}
     bodySpriteOverride: {fileID: 0}
     bodyColor: {r: 0.48, g: 0.84, b: 0.38, a: 1}
     bodyScaleMultiplier: 1.45
@@ -212,7 +212,7 @@ MonoBehaviour:
     nonPiercingDamageMultiplier: 1
     ignoresSlowEffects: 0
     canBeRepairedByMechanic: 0
-    runtimePrefab: {fileID: 100100000, guid: 52167178d7714cd09ecedd6ecd2fba18, type: 3}
+    runtimePrefab: {fileID: 5863667738006183233, guid: 52167178d7714cd09ecedd6ecd2fba18, type: 3}
     bodySpriteOverride: {fileID: 0}
     bodyColor: {r: 1, g: 0.7, b: 0.32, a: 1}
     bodyScaleMultiplier: 0.62
