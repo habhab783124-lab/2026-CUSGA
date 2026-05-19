@@ -181,7 +181,7 @@ MonoBehaviour:
     slowPulseDuration: 0.18
     slowPulseStartScale: 0.2
     slowPulseScaleMultiplier: 2.1
-    bombFlightTime: 0.45
+    bombFlightTime: 3
     bombFlightTimePerUpgradeDelta: -0.04
     bombRadius: 1.2
     bombRadiusPerUpgrade: 0.2
