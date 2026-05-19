@@ -1,6 +1,6 @@
 # Tower Defense AI Memory - Architecture
-Version: 1.8.0
-Updated: 2026-05-09
+Version: 1.9.0
+Updated: 2026-05-18
 Depends on: `docs/ai-memory/td-memory-main.md`
 
 ## 当前架构判断
@@ -75,6 +75,31 @@ Depends on: `docs/ai-memory/td-memory-main.md`
 - `EnemyShieldAuraModule`
 - `EnemyRepairModule`
 - `EnemySplitOnDeathModule`
+
+## 当前敌人表现层约定
+- 敌人 prefab 根节点主要承载 `Enemy` 逻辑、血条引用和运行时初始化入口。
+- 当前真正显示怪物贴图的 `SpriteRenderer` 在子节点 `VisualScaleRoot` 上，而不是 prefab 根节点。
+- 敌人的移动 `Animator` 也应挂在 `VisualScaleRoot`，这样动画换帧、受击缩放和显示层引用保持一致。
+- 敌人在静止显示时，`VisualScaleRoot/SpriteRenderer` 的默认 `Sprite` 应直接使用移动动画第 1 帧，保证 Scene 视图下不会退回到空白/方块状占位显示。
+- 当前敌人血条规则不再使用统一绝对高度。
+- 正确约定是：`HealthBarRoot` 应根据当前怪物主显示 sprite 的最高点动态计算，使“血条最低点 = 怪物最高点 + 固定间距”。
+- 也就是说，不同怪物的 `HealthBarRoot.localPosition.y` 可以不同；统一的是血条相对怪物头顶的额外距离。
+- 八种基础敌人的移动动画资产当前位于：
+  - `Assets/Animations/TowerDefense/Enemies/Clips/`
+  - `Assets/Animations/TowerDefense/Enemies/Controllers/`
+- 当前批量重建入口位于：
+  - `Assets/Editor/TowerDefense/Authoring/EnemyMoveAnimationAuthoringTool.cs`
+  - Unity 菜单：`Tools/Tower Defense/Authoring/重建敌人移动动画`
+- 当前场景侧预览入口位于：
+  - `Assets/Scenes/try.unity`
+  - 场景根节点：`EnemyAnimationPreviewRoot`
+  - 其下包含 8 个 `Preview_*Enemy` 实例，供 Scene 视图直接检查怪物 prefab 与动画接入状态
+- 当前 prefab 调整工作流入口位于：
+  - 专用场景：`Assets/Scenes/EnemyPrefabTuning.unity`
+  - 工作台：`Assets/Editor/TowerDefense/Authoring/EnemyPrefabTuningWindow.cs`
+  - 小范围回写菜单：`Tools/Tower Defense/Authoring/怪物 Prefab 小范围回写/*`
+- 这套调整工作流的目标不是让你对整只场景实例 `Apply All`，
+  而是让你在 Scene 视图里选中具体子节点，再把该子节点的局部 Transform 精确回写到源 prefab。
 
 ## UI 层职责
 - `MainMenuController`

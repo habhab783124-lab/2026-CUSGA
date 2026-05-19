@@ -520,6 +520,7 @@ public class DefenseTower : MonoBehaviour
         }
 
         target.TakeDamage(DamagePerShot, Enemy.DamageFeedbackType.Standard);
+        TowerDefenseGame.Instance?.PlaySingleTargetImpactSound();
         StartCoroutine(FlashRoutine());
         StartCoroutine(PlayTracerFeedback(target.transform.position));
     }
@@ -550,6 +551,7 @@ public class DefenseTower : MonoBehaviour
 
         if (affectedAnyEnemy)
         {
+            TowerDefenseGame.Instance?.PlaySlowFieldImpactSound();
             StartCoroutine(FlashRoutine());
             StartCoroutine(PlaySlowPulseFeedback());
         }
@@ -640,6 +642,7 @@ public class DefenseTower : MonoBehaviour
 
         if (hitCount > 0)
         {
+            TowerDefenseGame.Instance?.PlayBombardImpactSound();
             StartCoroutine(FlashRoutine());
         }
     }

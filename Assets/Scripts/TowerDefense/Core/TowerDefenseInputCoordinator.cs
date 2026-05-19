@@ -21,6 +21,7 @@ using UnityEngine.UI;
 public sealed class TowerDefenseInputCoordinator
 {
     private readonly Func<bool> _isGameOverQuery;
+    private readonly Func<Vector3, bool> _trySelectPlacedStructureAtWorld;
     private readonly Func<bool> _tryQuickPlacementAtCurrentMouse;
     private readonly Func<bool> _tryUpgradeSelectedStructure;
     private readonly Func<bool> _tryDemolishSelectedStructure;
@@ -34,6 +35,7 @@ public sealed class TowerDefenseInputCoordinator
 
     public TowerDefenseInputCoordinator(
         Func<bool> isGameOverQuery,
+        Func<Vector3, bool> trySelectPlacedStructureAtWorld,
         Func<bool> tryQuickPlacementAtCurrentMouse,
         Func<bool> tryUpgradeSelectedStructure,
         Func<bool> tryDemolishSelectedStructure,
@@ -44,6 +46,7 @@ public sealed class TowerDefenseInputCoordinator
         Action clearSelection)
     {
         _isGameOverQuery = isGameOverQuery;
+        _trySelectPlacedStructureAtWorld = trySelectPlacedStructureAtWorld;
         _tryQuickPlacementAtCurrentMouse = tryQuickPlacementAtCurrentMouse;
         _tryUpgradeSelectedStructure = tryUpgradeSelectedStructure;
         _tryDemolishSelectedStructure = tryDemolishSelectedStructure;
@@ -187,6 +190,12 @@ public sealed class TowerDefenseInputCoordinator
         }
 
         if (!Input.GetMouseButtonDown(0) || IsPointerOverUserInterface())
+        {
+            return;
+        }
+
+        Vector3 mouseWorldPosition = GetMouseWorldPosition();
+        if (_trySelectPlacedStructureAtWorld != null && _trySelectPlacedStructureAtWorld(mouseWorldPosition))
         {
             return;
         }

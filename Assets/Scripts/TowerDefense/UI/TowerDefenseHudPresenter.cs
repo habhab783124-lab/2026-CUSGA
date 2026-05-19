@@ -308,6 +308,12 @@ public sealed class TowerDefenseHudPresenter
     private TMP_Text _baseHealthText;
     private TMP_Text _waveText;
     private TMP_Text _selectionText;
+    private TMP_Text _structureStatusText;
+    private string _scrapTextTemplate;
+    private string _baseHealthTextTemplate;
+    private string _waveTextTemplate;
+    private string _selectionTextTemplate;
+    private string _structureStatusTextTemplate;
 
     private TMP_Text _gameOverTitle;
     private TMP_Text _gameOverHint;
@@ -353,6 +359,7 @@ public sealed class TowerDefenseHudPresenter
         TMP_Text baseHealthText,
         TMP_Text waveText,
         TMP_Text selectionText,
+        TMP_Text structureStatusText,
         Button relayTowerButton,
         Button defenseTowerButton,
         Button slowFieldTowerButton,
@@ -368,6 +375,7 @@ public sealed class TowerDefenseHudPresenter
         _baseHealthText = baseHealthText;
         _waveText = waveText;
         _selectionText = selectionText;
+        _structureStatusText = structureStatusText;
         _relayTowerButton = relayTowerButton;
         _defenseTowerButton = defenseTowerButton;
         _slowFieldTowerButton = slowFieldTowerButton;
@@ -380,6 +388,7 @@ public sealed class TowerDefenseHudPresenter
         _dragPreviewLabel = dragPreviewLabel;
 
         EnsureDragPreviewDoesNotBlockRaycasts();
+        CacheSceneAuthoredTextTemplates();
 
         _relayTowerButtonText = _relayTowerButton != null ? _relayTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
         _defenseTowerButtonText = _defenseTowerButton != null ? _defenseTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
@@ -399,6 +408,32 @@ public sealed class TowerDefenseHudPresenter
     /// </summary>
     public void FindSceneReferences()
     {
+        if (_selectionText == null)
+        {
+            TMP_Text[] texts = UnityEngine.Object.FindObjectsByType<TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int index = 0; index < texts.Length; index++)
+            {
+                if (texts[index] != null && texts[index].name == "SelectionText")
+                {
+                    _selectionText = texts[index];
+                    break;
+                }
+            }
+        }
+
+        if (_structureStatusText == null)
+        {
+            TMP_Text[] texts = UnityEngine.Object.FindObjectsByType<TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int index = 0; index < texts.Length; index++)
+            {
+                if (texts[index] != null && texts[index].name == "StructureStatusText")
+                {
+                    _structureStatusText = texts[index];
+                    break;
+                }
+            }
+        }
+
         if (_relayTowerButtonText == null && _relayTowerButton != null)
         {
             _relayTowerButtonText = _relayTowerButton.GetComponentInChildren<TMP_Text>(true);
@@ -425,11 +460,13 @@ public sealed class TowerDefenseHudPresenter
         }
 
         EnsureDragPreviewDoesNotBlockRaycasts();
+        CacheSceneAuthoredTextTemplates();
 
         WarnIfMissing(_scrapText, "ScrapText");
         WarnIfMissing(_baseHealthText, "BaseHealthText");
         WarnIfMissing(_waveText, "WaveText");
         WarnIfMissing(_selectionText, "SelectionText");
+        WarnIfMissing(_structureStatusText, "StructureStatusText");
         WarnIfMissing(_relayTowerButton, "RelayTowerButton");
         WarnIfMissing(_defenseTowerButton, "DefenseTowerButton");
         WarnIfMissing(_slowFieldTowerButton, "SlowFieldTowerButton");
@@ -483,12 +520,59 @@ public sealed class TowerDefenseHudPresenter
         }
     }
 
+    private void CacheSceneAuthoredTextTemplates()
+    {
+        if (_scrapText != null && !string.IsNullOrWhiteSpace(_scrapText.text))
+        {
+            _scrapTextTemplate = _scrapText.text;
+        }
+
+        if (_baseHealthText != null && !string.IsNullOrWhiteSpace(_baseHealthText.text))
+        {
+            _baseHealthTextTemplate = _baseHealthText.text;
+        }
+
+        if (_waveText != null && !string.IsNullOrWhiteSpace(_waveText.text))
+        {
+            _waveTextTemplate = _waveText.text;
+        }
+
+        if (_selectionText != null && !string.IsNullOrWhiteSpace(_selectionText.text))
+        {
+            _selectionTextTemplate = _selectionText.text;
+        }
+
+        if (_structureStatusText != null && !string.IsNullOrWhiteSpace(_structureStatusText.text))
+        {
+            _structureStatusTextTemplate = _structureStatusText.text;
+        }
+    }
+
     private static void WarnIfMissing(UnityEngine.Object reference, string expectedName)
     {
         if (reference == null)
         {
             Debug.LogWarning($"TowerDefenseHudPresenter is missing HUD reference: {expectedName}. Check the scene wiring.");
         }
+    }
+
+    private static string BuildSceneMetricText(string template, string fallbackLabel, string value)
+    {
+        string label = fallbackLabel;
+        if (!string.IsNullOrWhiteSpace(template))
+        {
+            int colonIndex = template.IndexOf(':');
+            if (colonIndex > 0)
+            {
+                label = template.Substring(0, colonIndex).Trim();
+            }
+            else
+            {
+                label = template.Trim();
+            }
+        }
+
+        return $"{label}: {value}";
     }
 
     /// <summary>
@@ -504,17 +588,10 @@ public sealed class TowerDefenseHudPresenter
     /// </summary>
     public void ConfigureCardLabels(TowerCatalog towerCatalog)
     {
-        ConfigureTowerCard(_relayTowerButton, _relayTowerButtonText, towerCatalog.GetDefinition(TowerType.Relay));
-        ConfigureTowerCard(_defenseTowerButton, _defenseTowerButtonText, towerCatalog.GetDefinition(TowerType.SingleTarget));
-        ConfigureTowerCard(_slowFieldTowerButton, _slowFieldTowerButtonText, towerCatalog.GetDefinition(TowerType.SlowField));
-        ConfigureTowerCard(_bombardTowerButton, _bombardTowerButtonText, towerCatalog.GetDefinition(TowerType.Bombard));
-
-        if (_clearSelectionButtonText != null)
-        {
-            string secondaryHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
-            _clearSelectionButtonText.text = $"CANCEL DEPLOY\n<size=20><color=#{secondaryHex}>Esc / RMB</color></size>";
-            _clearSelectionButtonText.alignment = TextAlignmentOptions.Center;
-        }
+        ApplyTowerCardVisualsOnly(_relayTowerButton, towerCatalog.GetDefinition(TowerType.Relay));
+        ApplyTowerCardVisualsOnly(_defenseTowerButton, towerCatalog.GetDefinition(TowerType.SingleTarget));
+        ApplyTowerCardVisualsOnly(_slowFieldTowerButton, towerCatalog.GetDefinition(TowerType.SlowField));
+        ApplyTowerCardVisualsOnly(_bombardTowerButton, towerCatalog.GetDefinition(TowerType.Bombard));
     }
 
     /// <summary>
@@ -528,23 +605,28 @@ public sealed class TowerDefenseHudPresenter
     {
         if (_scrapText != null)
         {
-            _scrapText.text = BuildMetricText("SCRAP STOCK", state.CurrentScrap.ToString(), _theme.ScrapValueColor);
+            _scrapText.text = BuildSceneMetricText(_scrapTextTemplate, "Scrap", state.CurrentScrap.ToString());
         }
 
         if (_baseHealthText != null)
         {
-            _baseHealthText.text = BuildMetricText("BASE CORE", state.CurrentBaseHealth.ToString(), _theme.BaseValueColor);
+            _baseHealthText.text = BuildSceneMetricText(_baseHealthTextTemplate, "Base HP", state.CurrentBaseHealth.ToString());
         }
 
         if (_waveText != null)
         {
             string waveDisplay = state.TotalWaves > 0 ? $"{state.CurrentWave}/{state.TotalWaves}" : "0/0";
-            _waveText.text = BuildMetricText("WAVE CLOCK", waveDisplay, _theme.WaveValueColor);
+            _waveText.text = BuildSceneMetricText(_waveTextTemplate, "Wave", waveDisplay);
         }
 
         if (_selectionText != null)
         {
             _selectionText.text = BuildSelectionText(state, towerCatalog);
+        }
+
+        if (_structureStatusText != null)
+        {
+            _structureStatusText.text = BuildStructureStatusText(state);
         }
 
         UpdateButtonInteractableState(canAffordTower);
@@ -664,7 +746,7 @@ public sealed class TowerDefenseHudPresenter
     /// 只是为了确保多行卡片文案在当前卡片里能稳定读清楚。
     /// 但它不会再去改按钮位置、父物体布局或整个右侧区结构。
     /// </summary>
-    private void ConfigureTowerCard(Button button, TMP_Text label, TowerDefinition definition)
+    private void ApplyTowerCardVisualsOnly(Button button, TowerDefinition definition)
     {
         if (button != null)
         {
@@ -674,19 +756,6 @@ public sealed class TowerDefenseHudPresenter
                 towerShopCard.ApplyDefinitionVisuals(definition);
             }
         }
-
-        if (label == null || definition == null)
-        {
-            return;
-        }
-
-        label.text = definition.BuildCardLabelMarkup(_theme.SecondaryInfoColor);
-        label.alignment = TextAlignmentOptions.Left;
-        label.margin = _theme.CardLabelMargin;
-        label.enableWordWrapping = false;
-        label.characterSpacing = _theme.CardLabelCharacterSpacing;
-        label.lineSpacing = _theme.CardLabelLineSpacing;
-        label.color = _theme.CardTextColor;
     }
 
     /// <summary>
@@ -697,14 +766,27 @@ public sealed class TowerDefenseHudPresenter
     /// </summary>
     private string BuildSelectionText(TowerDefenseHudState state, TowerCatalog towerCatalog)
     {
-        string composedText = BuildPrimaryOperationBlock(state, towerCatalog);
+        if (!string.IsNullOrWhiteSpace(_selectionTextTemplate))
+        {
+            return _selectionTextTemplate;
+        }
 
-        AppendSection(ref composedText, BuildStatusBlock(state.CurrentStatusMessage));
-        AppendSection(ref composedText, BuildPowerGridBlock(state.PowerGridSnapshot));
-        AppendSection(ref composedText, BuildTransientNoticeBlock(state.TransientNotice));
-        AppendSection(ref composedText, BuildRecentNoticeBlock(state.RecentHudNotices, state.TransientNotice));
+        return string.Empty;
+    }
 
-        return composedText;
+    private string BuildStructureStatusText(TowerDefenseHudState state)
+    {
+        if (state.PlacedStructureState.HasSelection)
+        {
+            return $"{state.PlacedStructureState.Title}\n{state.PlacedStructureState.Details}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(_structureStatusTextTemplate))
+        {
+            return _structureStatusTextTemplate;
+        }
+
+        return "Select a relay or turret to inspect live stats.";
     }
 
     /// <summary>
