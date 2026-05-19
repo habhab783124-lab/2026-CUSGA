@@ -126,8 +126,30 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private int slowFieldTowerCost = 50;
     [SerializeField] private int bombardTowerCost = 62;
 
-    [Header("Placement Rules")]
+    [Header("Placement Rules (Legacy Compatibility)")]
+
+    /// <summary>
+    /// Legacy compatibility field.
+    ///
+    /// This value is no longer the authoritative source for relay footprint / placement blocking.
+    /// The current authoritative source is the `CircleCollider2D` configured directly on the
+    /// relay runtime prefab.
+    ///
+    /// We intentionally keep this serialized field for one transition period so old scenes do not
+    /// immediately lose data or break deserialization, but new tuning work should not use it.
+    /// </summary>
     [SerializeField] private float relayPlacementRadius = 0.52f;
+
+    /// <summary>
+    /// Legacy compatibility field.
+    ///
+    /// This value is no longer the authoritative source for combat-tower footprint / placement
+    /// blocking. The current authoritative source is the `CircleCollider2D` configured directly on
+    /// each combat-tower runtime prefab.
+    ///
+    /// We intentionally keep this serialized field for one transition period so old scenes do not
+    /// immediately lose data or break deserialization, but new tuning work should not use it.
+    /// </summary>
     [SerializeField] private float defensePlacementRadius = 0.58f;
 
     [Header("Placement Expansion")]
@@ -205,6 +227,16 @@ public class TowerDefenseGame : MonoBehaviour
     [Header("HUD Theme")]
     [SerializeField] private HudThemeAuthoring hudTheme = new HudThemeAuthoring();
 
+    [Header("Audio")]
+    [SerializeField] private TowerDefenseAudioProfileAsset audioProfileReference;
+    [SerializeField] private AudioClip backgroundMusicClip;
+    [SerializeField] private AudioClip placeStructureClip;
+    [SerializeField] private AudioClip singleTargetImpactClip;
+    [SerializeField] private AudioClip slowFieldImpactClip;
+    [SerializeField] private AudioClip bombardImpactClip;
+    [SerializeField] private float backgroundMusicVolume = 0.55f;
+    [SerializeField] private float soundEffectVolume = 0.85f;
+
     [Header("Scene References (Preferred)")]
 
     /// <summary>
@@ -239,6 +271,7 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private TMP_Text baseHealthTextReference;
     [SerializeField] private TMP_Text waveTextReference;
     [SerializeField] private TMP_Text selectionTextReference;
+    [SerializeField] private TMP_Text structureStatusTextReference;
 
     [SerializeField] private Button relayTowerButtonReference;
     [SerializeField] private Button defenseTowerButtonReference;
@@ -316,6 +349,9 @@ public class TowerDefenseGame : MonoBehaviour
     private TowerPlacementSupportCoordinator _placementSupportCoordinator;
     private RelayTower _selectedRelayTower;
     private DefenseTower _selectedDefenseTower;
+    private TowerDefenseAudioCoordinator _audioCoordinator;
+    private AudioSource _backgroundMusicSource;
+    private AudioSource _soundEffectSource;
 
     /// <summary>
     /// `_towerCatalog` 提供塔的静态定义，例如显示名、造价、占地半径和扩张方格边长。
@@ -384,6 +420,7 @@ public class TowerDefenseGame : MonoBehaviour
         _presentationCoordinator?.InitializePresentation("Place a relay on any empty ground, then deploy towers inside relay coverage. You can drag the deploy cards or use hotkeys 1 / 2 / 3 / 4.");
         _placementSupportCoordinator?.HidePlacementAreaOverlay();
         _powerGridCoordinator?.RecalculatePowerDistribution();
+        _audioCoordinator?.StartBackgroundMusic();
     }
 
     /// <summary>
@@ -517,6 +554,26 @@ public class TowerDefenseGame : MonoBehaviour
     public void ShowTransientHudNotice(string message, float duration = 2.5f, HudNoticeTone tone = HudNoticeTone.Auto)
     {
         _presentationCoordinator?.ShowTransientHudNotice(message, duration, tone);
+    }
+
+    public void PlayPlaceStructureSound()
+    {
+        _audioCoordinator?.PlayPlaceStructure();
+    }
+
+    public void PlaySingleTargetImpactSound()
+    {
+        _audioCoordinator?.PlaySingleTargetImpact();
+    }
+
+    public void PlaySlowFieldImpactSound()
+    {
+        _audioCoordinator?.PlaySlowFieldImpact();
+    }
+
+    public void PlayBombardImpactSound()
+    {
+        _audioCoordinator?.PlayBombardImpact();
     }
 
     /// <summary>
@@ -761,6 +818,7 @@ public class TowerDefenseGame : MonoBehaviour
 
         _placementRules = new TowerPlacementRules(
             towerType => _placementSupportCoordinator != null ? _placementSupportCoordinator.GetPlacementRadius(towerType) : 0.5f,
+            towerType => _placementSupportCoordinator != null ? _placementSupportCoordinator.GetPlacementCenterOffset(towerType) : Vector2.zero,
             towerType => _placementSupportCoordinator != null ? _placementSupportCoordinator.GetExpansionSquareSize(towerType) : 4.5f);
         _placementSupportCoordinator = new TowerPlacementSupportCoordinator(
             initialPlacementSquareCenter,
@@ -784,6 +842,7 @@ public class TowerDefenseGame : MonoBehaviour
             logDiagnostic: LogPlacementDiagnostic);
         _inputCoordinator = new TowerDefenseInputCoordinator(
             isGameOverQuery: () => IsGameOver,
+            trySelectPlacedStructureAtWorld: TrySelectPlacedStructureAtWorld,
             tryQuickPlacementAtCurrentMouse: () => _placementInteractionController != null &&
                                                    _inputCoordinator != null &&
                                                    _placementInteractionController.TryQuickPlacementAt(_inputCoordinator.GetMouseWorldPosition()),
@@ -840,6 +899,7 @@ public class TowerDefenseGame : MonoBehaviour
         _hudPresenter.SetTheme(hudTheme.ToRuntimeTheme());
         _presentationCoordinator.BindPresentation(_hudPresenter, _towerCatalog);
         _sceneBootstrapper = new TowerDefenseSceneBootstrapper();
+        InitializeAudioCoordinator();
     }
 
     /// <summary>
@@ -869,6 +929,57 @@ public class TowerDefenseGame : MonoBehaviour
 
         _placementVisualController.BindPlacementPreviewRoot(_placementPreviewRoot);
         _placementInteractionController?.BindPresentation(_placementVisualController, _hudPresenter, _towerCatalog);
+    }
+
+    private void InitializeAudioCoordinator()
+    {
+        if (audioProfileReference == null)
+        {
+            audioProfileReference = Resources.Load<TowerDefenseAudioProfileAsset>("TowerDefense/Configs/TowerDefenseAudioProfile");
+        }
+
+        EnsureAudioSource(ref _backgroundMusicSource);
+        EnsureAudioSource(ref _soundEffectSource);
+
+        _backgroundMusicSource.volume = backgroundMusicVolume;
+        _soundEffectSource.volume = soundEffectVolume;
+
+        AudioClip resolvedBackgroundMusic = audioProfileReference != null && audioProfileReference.BackgroundMusic != null
+            ? audioProfileReference.BackgroundMusic
+            : backgroundMusicClip;
+        AudioClip resolvedPlaceStructure = audioProfileReference != null && audioProfileReference.PlaceStructureClip != null
+            ? audioProfileReference.PlaceStructureClip
+            : placeStructureClip;
+        AudioClip resolvedSingleTarget = audioProfileReference != null && audioProfileReference.SingleTargetImpactClip != null
+            ? audioProfileReference.SingleTargetImpactClip
+            : singleTargetImpactClip;
+        AudioClip resolvedSlowField = audioProfileReference != null && audioProfileReference.SlowFieldImpactClip != null
+            ? audioProfileReference.SlowFieldImpactClip
+            : slowFieldImpactClip;
+        AudioClip resolvedBombard = audioProfileReference != null && audioProfileReference.BombardImpactClip != null
+            ? audioProfileReference.BombardImpactClip
+            : bombardImpactClip;
+
+        _audioCoordinator = new TowerDefenseAudioCoordinator(
+            _backgroundMusicSource,
+            _soundEffectSource,
+            resolvedBackgroundMusic,
+            resolvedPlaceStructure,
+            resolvedSingleTarget,
+            resolvedSlowField,
+            resolvedBombard);
+    }
+
+    private void EnsureAudioSource(ref AudioSource source)
+    {
+        if (source != null)
+        {
+            return;
+        }
+
+        source = gameObject.AddComponent<AudioSource>();
+        source.playOnAwake = false;
+        source.spatialBlend = 0f;
     }
 
     /// <summary>
@@ -914,42 +1025,177 @@ public class TowerDefenseGame : MonoBehaviour
         _selectedDefenseTower = null;
     }
 
+    /// <summary>
+    /// Tries to select an already-placed structure under the given world position.
+    ///
+    /// We route this through the game coordinator instead of relying only on `OnMouseDown()`
+    /// because scene UI can legitimately block some Unity mouse callbacks. The input layer now
+    /// asks gameplay first: "is this click actually selecting an existing structure?" before it
+    /// falls through to quick-build placement.
+    /// </summary>
+    private bool TrySelectPlacedStructureAtWorld(Vector3 worldPosition)
+    {
+        Transform placedTowerRoot = _placedTowerRoot != null ? _placedTowerRoot : placedTowerRootReference;
+        if (placedTowerRoot == null)
+        {
+            return false;
+        }
+
+        DefenseTower bestDefenseTower = null;
+        RelayTower bestRelayTower = null;
+        float bestDistanceSqr = float.MaxValue;
+
+        for (int index = 0; index < placedTowerRoot.childCount; index++)
+        {
+            Transform placedStructure = placedTowerRoot.GetChild(index);
+            if (placedStructure == null)
+            {
+                continue;
+            }
+
+            DefenseTower defenseTower = placedStructure.GetComponent<DefenseTower>();
+            if (defenseTower != null)
+            {
+                if (TryMeasureStructureSelectionHit(placedStructure, worldPosition, out float defenseDistanceSqr) &&
+                    defenseDistanceSqr < bestDistanceSqr)
+                {
+                    bestDefenseTower = defenseTower;
+                    bestRelayTower = null;
+                    bestDistanceSqr = defenseDistanceSqr;
+                }
+
+                continue;
+            }
+
+            RelayTower relayTower = placedStructure.GetComponent<RelayTower>();
+            if (relayTower != null &&
+                TryMeasureStructureSelectionHit(placedStructure, worldPosition, out float relayDistanceSqr) &&
+                relayDistanceSqr < bestDistanceSqr)
+            {
+                bestRelayTower = relayTower;
+                bestDefenseTower = null;
+                bestDistanceSqr = relayDistanceSqr;
+            }
+        }
+
+        if (bestDefenseTower != null)
+        {
+            SelectPlacedStructure(bestDefenseTower);
+            return true;
+        }
+
+        if (bestRelayTower != null)
+        {
+            SelectPlacedStructure(bestRelayTower);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Measures whether the player click should count as hitting an already placed structure.
+    ///
+    /// We intentionally avoid relying only on global 2D overlap queries here:
+    /// - some placed-structure colliders are triggers
+    /// - trigger query behavior can be scene / project setting dependent
+    /// - scene-authored art and collider offsets are not always centered the same way
+    ///
+    /// Instead, selection uses a layered fallback:
+    /// 1. primary collider bounds
+    /// 2. primary sprite renderer bounds
+    /// 3. a small radius fallback around the structure pivot
+    ///
+    /// This makes "click the visible tower / relay" much more forgiving and reliable in Play.
+    /// </summary>
+    private static bool TryMeasureStructureSelectionHit(Transform structureTransform, Vector3 worldPosition, out float distanceSqr)
+    {
+        distanceSqr = float.MaxValue;
+        if (structureTransform == null)
+        {
+            return false;
+        }
+
+        Vector2 clickPoint = worldPosition;
+        Vector2 pivotPoint = structureTransform.position;
+        distanceSqr = (clickPoint - pivotPoint).sqrMagnitude;
+
+        Collider2D primaryCollider = structureTransform.GetComponent<Collider2D>();
+        if (primaryCollider != null)
+        {
+            Vector3 boundsPoint = new Vector3(worldPosition.x, worldPosition.y, primaryCollider.bounds.center.z);
+            if (primaryCollider.bounds.Contains(boundsPoint))
+            {
+                return true;
+            }
+
+            if (primaryCollider is CircleCollider2D circleCollider)
+            {
+                Vector2 worldCenter = circleCollider.transform.TransformPoint(circleCollider.offset);
+                float worldRadius = circleCollider.radius * Mathf.Max(
+                    Mathf.Abs(circleCollider.transform.lossyScale.x),
+                    Mathf.Abs(circleCollider.transform.lossyScale.y));
+                distanceSqr = (clickPoint - worldCenter).sqrMagnitude;
+                if (distanceSqr <= worldRadius * worldRadius)
+                {
+                    return true;
+                }
+            }
+        }
+
+        SpriteRenderer primaryRenderer = structureTransform.GetComponent<SpriteRenderer>();
+        if (primaryRenderer != null)
+        {
+            Bounds rendererBounds = primaryRenderer.bounds;
+            Vector3 boundsPoint = new Vector3(worldPosition.x, worldPosition.y, rendererBounds.center.z);
+            if (rendererBounds.Contains(boundsPoint))
+            {
+                distanceSqr = (clickPoint - (Vector2)rendererBounds.center).sqrMagnitude;
+                return true;
+            }
+
+            float rendererRadius = Mathf.Max(rendererBounds.extents.x, rendererBounds.extents.y);
+            if (rendererRadius > 0.01f)
+            {
+                distanceSqr = (clickPoint - (Vector2)rendererBounds.center).sqrMagnitude;
+                if (distanceSqr <= rendererRadius * rendererRadius)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return distanceSqr <= 0.45f * 0.45f;
+    }
+
     private PlacedStructureHudState BuildPlacedStructureHudState()
     {
         if (_selectedRelayTower != null)
         {
-            int upgradeCost = 0;
-            string invalidReason = string.Empty;
-            bool canUpgrade = _powerGridCoordinator != null &&
-                              _sessionState != null &&
-                              _powerGridCoordinator.CanUpgradeRelay(_selectedRelayTower, _sessionState.CurrentScrap, out upgradeCost, out invalidReason);
-            string detail = $"Relay #{_selectedRelayTower.RelayNumber} / LV {_selectedRelayTower.CurrentLevel} / Load {_selectedRelayTower.CurrentAssignedLoad}/{_selectedRelayTower.SupplyCapacity}";
-            detail += $"\nRange {_selectedRelayTower.SupplyRange:0.0} / Next cap {_selectedRelayTower.PreviewUpgradedSupplyCapacity()}";
-            detail += canUpgrade
-                ? $"\nAfter upgrade: {_sessionState.CurrentScrap - upgradeCost} SCRAP left."
-                  + $"\nU Upgrade ({upgradeCost} SCRAP) / Delete Dismantle"
-                : $"\n{invalidReason}";
+            string detail =
+                $"POWER {_selectedRelayTower.RemainingCapacity} / {_selectedRelayTower.SupplyCapacity}";
             return new PlacedStructureHudState(true, "Relay Node", detail);
         }
 
         if (_selectedDefenseTower != null)
         {
-            int upgradeCost = 0;
-            string invalidReason = string.Empty;
-            string powerState = _selectedDefenseTower.IsPowered
-                ? $"ONLINE / Relay #{(_selectedDefenseTower.AssignedRelay != null ? _selectedDefenseTower.AssignedRelay.RelayNumber : 0)}"
-                : _selectedDefenseTower.PowerStatusMessage;
-            bool canUpgrade = _powerGridCoordinator != null &&
-                              _sessionState != null &&
-                              _powerGridCoordinator.CanUpgradeDefenseTower(_selectedDefenseTower, _sessionState.CurrentScrap, out upgradeCost, out invalidReason);
-            string detail = $"Turret #{_selectedDefenseTower.TowerNumber} / LV {_selectedDefenseTower.CurrentLevel} / {powerState}";
-            detail += $"\n{_selectedDefenseTower.BuildCurrentCombatSummary()}";
-            detail += $"\n{_selectedDefenseTower.BuildUpgradePreviewSummary()}";
-            detail += canUpgrade
-                ? $"\nAfter upgrade: {_sessionState.CurrentScrap - upgradeCost} SCRAP left."
-                  + $"\nU Upgrade ({upgradeCost} SCRAP) / Delete Dismantle"
-                : $"\n{invalidReason}";
+            string detail = $"POWER {_selectedDefenseTower.PowerRequired}";
             return new PlacedStructureHudState(true, GetTowerDisplayName(_selectedDefenseTower.BuildType), detail);
+        }
+
+        TowerType selectedTowerType = _placementInteractionController != null
+            ? _placementInteractionController.SelectedTowerType
+            : TowerType.None;
+        if (selectedTowerType == TowerType.SingleTarget ||
+            selectedTowerType == TowerType.SlowField ||
+            selectedTowerType == TowerType.Bombard)
+        {
+            GameObject prototype = GetPrototype(selectedTowerType);
+            DefenseTower prototypeTower = prototype != null ? prototype.GetComponent<DefenseTower>() : null;
+            if (prototypeTower != null)
+            {
+                return new PlacedStructureHudState(true, GetTowerDisplayName(selectedTowerType), $"POWER {prototypeTower.PowerRequired}");
+            }
         }
 
         return new PlacedStructureHudState(false, string.Empty, string.Empty);
@@ -1258,6 +1504,7 @@ public class TowerDefenseGame : MonoBehaviour
                 baseHealthTextReference,
                 waveTextReference,
                 selectionTextReference,
+                structureStatusTextReference,
                 relayTowerButtonReference,
                 defenseTowerButtonReference,
                 slowFieldTowerButtonReference,

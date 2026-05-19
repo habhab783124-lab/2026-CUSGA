@@ -20,9 +20,6 @@ namespace TowerDefense.Editor
     /// </summary>
     public static class TowerDefensePrefabAuthoringTool
     {
-        private const float DefaultRelayPlacementRadius = 0.52f; // 中文：默认继电器放置半径
-        private const float DefaultCombatTowerPlacementRadius = 0.58f; // 中文：默认Combat塔放置半径
-
         private const string SampleScenePath = "Assets/Scenes/SampleScene.unity"; // 中文：Sample场景路径
         private static readonly string[] GameplayScenePaths = // 中文：Gameplay场景路径
         {
@@ -62,7 +59,7 @@ namespace TowerDefense.Editor
             string bombardPrefabPath = $"{RuntimePrefabFolder}/BombardTowerPrototype.prefab";
             string enemyPrefabPath = $"{RuntimePrefabFolder}/EnemyPrototype.prefab";
 
-            EnsurePlacedStructureComponents(relayPrototype.gameObject, DefaultRelayPlacementRadius);
+            EnsurePlacedStructureComponents(relayPrototype.gameObject);
             GameObject relayPrefab = PrefabUtility.SaveAsPrefabAsset(relayPrototype.gameObject, relayPrefabPath);
             GameObject enemyPrefab = PrefabUtility.SaveAsPrefabAsset(enemyPrototype.gameObject, enemyPrefabPath);
 
@@ -177,7 +174,7 @@ namespace TowerDefense.Editor
                 // By guaranteeing one clean clone per requested tower type, we keep the authoring
                 // pass deterministic and avoid carrying destroyed references from a previous type.
                 tower.ConfigureBuildType(towerType);
-                EnsurePlacedStructureComponents(temporaryClone, DefaultCombatTowerPlacementRadius);
+                EnsurePlacedStructureComponents(temporaryClone);
                 return PrefabUtility.SaveAsPrefabAsset(temporaryClone, assetPath);
             }
             finally
@@ -226,7 +223,7 @@ namespace TowerDefense.Editor
         ///
         /// 这样作者以后打开 Prefab 时，就能直接看到完整运行链依赖。
         /// </summary>
-        private static void EnsurePlacedStructureComponents(GameObject target, float placementRadius)
+        private static void EnsurePlacedStructureComponents(GameObject target)
         {
             if (target == null)
             {
@@ -237,10 +234,10 @@ namespace TowerDefense.Editor
             if (circleCollider == null)
             {
                 circleCollider = target.AddComponent<CircleCollider2D>();
+                circleCollider.radius = 0.5f;
             }
 
             circleCollider.isTrigger = true;
-            circleCollider.radius = placementRadius;
 
             if (target.GetComponent<PlacedTower>() == null)
             {

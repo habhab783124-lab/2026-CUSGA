@@ -311,9 +311,8 @@ namespace TowerDefense.Editor
             EditorGUILayout.LabelField("放置扩张规则", EditorStyles.miniBoldLabel);
             DrawPropertyField(serializedGame, "relayExpansionSquareSize", "继电器扩张方格边长");
             DrawPropertyField(serializedGame, "defenseExpansionSquareSize", "战斗塔扩张方格边长");
-            DrawPropertyField(serializedGame, "relayPlacementRadius", "继电器占地半径");
-            DrawPropertyField(serializedGame, "defensePlacementRadius", "战斗塔占地半径");
             DrawPropertyField(serializedGame, "enablePlacementDiagnostics", "启用放置诊断日志");
+            EditorGUILayout.HelpBox("当前版本里，塔和继电器的占地 / 不可放置半径以各自 prefab 上的 CircleCollider2D 为准。请直接在 prefab 上调整 Collider2D 的 Radius 与 Offset。", MessageType.Info);
 
             serializedGame.ApplyModifiedProperties();
             EditorUtility.SetDirty(currentGame);
