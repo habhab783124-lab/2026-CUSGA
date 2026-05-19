@@ -29,7 +29,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.3663442, y: 0.3663442, z: 0.40704912}
+  m_LocalScale: {x: 0.5495163, y: 0.5495163, z: 0.61057365}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2119000001}
@@ -234,9 +234,9 @@ MonoBehaviour:
     slowPulseDuration: 0.18
     slowPulseStartScale: 0.2
     slowPulseScaleMultiplier: 2.1
-    bombFlightTime: 1
+    bombFlightTime: 0.4
     bombFlightTimePerUpgradeDelta: -0.05
-    bombRadius: 1.15
+    bombRadius: 1.4
     bombRadiusPerUpgrade: 0.3
     bombArcHeight: 0.75
     bombProjectileScale: 0.32
@@ -315,9 +315,9 @@ CircleCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: -2.4446056}
+  m_Offset: {x: 0, y: -1.629737}
   serializedVersion: 2
-  m_Radius: 0.8159661
+  m_Radius: 0.5439774
 --- !u!1 &2119000000
 GameObject:
   m_ObjectHideFlags: 0

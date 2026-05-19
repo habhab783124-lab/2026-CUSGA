@@ -122,6 +122,7 @@ public partial class RelayTower
         }
 
         _spriteRenderer.color = Color.white;
+        TowerRenderSorting.ApplyPlacedTowerTopmostSorting(transform, _spriteRenderer);
     }
 
     /// <summary>

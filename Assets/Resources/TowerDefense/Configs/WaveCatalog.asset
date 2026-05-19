@@ -20,9 +20,13 @@ MonoBehaviour:
     - enemyType: 1
       enemyCount: 8
       spawnInterval: 1
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
     - enemyType: 2
       enemyCount: 2
       spawnInterval: 0.5
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
   - displayName: "\u7B2C 02 \u6CE2"
     designerNote: Introduce shield support and stealth pressure while still keeping
       the total count readable.
@@ -30,12 +34,18 @@ MonoBehaviour:
     - enemyType: 1
       enemyCount: 6
       spawnInterval: 0.95
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
     - enemyType: 3
       enemyCount: 1
       spawnInterval: 1.1
-    - enemyType: 5
-      enemyCount: 2
-      spawnInterval: 2
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
+    - enemyType: 2
+      enemyCount: 4
+      spawnInterval: 0.5
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
   - displayName: "\u7B2C 03 \u6CE2"
     designerNote: Mix heavy armor, repair support and one death-split boss-style
       unit.
@@ -43,12 +53,20 @@ MonoBehaviour:
     - enemyType: 5
       enemyCount: 2
       spawnInterval: 1
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
     - enemyType: 4
       enemyCount: 1
       spawnInterval: 1.2
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
     - enemyType: 7
       enemyCount: 1
       spawnInterval: 1.4
-    - enemyType: 2
-      enemyCount: 3
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
+    - enemyType: 1
+      enemyCount: 6
       spawnInterval: 0.5
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0

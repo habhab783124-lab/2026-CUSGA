@@ -29,7 +29,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.2965228, y: 0.2965228, z: 0.32946977}
+  m_LocalScale: {x: 0.4447842, y: 0.4447842, z: 0.49420467}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2119000001}
@@ -156,7 +156,7 @@ MonoBehaviour:
     signatureVerticalBobAmplitude: 0
     signatureVerticalBobSpeed: 2
   slowFieldTuning:
-    attackRange: 2.35
+    attackRange: 2.8
     attackRangePerUpgrade: 0.3
     attackInterval: 1
     attackIntervalPerUpgradeDelta: -0.05
@@ -315,9 +315,9 @@ CircleCollider2D:
   m_IsTrigger: 1
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: -3.0137732}
+  m_Offset: {x: 0, y: -2.0091822}
   serializedVersion: 2
-  m_Radius: 0.8525223
+  m_Radius: 0.5683482
 --- !u!1 &2119000000
 GameObject:
   m_ObjectHideFlags: 0

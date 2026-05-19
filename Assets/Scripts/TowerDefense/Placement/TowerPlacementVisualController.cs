@@ -243,6 +243,7 @@ public sealed class TowerPlacementVisualController : IDisposable
             // 这样可以避免“上一次停在 A 点的隐藏预览塔，
             // 这一次先在旧位置或世界原点闪一帧，再跳到鼠标下面”的视觉抖动。
             _placementPreviewInstance.transform.position = initialWorldPosition;
+            RefreshPlacementPreviewSorting();
             _placementPreviewInstance.SetActive(true);
             return;
         }
@@ -276,6 +277,7 @@ public sealed class TowerPlacementVisualController : IDisposable
         DisablePreviewRuntimeBehaviour();
         CachePreviewRenderers();
         CreatePlacementRing(towerType);
+        RefreshPlacementPreviewSorting();
     }
 
     /// <summary>
@@ -394,11 +396,6 @@ public sealed class TowerPlacementVisualController : IDisposable
     private void CachePreviewRenderers()
     {
         _placementPreviewSpriteRenderer = _placementPreviewInstance.GetComponent<SpriteRenderer>();
-        if (_placementPreviewSpriteRenderer != null)
-        {
-            _placementPreviewSpriteRenderer.sortingOrder = 15;
-        }
-
         _placementPreviewRingRenderer = null;
     }
 
@@ -427,7 +424,26 @@ public sealed class TowerPlacementVisualController : IDisposable
 
         _placementPreviewRingRenderer = placementRing.AddComponent<SpriteRenderer>();
         _placementPreviewRingRenderer.sprite = ringSprite;
-        _placementPreviewRingRenderer.sortingOrder = 14;
+    }
+
+    /// <summary>
+    /// The preview ghost must follow the same topmost rule as the final tower.
+    /// If we only fix placed towers, the drag state can still look visually broken.
+    /// </summary>
+    private void RefreshPlacementPreviewSorting()
+    {
+        if (_placementPreviewInstance == null)
+        {
+            return;
+        }
+
+        TowerRenderSorting.ApplyPlacementPreviewTopmostSorting(
+            _placementPreviewInstance.transform,
+            _placementPreviewSpriteRenderer);
+        TowerRenderSorting.ApplyPlacementPreviewAdornmentSorting(
+            _placementPreviewRingRenderer,
+            _placementPreviewSpriteRenderer,
+            TowerRenderSorting.PlacementPreviewRingRelativeSortingOffset);
     }
 
     private Vector3 ResolvePlacementRingLocalOffset(TowerType towerType)
