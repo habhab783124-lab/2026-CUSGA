@@ -27,6 +27,8 @@ public sealed class WaveSpawner : MonoBehaviour
         public float moveSpeed;
         public int enemyHealth;
         public int enemyScrapReward;
+        public EnemyPath enemyPathReference;
+        public int pathSequence;
     }
 
     /// <summary>
@@ -44,6 +46,16 @@ public sealed class WaveSpawner : MonoBehaviour
         public int EnemyHealth;
         public int EnemyScrapReward;
         public GameObject RuntimePrefab;
+        public EnemyPath PathReference;
+        public int PathSequence;
+    }
+
+    [Serializable]
+    private struct CatalogGroupPathBinding
+    {
+        public int waveIndex;
+        public int groupIndex;
+        public EnemyPath enemyPathReference;
     }
 
     /// <summary>
@@ -120,6 +132,9 @@ public sealed class WaveSpawner : MonoBehaviour
     [Header("Wave Content (Fallback)")]
     [SerializeField] private WaveDefinition[] waves;
 
+    [Header("Scene Path Bindings (Catalog Runtime)")]
+    [SerializeField] private CatalogGroupPathBinding[] catalogGroupPathBindings = Array.Empty<CatalogGroupPathBinding>();
+
     private BattlefieldMapDefinition _battlefieldMap;
     private EnemyPath _fallbackEnemyPath;
     private GameObject _enemyPrototype;
@@ -134,7 +149,6 @@ public sealed class WaveSpawner : MonoBehaviour
     private bool _waitingForFirstWave;
     private bool _levelClearMessageShown;
     private bool _campaignAdvanceTriggered;
-    private int _spawnGateSequence;
     private bool _routePreviewVisible;
     private bool _hasStartedAnyWave;
     private string _lastStartedWaveRouteSignature = string.Empty;
@@ -316,9 +330,9 @@ public sealed class WaveSpawner : MonoBehaviour
 
         waves = new[]
         {
-            new WaveDefinition { enemyCount = 4, spawnInterval = 1.0f, moveSpeed = 1.8f, enemyHealth = 3, enemyScrapReward = 8 },
-            new WaveDefinition { enemyCount = 6, spawnInterval = 0.85f, moveSpeed = 2.1f, enemyHealth = 4, enemyScrapReward = 11 },
-            new WaveDefinition { enemyCount = 8, spawnInterval = 0.70f, moveSpeed = 2.4f, enemyHealth = 6, enemyScrapReward = 15 }
+            new WaveDefinition { enemyCount = 4, spawnInterval = 1.0f, moveSpeed = 1.8f, enemyHealth = 3, enemyScrapReward = 8, enemyPathReference = null, pathSequence = 0 },
+            new WaveDefinition { enemyCount = 6, spawnInterval = 0.85f, moveSpeed = 2.1f, enemyHealth = 4, enemyScrapReward = 11, enemyPathReference = null, pathSequence = 0 },
+            new WaveDefinition { enemyCount = 8, spawnInterval = 0.70f, moveSpeed = 2.4f, enemyHealth = 6, enemyScrapReward = 15, enemyPathReference = null, pathSequence = 0 }
         };
     }
 
@@ -388,7 +402,11 @@ public sealed class WaveSpawner : MonoBehaviour
                     MoveSpeed = definition.MoveSpeed,
                     EnemyHealth = definition.MaxHealth,
                     EnemyScrapReward = definition.ScrapReward,
-                    RuntimePrefab = definition.RuntimePrefab != null ? definition.RuntimePrefab : enemyPrototypeReference
+                    RuntimePrefab = definition.RuntimePrefab != null ? definition.RuntimePrefab : enemyPrototypeReference,
+                    PathReference = authoredGroup.EnemyPathReference != null
+                        ? authoredGroup.EnemyPathReference
+                        : ResolveCatalogGroupPathReference(waveIndex, groupIndex),
+                    PathSequence = authoredGroup.PathSequence
                 });
             }
 
@@ -423,7 +441,9 @@ public sealed class WaveSpawner : MonoBehaviour
                 MoveSpeed = Mathf.Max(0.05f, authoredWave.moveSpeed),
                 EnemyHealth = Mathf.Max(1, authoredWave.enemyHealth),
                 EnemyScrapReward = Mathf.Max(0, authoredWave.enemyScrapReward),
-                RuntimePrefab = enemyPrototypeReference
+                RuntimePrefab = enemyPrototypeReference,
+                PathReference = authoredWave.enemyPathReference,
+                PathSequence = Mathf.Max(0, authoredWave.pathSequence)
             });
 
             _runtimeWaves.Add(runtimeWave);
@@ -432,7 +452,7 @@ public sealed class WaveSpawner : MonoBehaviour
 
     private bool SpawnEnemy(RuntimeSpawnGroup runtimeGroup, int waveNumber, int enemyNumber)
     {
-        EnemyPath spawnPath = ResolveSpawnPath(out EnemySpawnGate spawnGate);
+        EnemyPath spawnPath = ResolveSpawnPath(runtimeGroup, out EnemySpawnGate spawnGate);
         if (spawnPath == null)
         {
             Debug.LogWarning("WaveSpawner could not resolve a valid EnemyPath for the next spawn.", this);
@@ -577,13 +597,25 @@ public sealed class WaveSpawner : MonoBehaviour
         return (_battlefieldMap != null && _battlefieldMap.HasAnyValidSpawnGate()) || _fallbackEnemyPath != null;
     }
 
-    private EnemyPath ResolveSpawnPath(out EnemySpawnGate spawnGate)
+    private EnemyPath ResolveSpawnPath(RuntimeSpawnGroup runtimeGroup, out EnemySpawnGate spawnGate)
     {
         spawnGate = null;
 
-        if (_battlefieldMap != null && _battlefieldMap.TryGetSpawnGateBySequence(_spawnGateSequence, out spawnGate))
+        if (runtimeGroup != null && IsUsablePath(runtimeGroup.PathReference))
         {
-            _spawnGateSequence++;
+            EnemySpawnGate directGate = ResolveSpawnGateForPath(runtimeGroup.PathReference);
+            if (directGate != null)
+            {
+                spawnGate = directGate;
+            }
+
+            return runtimeGroup.PathReference;
+        }
+
+        int requestedPathSequence = runtimeGroup != null ? Mathf.Max(0, runtimeGroup.PathSequence) : 0;
+
+        if (_battlefieldMap != null && _battlefieldMap.TryGetSpawnGateBySequence(requestedPathSequence, out spawnGate))
+        {
             EnemyPath gatePath = spawnGate != null ? spawnGate.EnemyPath : null;
             if (IsUsablePath(gatePath))
             {
@@ -613,6 +645,50 @@ public sealed class WaveSpawner : MonoBehaviour
         }
 
         return IsUsablePath(_fallbackEnemyPath) ? _fallbackEnemyPath : null;
+    }
+
+    private EnemySpawnGate ResolveSpawnGateForPath(EnemyPath enemyPath)
+    {
+        if (_battlefieldMap == null || enemyPath == null || !_battlefieldMap.HasAnyValidSpawnGate())
+        {
+            return null;
+        }
+
+        for (int gateIndex = 0; gateIndex < _battlefieldMap.SpawnGateCount; gateIndex++)
+        {
+            if (_battlefieldMap.TryGetSpawnGateBySequence(gateIndex, out EnemySpawnGate spawnGate) && spawnGate != null && spawnGate.EnemyPath == enemyPath)
+            {
+                return spawnGate;
+            }
+        }
+
+        return null;
+    }
+
+    private EnemyPath ResolveCatalogGroupPathReference(int waveIndex, int groupIndex, bool requireUsablePath = true)
+    {
+        for (int bindingIndex = 0; bindingIndex < catalogGroupPathBindings.Length; bindingIndex++)
+        {
+            CatalogGroupPathBinding binding = catalogGroupPathBindings[bindingIndex];
+            if (binding.waveIndex != waveIndex || binding.groupIndex != groupIndex)
+            {
+                continue;
+            }
+
+            if (binding.enemyPathReference == null)
+            {
+                return null;
+            }
+
+            if (!requireUsablePath || IsUsablePath(binding.enemyPathReference))
+            {
+                return binding.enemyPathReference;
+            }
+
+            return null;
+        }
+
+        return null;
     }
 
     private static bool IsUsablePath(EnemyPath enemyPath)
@@ -686,7 +762,7 @@ public sealed class WaveSpawner : MonoBehaviour
             return false;
         }
 
-        string upcomingSignature = BuildWaveRouteSignature(_currentWaveIndex, _spawnGateSequence);
+        string upcomingSignature = BuildWaveRouteSignature(_currentWaveIndex);
         if (!_hasStartedAnyWave)
         {
             return true;
@@ -697,7 +773,7 @@ public sealed class WaveSpawner : MonoBehaviour
 
     private void MarkCurrentWaveRouteAsStarted()
     {
-        _lastStartedWaveRouteSignature = BuildWaveRouteSignature(_currentWaveIndex, _spawnGateSequence);
+        _lastStartedWaveRouteSignature = BuildWaveRouteSignature(_currentWaveIndex);
         _hasStartedAnyWave = true;
     }
 
@@ -713,16 +789,29 @@ public sealed class WaveSpawner : MonoBehaviour
         if (_battlefieldMap != null && _battlefieldMap.HasAnyValidSpawnGate())
         {
             RuntimeWave runtimeWave = _runtimeWaves[_currentWaveIndex];
-            for (int enemyIndex = 0; enemyIndex < runtimeWave.TotalEnemyCount; enemyIndex++)
+            for (int groupIndex = 0; groupIndex < runtimeWave.Groups.Count; groupIndex++)
             {
-                int gateSequence = _spawnGateSequence + enemyIndex;
-                if (!_battlefieldMap.TryGetSpawnGateBySequence(gateSequence, out EnemySpawnGate spawnGate) || spawnGate == null)
+                RuntimeSpawnGroup spawnGroup = runtimeWave.Groups[groupIndex];
+                EnemyPath path = null;
+                if (spawnGroup != null && IsUsablePath(spawnGroup.PathReference))
+                {
+                    path = spawnGroup.PathReference;
+                }
+                else
+                {
+                    int gateSequence = spawnGroup != null ? Mathf.Max(0, spawnGroup.PathSequence) : 0;
+                    if (_battlefieldMap.TryGetSpawnGateBySequence(gateSequence, out EnemySpawnGate spawnGate) && spawnGate != null)
+                    {
+                        path = spawnGate.EnemyPath;
+                    }
+                }
+
+                if (path == null)
                 {
                     continue;
                 }
 
-                EnemyPath path = spawnGate.EnemyPath;
-                if (path != null && !output.Contains(path))
+                if (!output.Contains(path))
                 {
                     output.Add(path);
                 }
@@ -735,7 +824,7 @@ public sealed class WaveSpawner : MonoBehaviour
         }
     }
 
-    private string BuildWaveRouteSignature(int waveIndex, int spawnGateSequenceAtWaveStart)
+    private string BuildWaveRouteSignature(int waveIndex)
     {
         if (waveIndex < 0 || waveIndex >= _runtimeWaves.Count)
         {
@@ -747,15 +836,23 @@ public sealed class WaveSpawner : MonoBehaviour
         if (_battlefieldMap != null && _battlefieldMap.HasAnyValidSpawnGate())
         {
             RuntimeWave runtimeWave = _runtimeWaves[waveIndex];
-            for (int enemyIndex = 0; enemyIndex < runtimeWave.TotalEnemyCount; enemyIndex++)
+            for (int groupIndex = 0; groupIndex < runtimeWave.Groups.Count; groupIndex++)
             {
-                int gateSequence = spawnGateSequenceAtWaveStart + enemyIndex;
-                if (!_battlefieldMap.TryGetSpawnGateBySequence(gateSequence, out EnemySpawnGate spawnGate) || spawnGate == null)
+                RuntimeSpawnGroup runtimeGroup = runtimeWave.Groups[groupIndex];
+                EnemyPath path = null;
+                if (runtimeGroup != null && IsUsablePath(runtimeGroup.PathReference))
                 {
-                    continue;
+                    path = runtimeGroup.PathReference;
+                }
+                else
+                {
+                    int gateSequence = runtimeGroup != null ? Mathf.Max(0, runtimeGroup.PathSequence) : 0;
+                    if (_battlefieldMap.TryGetSpawnGateBySequence(gateSequence, out EnemySpawnGate spawnGate) && spawnGate != null)
+                    {
+                        path = spawnGate.EnemyPath;
+                    }
                 }
 
-                EnemyPath path = spawnGate.EnemyPath;
                 if (path == null)
                 {
                     continue;
@@ -775,5 +872,34 @@ public sealed class WaveSpawner : MonoBehaviour
 
         instanceIds.Sort();
         return string.Join("|", instanceIds);
+    }
+
+    public EnemyPath ResolveCatalogBinding(int waveIndex, int groupIndex)
+    {
+        return ResolveCatalogGroupPathReference(waveIndex, groupIndex, requireUsablePath: false);
+    }
+
+    public void AssignCatalogBinding(int waveIndex, int groupIndex, EnemyPath enemyPath)
+    {
+        for (int bindingIndex = 0; bindingIndex < catalogGroupPathBindings.Length; bindingIndex++)
+        {
+            if (catalogGroupPathBindings[bindingIndex].waveIndex != waveIndex || catalogGroupPathBindings[bindingIndex].groupIndex != groupIndex)
+            {
+                continue;
+            }
+
+            CatalogGroupPathBinding existing = catalogGroupPathBindings[bindingIndex];
+            existing.enemyPathReference = enemyPath;
+            catalogGroupPathBindings[bindingIndex] = existing;
+            return;
+        }
+
+        Array.Resize(ref catalogGroupPathBindings, catalogGroupPathBindings.Length + 1);
+        catalogGroupPathBindings[catalogGroupPathBindings.Length - 1] = new CatalogGroupPathBinding
+        {
+            waveIndex = waveIndex,
+            groupIndex = groupIndex,
+            enemyPathReference = enemyPath
+        };
     }
 }

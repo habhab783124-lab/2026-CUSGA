@@ -112,6 +112,68 @@ public class PlacementBlocker : MonoBehaviour
         }
 
         Gizmos.color = gizmoColor;
+        switch (_collider)
+        {
+            case BoxCollider2D boxCollider:
+                DrawBoxColliderGizmo(boxCollider);
+                return;
+
+            case CircleCollider2D circleCollider:
+                DrawCircleColliderGizmo(circleCollider);
+                return;
+
+            case PolygonCollider2D polygonCollider:
+                DrawPolygonColliderGizmo(polygonCollider);
+                return;
+
+            case CapsuleCollider2D capsuleCollider:
+                DrawCapsuleColliderGizmo(capsuleCollider);
+                return;
+        }
+
         Gizmos.DrawWireCube(_collider.bounds.center, _collider.bounds.size);
+    }
+
+    private void DrawBoxColliderGizmo(BoxCollider2D collider)
+    {
+        Matrix4x4 previousMatrix = Gizmos.matrix;
+        Gizmos.matrix = collider.transform.localToWorldMatrix;
+        Gizmos.DrawWireCube(collider.offset, collider.size);
+        Gizmos.matrix = previousMatrix;
+    }
+
+    private void DrawCircleColliderGizmo(CircleCollider2D collider)
+    {
+        Matrix4x4 previousMatrix = Gizmos.matrix;
+        Gizmos.matrix = collider.transform.localToWorldMatrix;
+        Gizmos.DrawWireSphere(collider.offset, collider.radius);
+        Gizmos.matrix = previousMatrix;
+    }
+
+    private void DrawCapsuleColliderGizmo(CapsuleCollider2D collider)
+    {
+        Matrix4x4 previousMatrix = Gizmos.matrix;
+        Gizmos.matrix = collider.transform.localToWorldMatrix;
+        Gizmos.DrawWireCube(collider.offset, collider.size);
+        Gizmos.matrix = previousMatrix;
+    }
+
+    private void DrawPolygonColliderGizmo(PolygonCollider2D collider)
+    {
+        for (int pathIndex = 0; pathIndex < collider.pathCount; pathIndex++)
+        {
+            Vector2[] path = collider.GetPath(pathIndex);
+            if (path == null || path.Length < 2)
+            {
+                continue;
+            }
+
+            for (int pointIndex = 0; pointIndex < path.Length; pointIndex++)
+            {
+                Vector3 start = collider.transform.TransformPoint(path[pointIndex]);
+                Vector3 end = collider.transform.TransformPoint(path[(pointIndex + 1) % path.Length]);
+                Gizmos.DrawLine(start, end);
+            }
+        }
     }
 }

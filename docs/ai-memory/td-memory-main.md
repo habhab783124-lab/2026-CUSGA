@@ -1,6 +1,6 @@
 # 塔防开发主记忆
-Version: 2.0.0
-Updated: 2026-05-12
+Version: 2.1.0
+Updated: 2026-05-18
 Scope: 仅用于本项目 `【塔防开发】` 相关任务
 
 ## Navigation
@@ -53,6 +53,8 @@ Scope: 仅用于本项目 `【塔防开发】` 相关任务
 - 继电器供电：`RelayTower.PowerGrid + TowerPowerGridCoordinator`
 - 三种战斗塔共享主链：`DefenseTower`
 - 敌人目录化：`EnemyCatalogAsset`
+- 八种基础敌人的移动动画链已接入：`Frames -> EnemyMoveAnimationAuthoringTool -> AnimatorController -> Enemy prefab VisualScaleRoot`
+- 怪物 prefab 调整工作流已补齐：`EnemyPrefabTuning.unity + EnemyPrefabTuningWindow`
 - 波次资产化：`WaveCatalogAsset`
 - 多出怪口地图：`EnemySpawnGate + BattlefieldMapDefinition`
 - 剧情与塔防交替流程基础：`CampaignFlowAsset + CampaignFlowController + StorySceneStepController`

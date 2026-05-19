@@ -29,8 +29,6 @@ namespace TowerDefense.Editor
 
         private static readonly string[] PlacementRuleFields = // 中文：放置RuleFields
         {
-            "relayPlacementRadius",
-            "defensePlacementRadius",
             "relayExpansionSquareSize",
             "defenseExpansionSquareSize"
         };

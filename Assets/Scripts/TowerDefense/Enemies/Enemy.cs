@@ -72,8 +72,17 @@ public class Enemy : MonoBehaviour
 
     /// <summary>
     /// Base body color when the enemy is in a neutral state.
+    ///
+    /// 这套字段最早是为了“占位怪物也能靠纯色区分种类”而存在。
+    /// 但现在项目已经接入了正式怪物 sprite 动画，
+    /// 如果继续把常态主体直接染成强烈的纯色，
+    /// 反而会把真实怪物画面压扁成“红黄小色块”的占位观感。
+    ///
+    /// 因此当前默认值改成白色，表示：
+    /// - 常态下尽量尊重原始 sprite 外观
+    /// - 只在减速 / 受击等事件发生时，短时叠加临时反馈色
     /// </summary>
-    [SerializeField] private Color bodyColor = new Color(0.9f, 0.25f, 0.25f, 1f);
+    [SerializeField] private Color bodyColor = Color.white;
 
     /// <summary>
     /// While the enemy is slowed, we blend the body toward this color.
@@ -117,11 +126,22 @@ public class Enemy : MonoBehaviour
     [SerializeField] private SpriteRenderer healthBarFillRendererReference;
     [SerializeField] private SpriteRenderer healthBarBackgroundRendererReference;
 
+    [Header("Animation Runtime")]
+    [SerializeField] private float animatorSpeedBaseline = 1.8f;
+    [SerializeField] private float animatorSpeedMultiplier = 1f;
+    [SerializeField] private float minAnimatorSpeed = 0.75f;
+    [SerializeField] private float maxAnimatorSpeed = 2.2f;
+    [SerializeField] private bool randomizeAnimationPhaseOnSpawn = true;
+
+    [Header("Runtime Diagnostics")]
+    [SerializeField] private bool enableRuntimeVisualDiagnostics = true;
+
     private SpriteRenderer _spriteRenderer;
     private Transform _healthBarRoot;
     private Transform _healthBarFill;
     private SpriteRenderer _healthBarFillRenderer;
     private SpriteRenderer _healthBarBackgroundRenderer;
+    private Animator _bodyAnimator;
 
     private EnemyPath _path;
     private EnemyCatalogAsset _enemyCatalog;
@@ -144,6 +164,8 @@ public class Enemy : MonoBehaviour
     private float _pulseTimer;
     private float _pulseDuration;
     private float _pulseScaleMultiplier = 1f;
+    private bool _hasLoggedRuntimeVisualSnapshot;
+    private bool _hasInitializedAnimatorPhase;
 
     public static int ActiveEnemyCount => ActiveEnemies.Count;
     public bool IsAlive => _currentHealth > 0 && !_hasReachedBase;
@@ -246,12 +268,15 @@ public class Enemy : MonoBehaviour
         _hitFlashTimer = 0f;
         _pulseTimer = 0f;
         _pulseScaleMultiplier = 1f;
+        _hasLoggedRuntimeVisualSnapshot = false;
+        _hasInitializedAnimatorPhase = false;
 
         if (_path != null)
         {
             transform.position = _path.GetSpawnPosition();
         }
 
+        ApplyAnimatorRuntimeSettings();
         RefreshBodyVisualState();
         UpdateHealthBar();
     }
@@ -270,6 +295,7 @@ public class Enemy : MonoBehaviour
         GameObject enemyPrototypePrefab,
         Transform enemyRoot)
     {
+        CacheReferences();
         _enemyCatalog = enemyCatalog;
         _currentArchetypeId = archetypeId;
         _currentDefinition = enemyCatalog != null ? enemyCatalog.GetDefinition(archetypeId) : null;
@@ -281,7 +307,25 @@ public class Enemy : MonoBehaviour
 
         if (_currentDefinition != null)
         {
-            bodyColor = _currentDefinition.BodyColor;
+            // 目录里的 BodyColor 过去主要服务“占位怪物纯色区分”。
+            // 现在正式怪物已经有自己的 sprite 动画，为了让 Play 视图显示真实外观，
+            // 这里不再把目录颜色直接当作常态主体染色。
+            // 真正需要强调状态时，仍然走 slow / hit flash 这些临时反馈色。
+            bodyColor = Color.white;
+
+            // 运行时这里不能再假设“当前刷出来的 prefab 一定已经是正确怪物本体”。
+            //
+            // 我们已经抓到过真实日志：运行时实例的 archetype 是对的，
+            // 但实际 bodyRenderer 仍然拿着 `Square` 这张占位 sprite。
+            // 这说明运行时有时候仍会落回通用 EnemyPrototype，然后再套上敌人目录数据。
+            //
+            // 所以这里要做一层更鲁棒的桥接：
+            // - 只要目录里已经知道这个 archetype 对应哪个 RuntimePrefab，
+            //   就主动把“那只 prefab 的可视外观配置”拷到当前实例上。
+            //
+            // 这样即使底层刷出来的是通用原型，当前实例也会被立即换成对应怪物的
+            // sprite / animator / 血条布局，而不是继续显示占位方块。
+            ApplyRuntimeVisualFromDefinitionPrefab(_currentDefinition);
 
             if (_currentDefinition.BodySpriteOverride != null && bodyRendererReference != null)
             {
@@ -297,6 +341,81 @@ public class Enemy : MonoBehaviour
         BindMechanicModules();
     }
 
+    private void ApplyRuntimeVisualFromDefinitionPrefab(EnemyCatalogAsset.EnemyArchetypeDefinition definition)
+    {
+        if (definition == null)
+        {
+            return;
+        }
+        Transform currentVisualRoot = visualScaleRootReference != null ? visualScaleRootReference : transform;
+        SpriteRenderer currentBodyRenderer = bodyRendererReference != null ? bodyRendererReference : GetComponent<SpriteRenderer>();
+
+        if (currentBodyRenderer != null)
+        {
+            if (definition.RuntimeBodySprite != null)
+            {
+                currentBodyRenderer.sprite = definition.RuntimeBodySprite;
+            }
+        }
+
+        if (currentVisualRoot != null && definition.RuntimeAnimatorController != null)
+        {
+            Animator currentAnimator = currentVisualRoot.GetComponent<Animator>();
+            if (currentAnimator == null)
+            {
+                currentAnimator = currentVisualRoot.gameObject.AddComponent<Animator>();
+            }
+
+            currentAnimator.runtimeAnimatorController = definition.RuntimeAnimatorController;
+        }
+
+        if (definition.RuntimePrefab != null)
+        {
+            Enemy sourceEnemy = definition.RuntimePrefab.GetComponent<Enemy>();
+            SpriteRenderer sourceBodyRenderer = sourceEnemy != null && sourceEnemy.bodyRendererReference != null
+                ? sourceEnemy.bodyRendererReference
+                : definition.RuntimePrefab.GetComponent<SpriteRenderer>();
+
+            Transform sourceVisualRoot = sourceEnemy != null && sourceEnemy.visualScaleRootReference != null
+                ? sourceEnemy.visualScaleRootReference
+                : definition.RuntimePrefab.transform;
+
+            Animator sourceAnimator = sourceVisualRoot != null ? sourceVisualRoot.GetComponent<Animator>() : null;
+
+            if (currentBodyRenderer != null && sourceBodyRenderer != null)
+            {
+                currentBodyRenderer.sortingLayerID = sourceBodyRenderer.sortingLayerID;
+                currentBodyRenderer.sortingOrder = sourceBodyRenderer.sortingOrder;
+                currentBodyRenderer.flipX = sourceBodyRenderer.flipX;
+                currentBodyRenderer.flipY = sourceBodyRenderer.flipY;
+            }
+
+            if (currentVisualRoot != null && sourceAnimator != null)
+            {
+                Animator currentAnimator = currentVisualRoot.GetComponent<Animator>();
+                if (currentAnimator == null)
+                {
+                    currentAnimator = currentVisualRoot.gameObject.AddComponent<Animator>();
+                }
+
+                if (definition.RuntimeAnimatorController == null)
+                {
+                    currentAnimator.runtimeAnimatorController = sourceAnimator.runtimeAnimatorController;
+                }
+
+                currentAnimator.applyRootMotion = sourceAnimator.applyRootMotion;
+                currentAnimator.cullingMode = sourceAnimator.cullingMode;
+                currentAnimator.updateMode = sourceAnimator.updateMode;
+            }
+
+            if (healthBarRootReference != null && sourceEnemy != null && sourceEnemy.healthBarRootReference != null)
+            {
+                healthBarRootReference.localPosition = sourceEnemy.healthBarRootReference.localPosition;
+                healthBarRootReference.localScale = sourceEnemy.healthBarRootReference.localScale;
+            }
+        }
+    }
+
     /// <summary>
     /// `Update()` keeps movement and presentation feedback in one place.
     ///
@@ -306,7 +425,9 @@ public class Enemy : MonoBehaviour
     private void Update()
     {
         AdvanceFeedbackTimers();
+        ApplyAnimatorRuntimeSettings();
         RefreshBodyVisualState();
+        TryLogRuntimeVisualSnapshot();
 
         if (TowerDefenseGame.Instance != null && TowerDefenseGame.Instance.IsGameOver)
         {
@@ -537,6 +658,12 @@ public class Enemy : MonoBehaviour
             bodyRendererReference = _spriteRenderer;
         }
 
+        if (_bodyAnimator == null)
+        {
+            Transform visualRoot = visualScaleRootReference != null ? visualScaleRootReference : transform;
+            _bodyAnimator = visualRoot != null ? visualRoot.GetComponent<Animator>() : null;
+        }
+
         if (_healthBarRoot == null)
         {
             _healthBarRoot = healthBarRootReference;
@@ -682,5 +809,77 @@ public class Enemy : MonoBehaviour
 
         Transform scaleTarget = visualScaleRootReference != null ? visualScaleRootReference : transform;
         scaleTarget.localScale = _baseScale * pulseScale;
+    }
+
+    private void ApplyAnimatorRuntimeSettings()
+    {
+        if (_bodyAnimator == null)
+        {
+            return;
+        }
+
+        float safeBaseline = Mathf.Max(0.05f, animatorSpeedBaseline);
+        float normalizedMoveSpeed = _moveSpeed > 0f ? _moveSpeed / safeBaseline : 1f;
+        float animationSpeed = Mathf.Clamp(normalizedMoveSpeed * animatorSpeedMultiplier, minAnimatorSpeed, maxAnimatorSpeed);
+        _bodyAnimator.speed = animationSpeed;
+
+        if (!_hasInitializedAnimatorPhase && randomizeAnimationPhaseOnSpawn)
+        {
+            AnimatorStateInfo stateInfo = _bodyAnimator.GetCurrentAnimatorStateInfo(0);
+            if (stateInfo.length > 0f || _bodyAnimator.runtimeAnimatorController != null)
+            {
+                _bodyAnimator.Play(0, 0, Random.value);
+                _hasInitializedAnimatorPhase = true;
+            }
+        }
+        else if (!_hasInitializedAnimatorPhase)
+        {
+            _hasInitializedAnimatorPhase = true;
+        }
+    }
+
+    private void TryLogRuntimeVisualSnapshot()
+    {
+        if (!enableRuntimeVisualDiagnostics || _hasLoggedRuntimeVisualSnapshot)
+        {
+            return;
+        }
+
+        if (_spriteRenderer == null)
+        {
+            return;
+        }
+
+        Transform visualRoot = visualScaleRootReference != null ? visualScaleRootReference : transform;
+        SpriteRenderer rootRenderer = GetComponent<SpriteRenderer>();
+        SpriteRenderer visualRootRenderer = visualRoot != null ? visualRoot.GetComponent<SpriteRenderer>() : null;
+
+        string activeSpriteName = _spriteRenderer.sprite != null ? _spriteRenderer.sprite.name : "null";
+        string rootSpriteName = rootRenderer != null && rootRenderer.sprite != null ? rootRenderer.sprite.name : "null";
+        string visualRootSpriteName = visualRootRenderer != null && visualRootRenderer.sprite != null ? visualRootRenderer.sprite.name : "null";
+        string activeTextureName = _spriteRenderer.sprite != null && _spriteRenderer.sprite.texture != null ? _spriteRenderer.sprite.texture.name : "null";
+        Vector2 activeTextureSize = _spriteRenderer.sprite != null && _spriteRenderer.sprite.texture != null
+            ? new Vector2(_spriteRenderer.sprite.texture.width, _spriteRenderer.sprite.texture.height)
+            : Vector2.zero;
+        string definitionRuntimeBodySpriteName = _currentDefinition != null && _currentDefinition.RuntimeBodySprite != null
+            ? _currentDefinition.RuntimeBodySprite.name
+            : "null";
+        string definitionRuntimeBodyTextureName = _currentDefinition != null &&
+                                                  _currentDefinition.RuntimeBodySprite != null &&
+                                                  _currentDefinition.RuntimeBodySprite.texture != null
+            ? _currentDefinition.RuntimeBodySprite.texture.name
+            : "null";
+
+        Debug.Log(
+            $"[EnemyVisualDiag] enemy={name} archetype={_currentArchetypeId} " +
+            $"bodyRenderer={_spriteRenderer.gameObject.name} activeSprite={activeSpriteName} color={_spriteRenderer.color} " +
+            $"sortingOrder={_spriteRenderer.sortingOrder} enabled={_spriteRenderer.enabled} worldPos={_spriteRenderer.transform.position} " +
+            $"rootSprite={rootSpriteName} visualRootSprite={visualRootSpriteName} " +
+            $"activeTexture={activeTextureName} textureSize={activeTextureSize} " +
+            $"definitionRuntimeBodySprite={definitionRuntimeBodySpriteName} definitionRuntimeBodyTexture={definitionRuntimeBodyTextureName} " +
+            $"rootScale={transform.localScale} visualRootScale={(visualRoot != null ? visualRoot.localScale.ToString() : "null")}",
+            this);
+
+        _hasLoggedRuntimeVisualSnapshot = true;
     }
 }

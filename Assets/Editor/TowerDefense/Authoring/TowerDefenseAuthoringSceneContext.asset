@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b3b2b00484396c4585539d3691c557f, type: 3}
   m_Name: TowerDefenseAuthoringSceneContext
   m_EditorClassIdentifier: 
-  scenePath: Assets/Scenes/new level01.unity
-  sceneName: new level01
+  scenePath: Assets/Scenes/Level02.unity
+  sceneName: Level02
   currentGame: {fileID: 0}
   currentWaveSpawner: {fileID: 0}
   currentMap: {fileID: 0}

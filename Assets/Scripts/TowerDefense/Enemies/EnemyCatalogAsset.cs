@@ -92,6 +92,8 @@ public sealed class EnemyCatalogAsset : ScriptableObject
         [Header("外观")]
         [SerializeField, InspectorName("运行时 Prefab")] private GameObject runtimePrefab; // 中文：运行时预制体
         [SerializeField, InspectorName("主体精灵覆盖")] private Sprite bodySpriteOverride; // 中文：主体精灵覆盖
+        [SerializeField, InspectorName("运行时默认主体精灵")] private Sprite runtimeBodySprite; // 中文：运行时默认主体精灵
+        [SerializeField, InspectorName("运行时主体动画控制器")] private RuntimeAnimatorController runtimeAnimatorController; // 中文：运行时主体动画控制器
         [SerializeField, InspectorName("主体颜色")] private Color bodyColor = new Color(0.9f, 0.25f, 0.25f, 1f); // 中文：主体颜色
         [SerializeField, Min(0.2f), InspectorName("主体缩放倍率")] private float bodyScaleMultiplier = 1f; // 中文：主体缩放倍率
 
@@ -128,6 +130,8 @@ public sealed class EnemyCatalogAsset : ScriptableObject
         public bool CanBeRepairedByMechanic => canBeRepairedByMechanic; // 中文：能否BeRepairedBy机制
         public GameObject RuntimePrefab => runtimePrefab; // 中文：运行时预制体
         public Sprite BodySpriteOverride => bodySpriteOverride; // 中文：主体精灵覆盖
+        public Sprite RuntimeBodySprite => runtimeBodySprite; // 中文：运行时默认主体精灵
+        public RuntimeAnimatorController RuntimeAnimatorController => runtimeAnimatorController; // 中文：运行时主体动画控制器
         public Color BodyColor => bodyColor; // 中文：主体颜色
         public float BodyScaleMultiplier => Mathf.Max(0.2f, bodyScaleMultiplier); // 中文：主体缩放倍率
         public int ShieldAmount => Mathf.Max(0, shieldAmount); // 中文：护盾数量
