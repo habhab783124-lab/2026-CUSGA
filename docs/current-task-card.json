@@ -1,34 +1,30 @@
 {
   "status": "in_progress",
   "task_source": "user_latest_request",
-  "source_excerpt": "或者把 main 的最新内容合并/变基到 构建工作流；执行；合并",
+  "source_excerpt": "如果你要，我下一步可以直接帮你把当前这个已合并状态再推送到远程 构建工作流；执行",
   "selected_historical_excerpt_used": false,
   "do_scope": [
-    "检查当前分支和 main 的差异",
-    "更新任务卡到本次合并 main 动作",
+    "检查当前分支与远程状态",
+    "更新任务卡到本次推送已合并分支动作",
     "运行任务门禁脚本",
-    "处理会阻挡合并的本地任务卡改动",
-    "执行 main 到构建工作流的合并",
-    "如果出现冲突做最小范围处理",
-    "确认当前分支已经包含最新 main"
+    "把当前构建工作流推送到 origin/构建工作流",
+    "确认远程已更新"
   ],
   "not_do_scope": [
-    "不改 main 分支本身",
-    "不做变基不改写当前已推送分支历史",
+    "不再改项目代码场景预制体脚本或资源",
     "不清理 .codex-temp-* .dotnet 或 *.lscache 之类本地缓存",
-    "不额外重构玩法场景预制体脚本或资源"
+    "不切换到别的分支",
+    "不再做新的合并变基或同步"
   ],
   "affected_targets": [
     "docs/current-task-card.md",
     "docs/current-task-card.json",
-    ".git 分支历史与合并记录",
-    "合并过程涉及的冲突文件（如果有）",
+    ".git 提交历史与远程 origin/构建工作流",
     "当前分支构建工作流"
   ],
   "success_criteria": [
-    "构建工作流成功合并最新 main",
-    "当前工作区文件拿到 main 的更新",
-    "如果有冲突已经被明确处理并收口",
+    "构建工作流当前本地提交成功推送到 origin/构建工作流",
+    "远程分支包含本次 main 合并结果",
     "本地临时文件没有被误提交或误删除"
   ],
   "approved": true
