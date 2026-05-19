@@ -14,6 +14,12 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
     [Header("Target")]
     [SerializeField] private Transform targetPoint;
 
+    [Header("Animation")]
+    [SerializeField] private Animator playerAnimator;
+    [SerializeField] private RuntimeAnimatorController playerAnimatorController;
+    [SerializeField] private string playerIdleStateName = "LingIdle";
+    [SerializeField] private string playerWalkRightStateName = "LingWalkRight";
+
     [Header("Dialogue Bubble")]
     [SerializeField] private DialogueBubbleView dialogueBubblePrefab;
     [SerializeField] private float dialogueDelayAfterIntro = 1f;
@@ -43,13 +49,16 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
     private int dialogueIndex;
     private bool dialogueSequenceActive;
     private bool waitingForExitClick;
+    private string currentAnimationState;
 
     private void Awake()
     {
+        EnsureAnimator();
         targetPosition = targetPoint != null ? targetPoint.position : transform.position;
         EnsureDialogueBubblePrefab();
         EnsureDialogueAnchors();
         BuildDialogueLines();
+        PlayAnimationState(playerIdleStateName);
     }
 
     private void Start()
@@ -124,6 +133,7 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
         float halfWidth = cam.orthographic ? cam.orthographicSize * cam.aspect : 5f;
         float startX = cam.transform.position.x - halfWidth - extraLeftBeyondCamera;
         transform.position = new Vector3(startX, targetPosition.y, targetPosition.z);
+        PlayAnimationState(playerWalkRightStateName);
 
         while (Vector3.Distance(transform.position, targetPosition) > arriveEpsilon)
         {
@@ -132,6 +142,7 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
         }
 
         transform.position = targetPosition;
+        PlayAnimationState(playerIdleStateName);
         introRoutine = null;
 
         if (dialogueDelayAfterIntro > 0f)
@@ -217,6 +228,7 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
 
         float halfWidth = cam.orthographic ? cam.orthographicSize * cam.aspect : 5f;
         float exitX = cam.transform.position.x + halfWidth + playerOffscreenMarginWorld;
+        PlayAnimationState(playerWalkRightStateName);
 
         while (transform.position.x < exitX)
         {
@@ -224,7 +236,37 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
             yield return null;
         }
 
+        PlayAnimationState(playerIdleStateName);
         exitRoutine = null;
+    }
+
+    private void EnsureAnimator()
+    {
+        if (playerAnimator == null)
+        {
+            playerAnimator = GetComponent<Animator>();
+        }
+
+        if (playerAnimator == null && playerAnimatorController != null)
+        {
+            playerAnimator = gameObject.AddComponent<Animator>();
+        }
+
+        if (playerAnimator != null && playerAnimatorController != null && playerAnimator.runtimeAnimatorController == null)
+        {
+            playerAnimator.runtimeAnimatorController = playerAnimatorController;
+        }
+    }
+
+    private void PlayAnimationState(string stateName)
+    {
+        if (playerAnimator == null || string.IsNullOrWhiteSpace(stateName) || currentAnimationState == stateName)
+        {
+            return;
+        }
+
+        playerAnimator.Play(stateName, 0, 0f);
+        currentAnimationState = stateName;
     }
 
     private void HideAllBubbles()
@@ -367,10 +409,10 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
     private void BuildDialogueLines()
     {
         queuedLines.Clear();
-        queuedLines.Add(SpeakerA("听说西区又减配额了。这周每人每天三百毫升水。"));
-        queuedLines.Add(SpeakerB("三百？上个月还有五百。"));
-        queuedLines.Add(SpeakerA("有什么办法。废料厂受到攻击停产，净水材料跟不上了。"));
-        queuedLines.Add(SpeakerB("那帮城外的变异体……要不是他们天天进攻，废料厂也不会停。"));
+        queuedLines.Add(SpeakerA("<size=150%>听说西区又减配额了。这周每人每天三百毫升水。</size>"));
+        queuedLines.Add(SpeakerB("<size=150%>三百？上个月还有五百。</size>"));
+        queuedLines.Add(SpeakerA("<size=150%>有什么办法。废料厂受到攻击停产，净水材料跟不上了。</size>"));
+        queuedLines.Add(SpeakerB("<size=150%>那帮城外的变异体……要不是他们天天进攻，废料厂也不会停。</size>"));
     }
 
     private static DialogueLine SpeakerA(string text)

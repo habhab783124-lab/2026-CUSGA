@@ -20,6 +20,13 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
     [SerializeField] private PlayerInteractor2D playerInteractor;
     [SerializeField] private Transform player;
     [SerializeField] private Transform shen;
+    [SerializeField] private Animator playerAnimator;
+    [SerializeField] private Animator shenAnimator;
+    [SerializeField] private SpriteRenderer shenSpriteRenderer;
+    [SerializeField] private Sprite[] shenWalkLeftFrames = new Sprite[0];
+    [SerializeField] private Sprite[] shenWalkRightFrames = new Sprite[0];
+    [SerializeField] private Sprite shenIdleSprite;
+    [SerializeField] private float shenWalkFramesPerSecond = 8f;
 
     [Header("Final Positions")]
     [SerializeField] private Transform playerStopPoint;
@@ -32,6 +39,18 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
     [SerializeField] private float arriveEpsilon = 0.02f;
     [SerializeField] private float dialogueDelayAfterArrive = 0.15f;
 
+    [Header("Bus Interlude")]
+    [SerializeField] private Sprite busSprite;
+    [SerializeField] private float busMoveSpeed = 5f;
+    [SerializeField] private float busArriveEpsilon = 0.02f;
+    [SerializeField] private float busStartExtraLeftBeyondCamera = 8f;
+    [SerializeField] private float busStopRightScreenMargin = 0.1f;
+    [SerializeField] private float busYPosition = 0.5f;
+    [SerializeField] private int busSortingOrder = 1;
+    [SerializeField] private Vector3 busScale = new(1.4f, 1.4f, 1f);
+
+    private const string Chapter6IntroDialogueId = "chapter6_intro";
+    private const int Chapter6BusInsertAfterLineIndex = 25;
     private Coroutine sequenceRoutine;
     private bool hasPlayed;
     private Vector3 playerTargetPosition;
@@ -39,6 +58,13 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
     private bool hasPlayerTarget;
     private bool hasShenTarget;
     private bool targetPositionsInitialized;
+    private string currentPlayerAnimationState;
+    private string currentShenAnimationState;
+    private Transform runtimeBus;
+    private SpriteRenderer runtimeBusRenderer;
+    private List<DialogueLine> pendingDialogueLinesAfterBus;
+    private Coroutine shenSpriteAnimationRoutine;
+    private bool shenAnimatorDisabledForSpriteAnimation;
 
     protected override void Reset()
     {
@@ -52,6 +78,11 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
         base.Awake();
         dialogueRunner = ResolveDialogueRunner(dialogueRunner);
         ResolveReferences();
+        if (HasAnyShenSpriteAnimationFrames())
+        {
+            SetShenAnimatorEnabled(false);
+        }
+
         CaptureInitialTargetPositionsIfNeeded();
         PlaceCharactersAtStartPositions();
     }
@@ -98,6 +129,21 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
         shen = ResolveActor(shen, "shen", "Shen");
         playerBubbleAnchor = ResolveDialogueAnchor(playerBubbleAnchor, "player", player, "Player");
         shenBubbleAnchor = ResolveDialogueAnchor(shenBubbleAnchor, "shen", shen, "Shen");
+
+        if (player != null && playerAnimator == null)
+        {
+            playerAnimator = player.GetComponentInChildren<Animator>(true);
+        }
+
+        if (shen != null && shenAnimator == null)
+        {
+            shenAnimator = shen.GetComponentInChildren<Animator>(true);
+        }
+
+        if (shen != null && shenSpriteRenderer == null)
+        {
+            shenSpriteRenderer = shen.GetComponentInChildren<SpriteRenderer>(true);
+        }
     }
 
     private void CaptureInitialTargetPositionsIfNeeded()
@@ -227,10 +273,13 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
         {
             MoveTowards(player, playerTargetPosition, playerMoveSpeed);
             MoveTowards(shen, shenTargetPosition, shenMoveSpeed);
+            UpdateMovementAnimations();
             yield return null;
         }
 
         SnapToTargets();
+        PlayPlayerAnimation("LingIdle");
+        PlayShenIdleAnimation();
 
         if (dialogueDelayAfterArrive > 0f)
         {
@@ -246,14 +295,160 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
         }
 
         IList<DialogueLine> resolvedLines = lines as IList<DialogueLine> ?? new List<DialogueLine>(lines);
+        if (TrySplitDialogueForBusInterlude(resolvedLines, out List<DialogueLine> firstSegment, out List<DialogueLine> secondSegment))
+        {
+            pendingDialogueLinesAfterBus = secondSegment;
+            PlayDialogueSegment(firstSegment, OnFirstDialogueSegmentEnded);
+        }
+        else
+        {
+            PlayDialogueSegment(resolvedLines, ReleaseMovementLock);
+        }
+
+        sequenceRoutine = null;
+    }
+
+    private void PlayDialogueSegment(IList<DialogueLine> dialogueLines, System.Action onEnded)
+    {
         dialogueRunner.PlayConversation(
             playerInteractor,
             playerBubbleAnchor,
             shenBubbleAnchor,
-            resolvedLines,
-            onEnded: ReleaseMovementLock);
+            dialogueLines,
+            onEnded: onEnded);
+    }
+
+    private bool TrySplitDialogueForBusInterlude(
+        IList<DialogueLine> resolvedLines,
+        out List<DialogueLine> firstSegment,
+        out List<DialogueLine> secondSegment)
+    {
+        firstSegment = null;
+        secondSegment = null;
+
+        if (!string.Equals(dialogueId, Chapter6IntroDialogueId, System.StringComparison.Ordinal)
+            || resolvedLines == null
+            || resolvedLines.Count <= Chapter6BusInsertAfterLineIndex + 1)
+        {
+            return false;
+        }
+
+        firstSegment = new List<DialogueLine>(Chapter6BusInsertAfterLineIndex + 1);
+        secondSegment = new List<DialogueLine>(resolvedLines.Count - Chapter6BusInsertAfterLineIndex - 1);
+
+        for (int i = 0; i < resolvedLines.Count; i++)
+        {
+            if (i <= Chapter6BusInsertAfterLineIndex)
+            {
+                firstSegment.Add(resolvedLines[i]);
+            }
+            else
+            {
+                secondSegment.Add(resolvedLines[i]);
+            }
+        }
+
+        return secondSegment.Count > 0;
+    }
+
+    private void OnFirstDialogueSegmentEnded()
+    {
+        SetPlayerCutsceneLock(playerInteractor, true);
+
+        if (sequenceRoutine != null)
+        {
+            StopCoroutine(sequenceRoutine);
+        }
+
+        sequenceRoutine = StartCoroutine(PlayBusInterludeThenResumeDialogueRoutine());
+    }
+
+    private IEnumerator PlayBusInterludeThenResumeDialogueRoutine()
+    {
+        yield return PlayBusEntranceRoutine();
+
+        if (pendingDialogueLinesAfterBus != null && pendingDialogueLinesAfterBus.Count > 0)
+        {
+            List<DialogueLine> remainingLines = pendingDialogueLinesAfterBus;
+            pendingDialogueLinesAfterBus = null;
+            PlayDialogueSegment(remainingLines, ReleaseMovementLock);
+        }
+        else
+        {
+            ReleaseMovementLock();
+        }
 
         sequenceRoutine = null;
+    }
+
+    private IEnumerator PlayBusEntranceRoutine()
+    {
+        if (!EnsureRuntimeBus())
+        {
+            yield break;
+        }
+
+        Camera cam = Camera.main;
+        if (cam == null)
+        {
+            yield break;
+        }
+
+        float halfCameraWidth = cam.orthographic ? cam.orthographicSize * cam.aspect : 10f;
+        float halfBusWidth = GetBusHalfWidthWorld();
+        float targetX = cam.transform.position.x + halfCameraWidth - halfBusWidth - busStopRightScreenMargin;
+        float startX = cam.transform.position.x - halfCameraWidth - busStartExtraLeftBeyondCamera;
+
+        runtimeBus.position = new Vector3(startX, busYPosition, 0f);
+        runtimeBus.gameObject.SetActive(true);
+
+        Vector3 targetPosition = new Vector3(targetX, busYPosition, 0f);
+        while (runtimeBus != null && Vector3.Distance(runtimeBus.position, targetPosition) > busArriveEpsilon)
+        {
+            runtimeBus.position = Vector3.MoveTowards(runtimeBus.position, targetPosition, busMoveSpeed * Time.deltaTime);
+            yield return null;
+        }
+
+        if (runtimeBus != null)
+        {
+            runtimeBus.position = targetPosition;
+        }
+    }
+
+    private bool EnsureRuntimeBus()
+    {
+        if (busSprite == null)
+        {
+            return false;
+        }
+
+        if (runtimeBus == null)
+        {
+            GameObject busObject = new GameObject("Chapter6RuntimeBus");
+            runtimeBus = busObject.transform;
+            runtimeBusRenderer = busObject.AddComponent<SpriteRenderer>();
+        }
+
+        if (runtimeBusRenderer == null)
+        {
+            runtimeBusRenderer = runtimeBus.GetComponent<SpriteRenderer>();
+        }
+
+        runtimeBusRenderer.sprite = busSprite;
+        runtimeBusRenderer.sortingOrder = busSortingOrder;
+        runtimeBus.localScale = busScale;
+        runtimeBus.gameObject.SetActive(false);
+        return true;
+    }
+
+    private float GetBusHalfWidthWorld()
+    {
+        if (busSprite == null)
+        {
+            return 0f;
+        }
+
+        return busSprite.bounds.extents.x * Mathf.Abs(busScale.x);
     }
 
     private bool BothArrived()
@@ -294,8 +489,185 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
         }
     }
 
+    private void UpdateMovementAnimations()
+    {
+        UpdateActorAnimation(player, playerTargetPosition, playerAnimator, "LingWalkRight", "LingIdle", ref currentPlayerAnimationState);
+        UpdateShenMovementAnimation();
+    }
+
+    private static void UpdateActorAnimation(
+        Transform actor,
+        Vector3 destination,
+        Animator animator,
+        string moveStateName,
+        string idleStateName,
+        ref string currentState)
+    {
+        if (actor == null || animator == null)
+        {
+            return;
+        }
+
+        string targetState = Vector3.Distance(actor.position, destination) > 0.02f ? moveStateName : idleStateName;
+        if (currentState == targetState || string.IsNullOrWhiteSpace(targetState))
+        {
+            return;
+        }
+
+        animator.Play(targetState, 0, 0f);
+        currentState = targetState;
+    }
+
+    private void PlayPlayerAnimation(string stateName)
+    {
+        if (playerAnimator == null || string.IsNullOrWhiteSpace(stateName) || currentPlayerAnimationState == stateName)
+        {
+            return;
+        }
+
+        playerAnimator.Play(stateName, 0, 0f);
+        currentPlayerAnimationState = stateName;
+    }
+
+    private void PlayShenAnimation(string stateName)
+    {
+        if (shenAnimator == null || string.IsNullOrWhiteSpace(stateName) || currentShenAnimationState == stateName)
+        {
+            return;
+        }
+
+        SetShenAnimatorEnabled(true);
+        shenAnimator.Play(stateName, 0, 0f);
+        currentShenAnimationState = stateName;
+    }
+
     private void ReleaseMovementLock()
     {
         SetPlayerCutsceneLock(playerInteractor, false);
+    }
+
+    private void OnDestroy()
+    {
+        StopShenSpriteAnimation();
+    }
+
+    private void UpdateShenMovementAnimation()
+    {
+        if (shen == null)
+        {
+            StopShenSpriteAnimation();
+            return;
+        }
+
+        if (Vector3.Distance(shen.position, shenTargetPosition) <= 0.02f)
+        {
+            PlayShenIdleAnimation();
+            return;
+        }
+
+        float deltaX = shenTargetPosition.x - shen.position.x;
+        PlayShenWalkAnimation(deltaX);
+    }
+
+    private void PlayShenWalkAnimation(float deltaXWorld)
+    {
+        Sprite[] frames = deltaXWorld < -0.01f ? shenWalkLeftFrames : shenWalkRightFrames;
+        if (frames != null && frames.Length > 0)
+        {
+            SetShenAnimatorEnabled(false);
+            PlayShenSpriteAnimation(frames);
+            return;
+        }
+
+        string stateName = deltaXWorld < -0.01f ? "ShenWalkLeft" : "ShenWalkRight";
+        PlayShenAnimation(stateName);
+    }
+
+    private void PlayShenIdleAnimation()
+    {
+        StopShenSpriteAnimation();
+        if (shenSpriteRenderer != null && shenIdleSprite != null)
+        {
+            SetShenAnimatorEnabled(false);
+            shenSpriteRenderer.sprite = shenIdleSprite;
+            return;
+        }
+
+        PlayShenAnimation("ShenIdle");
+    }
+
+    private void PlayShenSpriteAnimation(Sprite[] frames)
+    {
+        if (shenSpriteRenderer == null || frames == null || frames.Length == 0)
+        {
+            return;
+        }
+
+        if (shenSpriteAnimationRoutine != null)
+        {
+            return;
+        }
+
+        shenSpriteAnimationRoutine = StartCoroutine(PlayShenSpriteAnimationRoutine(frames));
+    }
+
+    private IEnumerator PlayShenSpriteAnimationRoutine(Sprite[] frames)
+    {
+        float frameDelay = 1f / Mathf.Max(1f, shenWalkFramesPerSecond);
+        int index = 0;
+
+        while (true)
+        {
+            if (shenSpriteRenderer != null)
+            {
+                shenSpriteRenderer.sprite = frames[index];
+            }
+
+            index = (index + 1) % frames.Length;
+            yield return new WaitForSeconds(frameDelay);
+        }
+    }
+
+    private void StopShenSpriteAnimation()
+    {
+        if (shenSpriteAnimationRoutine != null)
+        {
+            StopCoroutine(shenSpriteAnimationRoutine);
+            shenSpriteAnimationRoutine = null;
+        }
+    }
+
+    private bool HasAnyShenSpriteAnimationFrames()
+    {
+        return (shenWalkLeftFrames != null && shenWalkLeftFrames.Length > 0)
+            || (shenWalkRightFrames != null && shenWalkRightFrames.Length > 0)
+            || shenIdleSprite != null;
+    }
+
+    private void SetShenAnimatorEnabled(bool enabled)
+    {
+        if (shenAnimator == null)
+        {
+            return;
+        }
+
+        if (enabled)
+        {
+            if (shenAnimatorDisabledForSpriteAnimation)
+            {
+                shenAnimator.enabled = true;
+                shenAnimatorDisabledForSpriteAnimation = false;
+                currentShenAnimationState = null;
+            }
+
+            return;
+        }
+
+        if (shenAnimator.enabled)
+        {
+            shenAnimator.enabled = false;
+            shenAnimatorDisabledForSpriteAnimation = true;
+            currentShenAnimationState = null;
+        }
     }
 }

@@ -11,8 +11,7 @@ public sealed class Chapter1 : MonoBehaviour
         None = 0,
         WaitingNpcOpen = 1,
         WaitingLineAdvance = 2,
-        WaitingNpcClose = 3,
-        WaitingPlayerStart = 4,
+        WaitingPlayerStart = 3,
     }
 
     [Header("字体")]
@@ -407,16 +406,6 @@ public sealed class Chapter1 : MonoBehaviour
                     StartNpcTyping(currentNpcFullText);
                 }
                 break;
-            case Chapter1AdvanceStage.WaitingNpcClose:
-                if (centerBubbleScreen != null && !centerBubbleScreen.IsTransitioning)
-                {
-                    centerBubbleScreen.PlayClose(this, OnCenterBubbleClosed);
-                }
-                else
-                {
-                    OnCenterBubbleClosed();
-                }
-                break;
             case Chapter1AdvanceStage.WaitingPlayerStart:
                 if (pendingPlayerLine != null)
                 {
@@ -474,9 +463,19 @@ public sealed class Chapter1 : MonoBehaviour
         if (currentLineIndex > 0 && lines[currentLineIndex - 1].speaker == DialogueSpeaker.NPC)
         {
             pendingPlayerLine = line;
+            waitingForAdvanceClick = false;
+            advanceStage = Chapter1AdvanceStage.None;
             HideNpcTextImmediate();
-            waitingForAdvanceClick = true;
-            advanceStage = Chapter1AdvanceStage.WaitingNpcClose;
+
+            if (centerBubbleScreen != null && !centerBubbleScreen.IsTransitioning)
+            {
+                centerBubbleScreen.PlayClose(this, OnCenterBubbleClosed);
+            }
+            else
+            {
+                OnCenterBubbleClosed();
+            }
+
             return;
         }
 
@@ -505,8 +504,6 @@ public sealed class Chapter1 : MonoBehaviour
     {
         advanceStage = Chapter1AdvanceStage.WaitingPlayerStart;
         waitingForAdvanceClick = true;
-        currentNpcFullText = string.Empty;
-        currentNpcParsedLine = null;
     }
 
     private void EndDialogue()

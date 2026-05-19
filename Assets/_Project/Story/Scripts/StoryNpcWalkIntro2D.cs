@@ -12,6 +12,11 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
     [SerializeField] private PlayerInteractor2D playerInteractor;
     [SerializeField] private Transform npc;
     [SerializeField] private SpriteRenderer npcSprite;
+    [SerializeField] private Animator npcAnimator;
+    [SerializeField] private Sprite[] npcWalkLeftFrames = new Sprite[0];
+    [SerializeField] private Sprite[] npcWalkRightFrames = new Sprite[0];
+    [SerializeField] private Sprite npcIdleSprite;
+    [SerializeField] private float npcWalkFramesPerSecond = 8f;
 
     [Header("Scene start audio")]
     [SerializeField] private bool playAlarmOnSceneStart = true;
@@ -35,6 +40,9 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
     [SerializeField] private float moveSpeed = 2.2f;
     [SerializeField] private bool flipSpriteWhenWalkingLeft = true;
     [SerializeField] private float arriveEpsilon = 0.04f;
+    [SerializeField] private string npcIdleStateName = "ChenIdle";
+    [SerializeField] private string npcWalkLeftStateName = "ChenWalkLeft";
+    [SerializeField] private string npcWalkRightStateName = "ChenWalkRight";
 
     [Header("Auto dialogue after intro")]
     [SerializeField] private bool playDialogueWhenNpcArrives = true;
@@ -53,6 +61,9 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
 
     private AudioSource alarmAudioSource;
     private AudioSource footstepAudioSource;
+    private string currentNpcAnimationState;
+    private Coroutine npcSpriteAnimationRoutine;
+    private bool npcAnimatorDisabledForSpriteAnimation;
 
     private void Awake()
     {
@@ -71,9 +82,24 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
             dialogueRunner = UnityEngine.Object.FindObjectOfType<DialogueRunner>();
         }
 
+        if (npc != null && npcSprite == null)
+        {
+            npcSprite = npc.GetComponentInChildren<SpriteRenderer>(true);
+        }
+
+        if (npc != null && npcAnimator == null)
+        {
+            npcAnimator = npc.GetComponentInChildren<Animator>(true);
+        }
+
         if (playAlarmOnSceneStart)
         {
             PlaySceneStartAlarm();
+        }
+
+        if (HasAnyNpcSpriteAnimationFrames())
+        {
+            SetNpcAnimatorEnabled(false);
         }
 
         if (playerMotor != null)
@@ -132,7 +158,9 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
         float startX = cam.transform.position.x + halfW + extraRightBeyondCamera;
         npc.position = new Vector3(startX, target.y, npc.position.z);
 
-        ApplyFacing(target.x - npc.position.x);
+        float walkDeltaX = target.x - npc.position.x;
+        ApplyFacing(walkDeltaX);
+        PlayNpcWalkAnimation(walkDeltaX);
         StartWalkingFootstep();
 
         while (Vector3.Distance(
@@ -146,6 +174,7 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
         StopWalkingFootstep();
         npc.position = new Vector3(target.x, target.y, npc.position.z);
         ApplyFacing(ppos.x - npc.position.x);
+        PlayNpcIdleAnimation();
 
         if (releaseCutsceneHoldWhenNpcArrives && playerMotor != null)
         {
@@ -333,5 +362,121 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
         }
 
         npcSprite.transform.localScale = s;
+    }
+
+    private void PlayNpcWalkAnimation(float deltaXWorld)
+    {
+        Sprite[] frames = deltaXWorld < -0.01f ? npcWalkLeftFrames : npcWalkRightFrames;
+        if (frames != null && frames.Length > 0)
+        {
+            SetNpcAnimatorEnabled(false);
+            PlayNpcSpriteAnimation(frames);
+            return;
+        }
+
+        if (npcAnimator == null)
+        {
+            return;
+        }
+
+        SetNpcAnimatorEnabled(true);
+        string targetState = deltaXWorld < -0.01f ? npcWalkLeftStateName : npcWalkRightStateName;
+        PlayNpcAnimationState(targetState);
+    }
+
+    private void PlayNpcIdleAnimation()
+    {
+        StopNpcSpriteAnimation();
+        if (npcSprite != null && npcIdleSprite != null)
+        {
+            SetNpcAnimatorEnabled(false);
+            npcSprite.sprite = npcIdleSprite;
+            return;
+        }
+
+        SetNpcAnimatorEnabled(true);
+        PlayNpcAnimationState(npcIdleStateName);
+    }
+
+    private void PlayNpcAnimationState(string stateName)
+    {
+        if (npcAnimator == null || string.IsNullOrWhiteSpace(stateName) || currentNpcAnimationState == stateName)
+        {
+            return;
+        }
+
+        npcAnimator.Play(stateName, 0, 0f);
+        currentNpcAnimationState = stateName;
+    }
+
+    private void PlayNpcSpriteAnimation(Sprite[] frames)
+    {
+        StopNpcSpriteAnimation();
+        if (npcSprite == null || frames == null || frames.Length == 0)
+        {
+            return;
+        }
+
+        npcSpriteAnimationRoutine = StartCoroutine(PlayNpcSpriteAnimationRoutine(frames));
+    }
+
+    private IEnumerator PlayNpcSpriteAnimationRoutine(Sprite[] frames)
+    {
+        float frameDelay = 1f / Mathf.Max(1f, npcWalkFramesPerSecond);
+        int index = 0;
+
+        while (true)
+        {
+            if (npcSprite != null)
+            {
+                npcSprite.sprite = frames[index];
+            }
+
+            index = (index + 1) % frames.Length;
+            yield return new WaitForSeconds(frameDelay);
+        }
+    }
+
+    private void StopNpcSpriteAnimation()
+    {
+        if (npcSpriteAnimationRoutine != null)
+        {
+            StopCoroutine(npcSpriteAnimationRoutine);
+            npcSpriteAnimationRoutine = null;
+        }
+    }
+
+    private bool HasAnyNpcSpriteAnimationFrames()
+    {
+        return (npcWalkLeftFrames != null && npcWalkLeftFrames.Length > 0)
+            || (npcWalkRightFrames != null && npcWalkRightFrames.Length > 0)
+            || npcIdleSprite != null;
+    }
+
+    private void SetNpcAnimatorEnabled(bool enabled)
+    {
+        if (npcAnimator == null)
+        {
+            return;
+        }
+
+        if (enabled)
+        {
+            if (npcAnimatorDisabledForSpriteAnimation)
+            {
+                npcAnimator.enabled = true;
+                npcAnimatorDisabledForSpriteAnimation = false;
+                currentNpcAnimationState = null;
+            }
+
+            return;
+        }
+
+        if (npcAnimator.enabled)
+        {
+            npcAnimator.enabled = false;
+            npcAnimatorDisabledForSpriteAnimation = true;
+            currentNpcAnimationState = null;
+        }
     }
 }

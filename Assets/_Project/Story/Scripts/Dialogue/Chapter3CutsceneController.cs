@@ -35,6 +35,7 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
 
     [Header("玩家")]
     [SerializeField] private PlayerInteractor2D playerInteractor;
+    [SerializeField] private Animator playerAnimator;
     [SerializeField] private float playerExitMoveSpeed = 3.5f;
     [SerializeField] private float playerOffscreenMarginWorld = 2.5f;
 
@@ -46,6 +47,7 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
 
     private const string Chapter35SceneName = "chapter3.5";
     private Coroutine chenSpriteAnimationRoutine;
+    private string currentPlayerAnimationState;
 
     private void Reset()
     {
@@ -113,7 +115,7 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
 
         if (chen == null)
         {
-            GameObject go = GameObject.Find("Chen");
+            GameObject go = GameObject.Find("Chen_left");
             if (go != null)
             {
                 chen = go.transform;
@@ -123,6 +125,11 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
         if (playerInteractor == null)
         {
             playerInteractor = FindObjectOfType<PlayerInteractor2D>();
+        }
+
+        if (playerInteractor != null && playerAnimator == null)
+        {
+            playerAnimator = playerInteractor.GetComponentInChildren<Animator>(true);
         }
 
         if (chen != null && chenStopConfig == null)
@@ -344,6 +351,7 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
         }
 
         Camera cam = Camera.main;
+        PlayPlayerAnimation("LingWalkRight");
         while (playerTransform != null)
         {
             playerTransform.position += Vector3.right * (playerExitMoveSpeed * Time.deltaTime);
@@ -363,6 +371,8 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
 
             yield return null;
         }
+
+        PlayPlayerAnimation("LingIdle");
     }
 
     private void LoadNext()
@@ -373,6 +383,17 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
         }
 
         ScreenFadeTransition.Play(nextSceneName, fadeOutToBlackDuration, fadeInFromBlackDuration, startOpaque: false);
+    }
+
+    private void PlayPlayerAnimation(string stateName)
+    {
+        if (playerAnimator == null || string.IsNullOrWhiteSpace(stateName) || currentPlayerAnimationState == stateName)
+        {
+            return;
+        }
+
+        playerAnimator.Play(stateName, 0, 0f);
+        currentPlayerAnimationState = stateName;
     }
 
 #if UNITY_EDITOR
