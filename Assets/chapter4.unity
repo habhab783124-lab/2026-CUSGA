@@ -134,6 +134,7 @@ GameObject:
   - component: {fileID: 122054167}
   - component: {fileID: 122054166}
   - component: {fileID: 122054165}
+  - component: {fileID: 122054169}
   m_Layer: 0
   m_Name: Chen
   m_TagString: Untagged
@@ -246,7 +247,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 0ccc508108fa6ed4fa11b4a467d7f609, type: 3}
-  m_Color: {r: 0.6139018, g: 1, b: 0.26100624, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -265,12 +266,33 @@ Transform:
   m_GameObject: {fileID: 122054164}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.9, y: -2, z: 0}
-  m_LocalScale: {x: 4, y: 5, z: 1}
+  m_LocalPosition: {x: 4.9, y: -2.2, z: 0}
+  m_LocalScale: {x: 1.6, y: 1.6, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &122054169
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 122054164}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: e43afbfc32b0f9446902efe7bb598d3e, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &161375234
 GameObject:
   m_ObjectHideFlags: 0
@@ -330,8 +352,8 @@ SpriteRenderer:
   m_SortingLayerID: -1343527989
   m_SortingLayer: -1
   m_SortingOrder: -10
-  m_Sprite: {fileID: 21300000, guid: 5e1434bdb5116004e919a865fec4e56a, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Sprite: {fileID: 21300000, guid: e0a28627db211ee4d9f782d49522b46e, type: 3}
+  m_Color: {r: 0.66666657, g: 0.66666657, b: 0.66666657, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -350,8 +372,8 @@ Transform:
   m_GameObject: {fileID: 161375234}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2, y: 0, z: 0}
-  m_LocalScale: {x: 5, y: 4, z: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1.06, y: 1.2, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -385,6 +407,7 @@ GameObject:
   - component: {fileID: 323238205}
   - component: {fileID: 323238204}
   - component: {fileID: 323238203}
+  - component: {fileID: 323238208}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -508,8 +531,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 0ccc508108fa6ed4fa11b4a467d7f609, type: 3}
-  m_Color: {r: 0.9748427, g: 0.2237845, b: 0.9244778, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 1cd10b9d89d9d2c45a76f7825b749514, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -528,12 +551,33 @@ Transform:
   m_GameObject: {fileID: 323238202}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -2, z: 0}
-  m_LocalScale: {x: 4, y: 5, z: 1}
+  m_LocalPosition: {x: 0, y: -2.2, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &323238208
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 323238202}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 8cf038221e33b904db0ef501af50ac89, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &356888051
 GameObject:
   m_ObjectHideFlags: 0
@@ -581,7 +625,40 @@ MonoBehaviour:
   playerMotor: {fileID: 0}
   playerInteractor: {fileID: 0}
   npc: {fileID: 122054168}
-  npcSprite: {fileID: 0}
+  npcSprite: {fileID: 122054167}
+  npcAnimator: {fileID: 122054169}
+  npcWalkLeftFrames:
+  - {fileID: -369702943, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2142474081, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2098524698, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2046068377, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -1289958125, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: 962985988, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -1276910788, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: 1422783262, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2046455638, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2118035383, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  npcWalkRightFrames:
+  - {fileID: -649326195, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 383418462, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 1456302690, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 702979644, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: -1163956243, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 1769017905, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: -798478279, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: -405345037, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 740805072, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 2129486555, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  npcIdleSprite: {fileID: 21300000, guid: fce32e4c2667ab6438a26d9443b07987, type: 3}
+  npcWalkFramesPerSecond: 8
+  playAlarmOnSceneStart: 1
+  alarmResourcePath: StoryAudio/BGM/alarm
+  alarmVolume: 0
+  loopAlarm: 1
+  playFootstepWhileWalking: 1
+  footstepResourcePath: StoryAudio/BGM/iron_step
+  footstepVolume: 0.7
+  loopFootstep: 1
   hideInteractionPromptDuringIntro: 1
   disableInteractionInputDuringIntro: 1
   stopOffsetFromPlayer: {x: 4, y: 0}
@@ -590,6 +667,7 @@ MonoBehaviour:
   flipSpriteWhenWalkingLeft: 0
   arriveEpsilon: 0.04
   playDialogueWhenNpcArrives: 1
+  autoPlayFirstLineWhenNpcArrives: 1
   arrivedDialogueId: chapter4_Chen
   dialogueRunner: {fileID: 0}
   npcBubbleAnchor: {fileID: 0}
@@ -750,11 +828,16 @@ MonoBehaviour:
   secondsPerChar: 0.03
   bubblePrefab: {fileID: 9191823685866065000, guid: b8d7239750b6adc41866acb1283edf0b, type: 3}
   dialogueFontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
-  bubbleWorldOffset: {x: 0, y: 2.05, z: 0}
+  bubbleWorldOffset: {x: 0, y: 2.6, z: 0}
   bubbleContentPadding: {x: 0.55, y: 0.35}
   bubbleMaxWidth: 7.2
   bubbleMinWidth: 2
   bubbleMinHeight: 1.2
+  useScreenBottomLayout: 0
+  bottomBubbleSize: {x: 1280, y: 220}
+  bottomBubbleOffset: {x: 0, y: 120}
+  bottomBubbleAlpha: 0.6
+  hideBubbleTailInBottomLayout: 1
   mouseButton: 0
   advanceKey: 101
   mouseButtonOnlyAdvance: 0

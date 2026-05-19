@@ -12,6 +12,23 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
     [SerializeField] private PlayerInteractor2D playerInteractor;
     [SerializeField] private Transform npc;
     [SerializeField] private SpriteRenderer npcSprite;
+    [SerializeField] private Animator npcAnimator;
+    [SerializeField] private Sprite[] npcWalkLeftFrames = new Sprite[0];
+    [SerializeField] private Sprite[] npcWalkRightFrames = new Sprite[0];
+    [SerializeField] private Sprite npcIdleSprite;
+    [SerializeField] private float npcWalkFramesPerSecond = 8f;
+
+    [Header("Scene start audio")]
+    [SerializeField] private bool playAlarmOnSceneStart = true;
+    [SerializeField] private string alarmResourcePath = "StoryAudio/BGM/alarm";
+    [SerializeField] [Range(0f, 1f)] private float alarmVolume = 0.8f;
+    [SerializeField] private bool loopAlarm = true;
+
+    [Header("Walk audio")]
+    [SerializeField] private bool playFootstepWhileWalking = true;
+    [SerializeField] private string footstepResourcePath = "StoryAudio/BGM/iron_step";
+    [SerializeField] [Range(0f, 1f)] private float footstepVolume = 0.7f;
+    [SerializeField] private bool loopFootstep = true;
 
     [Header("Player during intro")]
     [SerializeField] private bool hideInteractionPromptDuringIntro = true;
@@ -23,9 +40,13 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
     [SerializeField] private float moveSpeed = 2.2f;
     [SerializeField] private bool flipSpriteWhenWalkingLeft = true;
     [SerializeField] private float arriveEpsilon = 0.04f;
+    [SerializeField] private string npcIdleStateName = "ChenIdle";
+    [SerializeField] private string npcWalkLeftStateName = "ChenWalkLeft";
+    [SerializeField] private string npcWalkRightStateName = "ChenWalkRight";
 
     [Header("Auto dialogue after intro")]
     [SerializeField] private bool playDialogueWhenNpcArrives = true;
+    [SerializeField] private bool autoPlayFirstLineWhenNpcArrives = true;
     [SerializeField] private string arrivedDialogueId = "chapter4_Chen";
     [SerializeField] private DialogueRunner dialogueRunner;
     [SerializeField] private Transform npcBubbleAnchor;
@@ -37,6 +58,12 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
     [SerializeField] private bool restoreInteractionPromptAfter = true;
     [SerializeField] private bool restoreInteractionInputAfter = true;
     [SerializeField] private UnityEvent onNpcArrived;
+
+    private AudioSource alarmAudioSource;
+    private AudioSource footstepAudioSource;
+    private string currentNpcAnimationState;
+    private Coroutine npcSpriteAnimationRoutine;
+    private bool npcAnimatorDisabledForSpriteAnimation;
 
     private void Awake()
     {
@@ -53,6 +80,26 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
         if (dialogueRunner == null)
         {
             dialogueRunner = UnityEngine.Object.FindObjectOfType<DialogueRunner>();
+        }
+
+        if (npc != null && npcSprite == null)
+        {
+            npcSprite = npc.GetComponentInChildren<SpriteRenderer>(true);
+        }
+
+        if (npc != null && npcAnimator == null)
+        {
+            npcAnimator = npc.GetComponentInChildren<Animator>(true);
+        }
+
+        if (playAlarmOnSceneStart)
+        {
+            PlaySceneStartAlarm();
+        }
+
+        if (HasAnyNpcSpriteAnimationFrames())
+        {
+            SetNpcAnimatorEnabled(false);
         }
 
         if (playerMotor != null)
@@ -73,6 +120,12 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
                 playerInteractor.SetInteractionInputEnabled(false);
             }
         }
+    }
+
+    private void OnDestroy()
+    {
+        StopAudioSource(alarmAudioSource);
+        StopAudioSource(footstepAudioSource);
     }
 
     private void Start()
@@ -105,7 +158,10 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
         float startX = cam.transform.position.x + halfW + extraRightBeyondCamera;
         npc.position = new Vector3(startX, target.y, npc.position.z);
 
-        ApplyFacing(target.x - npc.position.x);
+        float walkDeltaX = target.x - npc.position.x;
+        ApplyFacing(walkDeltaX);
+        PlayNpcWalkAnimation(walkDeltaX);
+        StartWalkingFootstep();
 
         while (Vector3.Distance(
                    new Vector3(npc.position.x, npc.position.y, 0f),
@@ -115,8 +171,10 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
             yield return null;
         }
 
+        StopWalkingFootstep();
         npc.position = new Vector3(target.x, target.y, npc.position.z);
         ApplyFacing(ppos.x - npc.position.x);
+        PlayNpcIdleAnimation();
 
         if (releaseCutsceneHoldWhenNpcArrives && playerMotor != null)
         {
@@ -149,6 +207,93 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
         }
     }
 
+    private void PlaySceneStartAlarm()
+    {
+        AudioClip clip = Resources.Load<AudioClip>(alarmResourcePath);
+        if (clip == null)
+        {
+            Debug.LogWarning($"StoryNpcWalkIntro2D: failed to load alarm clip at Resources path '{alarmResourcePath}'.", this);
+            return;
+        }
+
+        if (alarmAudioSource == null)
+        {
+            alarmAudioSource = GetOrCreateAudioSource("Alarm Audio");
+        }
+
+        ConfigureAndPlayAudioSource(alarmAudioSource, clip, Mathf.Clamp01(alarmVolume), loopAlarm);
+    }
+
+    private void StartWalkingFootstep()
+    {
+        if (!playFootstepWhileWalking)
+        {
+            return;
+        }
+
+        AudioClip clip = Resources.Load<AudioClip>(footstepResourcePath);
+        if (clip == null)
+        {
+            Debug.LogWarning($"StoryNpcWalkIntro2D: failed to load footstep clip at Resources path '{footstepResourcePath}'.", this);
+            return;
+        }
+
+        if (footstepAudioSource == null)
+        {
+            footstepAudioSource = GetOrCreateAudioSource("Footstep Audio");
+        }
+
+        ConfigureAndPlayAudioSource(footstepAudioSource, clip, Mathf.Clamp01(footstepVolume), loopFootstep);
+    }
+
+    private void StopWalkingFootstep()
+    {
+        StopAudioSource(footstepAudioSource);
+    }
+
+    private AudioSource GetOrCreateAudioSource(string childName)
+    {
+        Transform child = transform.Find(childName);
+        GameObject target = child != null ? child.gameObject : new GameObject(childName);
+        if (child == null)
+        {
+            target.transform.SetParent(transform, false);
+        }
+
+        AudioSource source = target.GetComponent<AudioSource>();
+        if (source == null)
+        {
+            source = target.AddComponent<AudioSource>();
+        }
+
+        source.playOnAwake = false;
+        source.spatialBlend = 0f;
+        return source;
+    }
+
+    private static void ConfigureAndPlayAudioSource(AudioSource source, AudioClip clip, float volume, bool loop)
+    {
+        if (source == null || clip == null)
+        {
+            return;
+        }
+
+        source.loop = loop;
+        source.clip = clip;
+        source.volume = volume;
+        source.Play();
+    }
+
+    private static void StopAudioSource(AudioSource source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        source.Stop();
+    }
+
     private void PlayArrivedDialogue()
     {
         if (dialogueRunner == null || dialogueRunner.IsPlaying || string.IsNullOrWhiteSpace(arrivedDialogueId))
@@ -173,7 +318,13 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
             resolvedPlayerAnchor,
             resolvedNpcAnchor,
             new List<DialogueLine>(dialogue),
-            OnArrivedDialogueEnded);
+            OnArrivedDialogueEnded,
+            deferFirstLineUntilExternal: !autoPlayFirstLineWhenNpcArrives);
+
+        if (autoPlayFirstLineWhenNpcArrives)
+        {
+            dialogueRunner.PlayDeferredFirstLine();
+        }
     }
 
     private void OnArrivedDialogueEnded()
@@ -211,5 +362,121 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
         }
 
         npcSprite.transform.localScale = s;
+    }
+
+    private void PlayNpcWalkAnimation(float deltaXWorld)
+    {
+        Sprite[] frames = deltaXWorld < -0.01f ? npcWalkLeftFrames : npcWalkRightFrames;
+        if (frames != null && frames.Length > 0)
+        {
+            SetNpcAnimatorEnabled(false);
+            PlayNpcSpriteAnimation(frames);
+            return;
+        }
+
+        if (npcAnimator == null)
+        {
+            return;
+        }
+
+        SetNpcAnimatorEnabled(true);
+        string targetState = deltaXWorld < -0.01f ? npcWalkLeftStateName : npcWalkRightStateName;
+        PlayNpcAnimationState(targetState);
+    }
+
+    private void PlayNpcIdleAnimation()
+    {
+        StopNpcSpriteAnimation();
+        if (npcSprite != null && npcIdleSprite != null)
+        {
+            SetNpcAnimatorEnabled(false);
+            npcSprite.sprite = npcIdleSprite;
+            return;
+        }
+
+        SetNpcAnimatorEnabled(true);
+        PlayNpcAnimationState(npcIdleStateName);
+    }
+
+    private void PlayNpcAnimationState(string stateName)
+    {
+        if (npcAnimator == null || string.IsNullOrWhiteSpace(stateName) || currentNpcAnimationState == stateName)
+        {
+            return;
+        }
+
+        npcAnimator.Play(stateName, 0, 0f);
+        currentNpcAnimationState = stateName;
+    }
+
+    private void PlayNpcSpriteAnimation(Sprite[] frames)
+    {
+        StopNpcSpriteAnimation();
+        if (npcSprite == null || frames == null || frames.Length == 0)
+        {
+            return;
+        }
+
+        npcSpriteAnimationRoutine = StartCoroutine(PlayNpcSpriteAnimationRoutine(frames));
+    }
+
+    private IEnumerator PlayNpcSpriteAnimationRoutine(Sprite[] frames)
+    {
+        float frameDelay = 1f / Mathf.Max(1f, npcWalkFramesPerSecond);
+        int index = 0;
+
+        while (true)
+        {
+            if (npcSprite != null)
+            {
+                npcSprite.sprite = frames[index];
+            }
+
+            index = (index + 1) % frames.Length;
+            yield return new WaitForSeconds(frameDelay);
+        }
+    }
+
+    private void StopNpcSpriteAnimation()
+    {
+        if (npcSpriteAnimationRoutine != null)
+        {
+            StopCoroutine(npcSpriteAnimationRoutine);
+            npcSpriteAnimationRoutine = null;
+        }
+    }
+
+    private bool HasAnyNpcSpriteAnimationFrames()
+    {
+        return (npcWalkLeftFrames != null && npcWalkLeftFrames.Length > 0)
+            || (npcWalkRightFrames != null && npcWalkRightFrames.Length > 0)
+            || npcIdleSprite != null;
+    }
+
+    private void SetNpcAnimatorEnabled(bool enabled)
+    {
+        if (npcAnimator == null)
+        {
+            return;
+        }
+
+        if (enabled)
+        {
+            if (npcAnimatorDisabledForSpriteAnimation)
+            {
+                npcAnimator.enabled = true;
+                npcAnimatorDisabledForSpriteAnimation = false;
+                currentNpcAnimationState = null;
+            }
+
+            return;
+        }
+
+        if (npcAnimator.enabled)
+        {
+            npcAnimator.enabled = false;
+            npcAnimatorDisabledForSpriteAnimation = true;
+            currentNpcAnimationState = null;
+        }
     }
 }
