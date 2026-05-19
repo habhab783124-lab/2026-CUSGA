@@ -147,6 +147,7 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
             chenAnimator = chen.GetComponentInChildren<Animator>(true);
         }
 
+#if UNITY_EDITOR
         if ((chenWalkLeftFrames == null || chenWalkLeftFrames.Length == 0) && !Application.isPlaying)
         {
             chenWalkLeftFrames = LoadSpritesAtPath("Assets/_Project/Story/Sprites/Character/chen_left.png");
@@ -161,6 +162,7 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
         {
             chenIdleSprite = LoadSpriteAtPath("Assets/_Project/Story/Sprites/Character/Chen.png");
         }
+#endif
     }
 
     private IEnumerator EnterThenDialogueRoutine()
