@@ -2073,6 +2073,7 @@ MonoBehaviour:
   waveCatalogAsset: {fileID: 11400000, guid: fb8bb08b2dce42b1ad14c0b2b19188e5, type: 2}
   enemyCatalogAsset: {fileID: 11400000, guid: 819dd0e8f3ce43b486231f9495890f82, type: 2}
   continueCampaignAfterClear: 0
+  fallbackNextSceneNameAfterClear: chapter2
   enemyPathReference: {fileID: 1833619266}
   enemyPrototypeReference: {fileID: 5863667738006183233, guid: 188b0c4095b17be4d9ca76d998df24f1, type: 3}
   enemyRootReference: {fileID: 2141618144}

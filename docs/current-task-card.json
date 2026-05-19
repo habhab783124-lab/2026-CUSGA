@@ -1,27 +1,46 @@
 {
   "status": "completed",
   "task_source": "user_latest_request",
-  "source_excerpt": "当前分支提交的pr有一个冲突，解决这个冲突；执行",
+  "source_excerpt": "现在我直接把你需要做的切换流程告诉你，以下全部为场景名：chapter1->level1->chapter2、chapter4->level2->chapter5->level3->chapter6、chapter8->level4->chapter9。这个不用你做，执行",
   "selected_historical_excerpt_used": false,
   "do_scope": [
-    "检查当前分支与冲突来源",
-    "处理 Assets/_Project/Fonts/zpix SDF.asset 的冲突",
-    "提交并推送冲突修复到当前分支"
+    "实现 chapter1 结束后进入 level 1",
+    "实现 chapter4 结束后进入 Level 2",
+    "实现 chapter5 结束后进入 Level 3",
+    "实现 chapter8 结束后进入 level 4",
+    "实现四个塔防关卡胜利后进入对应 chapter",
+    "实现四个塔防关卡失败后点击任意位置重开当前关卡",
+    "把四个正式塔防关卡加入 Build Settings"
   ],
   "not_do_scope": [
-    "不顺带修改别的玩法、场景或 UI 内容",
-    "不处理与这次冲突无关的历史改动",
-    "不处理两个嵌套临时仓库目录的内部内容"
+    "不修改 chapter 与 chapter 之间已经完成的切换",
+    "不修改主界面或 Opening 到 chapter1 的入口",
+    "不修改塔防数值、地图布局或 UI 视觉",
+    "不重做整套 CampaignFlowAsset 主线流程"
   ],
   "affected_targets": [
-    "Assets/_Project/Fonts/zpix SDF.asset",
+    "Assets/_Project/Story/Scripts/Dialogue/Chapter1.cs",
+    "Assets/_Project/Story/Scripts/Dialogue/Chapter5.cs",
+    "Assets/_Project/Story/Scripts/StoryNpcWalkIntro2D.cs",
+    "Assets/Scripts/TowerDefense/Core/TowerDefenseGame.cs",
+    "Assets/Scripts/TowerDefense/Map/WaveSpawner.cs",
+    "Assets/chapter1.unity",
+    "Assets/chapter4.unity",
+    "Assets/chapter5.unity",
+    "Assets/chapter8.unity",
+    "Assets/Scenes/level 1.unity",
+    "Assets/Scenes/Level 2.unity",
+    "Assets/Scenes/Level 3.unity",
+    "Assets/Scenes/level 4.unity",
+    "ProjectSettings/EditorBuildSettings.asset",
     "docs/current-task-card.md",
     "docs/current-task-card.json"
   ],
   "success_criteria": [
-    "Assets/_Project/Fonts/zpix SDF.asset 的 PR 冲突被消除",
-    "修复提交已推送到 origin/第一次大合并",
-    "当前分支保持可继续提交状态"
+    "chapter1、chapter4、chapter5、chapter8 在剧情结束后自动进入对应塔防关卡",
+    "level 1、Level 2、Level 3、level 4 胜利后自动进入对应 chapter",
+    "四个塔防关卡失败后 Game Over 出现后点击任意位置可以重开当前关卡",
+    "四个正式塔防关卡已加入 Build Settings"
   ],
   "approved": true
 }

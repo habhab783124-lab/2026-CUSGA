@@ -2,6 +2,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
@@ -177,6 +178,10 @@ public class TowerDefenseGame : MonoBehaviour
 
     [Header("Diagnostics")]
     [SerializeField] private bool enablePlacementDiagnostics;
+
+    [Header("Scene Flow")]
+    [SerializeField] private bool restartCurrentSceneOnGameOverClick = true;
+    [SerializeField] private float gameOverRestartClickDelaySeconds = 0.2f;
 
     [Header("Tower Presentation")]
     [SerializeField] private TowerPresentationAuthoring relayPresentation = new TowerPresentationAuthoring
@@ -366,6 +371,8 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private TowerDefenseHudPresenter _hudPresenter;
     private StructureSelectionRangeVisualizer _selectionRangeVisualizer;
+    private bool _gameOverRestartTriggered;
+    private float _gameOverRestartAllowedAtUnscaledTime;
 
     /// <summary>
     /// 对外暴露只读的结算状态，方便 HUD、敌人和其他运行时对象判断当前是否已经 Game Over。
@@ -435,6 +442,7 @@ public class TowerDefenseGame : MonoBehaviour
     private void Update()
     {
         _inputCoordinator?.Tick();
+        HandleGameOverRestartInput();
     }
 
     /// <summary>
@@ -1262,8 +1270,68 @@ public class TowerDefenseGame : MonoBehaviour
         }
 
         _placementInteractionController?.ForceCancelPlacementDrag();
+        _gameOverRestartTriggered = false;
+        _gameOverRestartAllowedAtUnscaledTime = Time.unscaledTime + Mathf.Max(0f, gameOverRestartClickDelaySeconds);
         Time.timeScale = 0f;
         _presentationCoordinator?.ShowGameOver();
+    }
+
+    /// <summary>
+    /// 失败后的补救路径非常明确：
+    /// 先停住战斗并展示 Game Over，
+    /// 然后在一个很短的无缩放时间窗口后，允许玩家点击任意位置重开当前关卡。
+    /// 这样既能保证玩家看见失败反馈，也不会被迫回到别的入口重新找关卡。
+    /// </summary>
+    private void HandleGameOverRestartInput()
+    {
+        if (!restartCurrentSceneOnGameOverClick || !IsGameOver || _gameOverRestartTriggered)
+        {
+            return;
+        }
+
+        if (Time.unscaledTime < _gameOverRestartAllowedAtUnscaledTime)
+        {
+            return;
+        }
+
+        if (!DidPressRestartAfterGameOver())
+        {
+            return;
+        }
+
+        RestartCurrentScene();
+    }
+
+    private static bool DidPressRestartAfterGameOver()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            return true;
+        }
+
+        for (int index = 0; index < Input.touchCount; index++)
+        {
+            if (Input.GetTouch(index).phase == TouchPhase.Began)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void RestartCurrentScene()
+    {
+        Scene activeScene = SceneManager.GetActiveScene();
+        if (!activeScene.IsValid() || string.IsNullOrWhiteSpace(activeScene.name))
+        {
+            Debug.LogWarning("TowerDefenseGame could not restart the current scene because the active scene name was unavailable.", this);
+            return;
+        }
+
+        _gameOverRestartTriggered = true;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(activeScene.name, LoadSceneMode.Single);
     }
 
 

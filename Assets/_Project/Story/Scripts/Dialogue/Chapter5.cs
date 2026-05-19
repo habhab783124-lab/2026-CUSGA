@@ -64,6 +64,12 @@ public sealed class Chapter5 : MonoBehaviour
     [SerializeField] [Min(0f)] private float stationDisplaySeconds = 3f;
     [SerializeField] [Min(0f)] private float stationFadeInSeconds = 0.35f;
 
+    [Header("Scene Transition")]
+    [SerializeField] private bool autoLoadNextSceneOnDialogueEnd = true;
+    [SerializeField] private string nextSceneName = "Level 3";
+    [SerializeField] [Min(0f)] private float fadeOutToBlackDuration = 0.75f;
+    [SerializeField] [Min(0f)] private float fadeInFromBlackDuration = 0.75f;
+
     private NarrationPresenter narrationPresenter;
     private AudioSource audioSource;
     private Coroutine shenEntranceRoutine;
@@ -83,6 +89,7 @@ public sealed class Chapter5 : MonoBehaviour
     private CanvasGroup stationInterstitialCanvasGroup;
     private Image stationInterstitialImage;
     private bool stationInterstitialActive;
+    private bool transitionQueued;
 
     private void Awake()
     {
@@ -658,6 +665,7 @@ public sealed class Chapter5 : MonoBehaviour
     {
         if (characterLines.Count == 0)
         {
+            QueueSceneTransition();
             return;
         }
 
@@ -673,6 +681,7 @@ public sealed class Chapter5 : MonoBehaviour
         {
             characterDialogueActive = false;
             HideAllCharacterBubbles();
+            QueueSceneTransition();
             return;
         }
 
@@ -760,6 +769,21 @@ public sealed class Chapter5 : MonoBehaviour
         stationInterstitialCanvasGroup.alpha = 0f;
         stationInterstitialCanvasGroup.blocksRaycasts = false;
         stationInterstitialActive = false;
+    }
+
+    /// <summary>
+    /// Chapter5 的结束条件就是沈与玩家这段对话播完。
+    /// 收尾后直接进入下一关塔防，和用户要求的“剧情结束触发场景切换”保持一致。
+    /// </summary>
+    private void QueueSceneTransition()
+    {
+        if (!autoLoadNextSceneOnDialogueEnd || transitionQueued || string.IsNullOrWhiteSpace(nextSceneName))
+        {
+            return;
+        }
+
+        transitionQueued = true;
+        ScreenFadeTransition.Play(nextSceneName, fadeOutToBlackDuration, fadeInFromBlackDuration, startOpaque: false);
     }
 
     private void BuildCharacterDialogueLines()

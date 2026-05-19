@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// `WaveSpawner` drives enemy wave progression inside one authored combat scene.
@@ -120,6 +121,7 @@ public sealed class WaveSpawner : MonoBehaviour
     [SerializeField] private WaveCatalogAsset waveCatalogAsset;
     [SerializeField] private EnemyCatalogAsset enemyCatalogAsset;
     [SerializeField] private bool continueCampaignAfterClear;
+    [SerializeField] private string fallbackNextSceneNameAfterClear;
 
     [Header("Scene References (Fallback)")]
     [SerializeField] private EnemyPath enemyPathReference;
@@ -149,6 +151,7 @@ public sealed class WaveSpawner : MonoBehaviour
     private bool _waitingForFirstWave;
     private bool _levelClearMessageShown;
     private bool _campaignAdvanceTriggered;
+    private bool _fallbackSceneAdvanceTriggered;
     private bool _routePreviewVisible;
     private bool _hasStartedAnyWave;
     private string _lastStartedWaveRouteSignature = string.Empty;
@@ -229,8 +232,17 @@ public sealed class WaveSpawner : MonoBehaviour
 
             if (!_campaignAdvanceTriggered && continueCampaignAfterClear && Enemy.ActiveEnemyCount == 0)
             {
-                _campaignAdvanceTriggered = true;
-                CampaignFlowController.AdvanceToNextStep();
+                if (CampaignFlowController.HasActiveCampaign && CampaignFlowController.AdvanceToNextStep())
+                {
+                    _campaignAdvanceTriggered = true;
+                }
+            }
+
+            if (!_fallbackSceneAdvanceTriggered && Enemy.ActiveEnemyCount == 0 && !string.IsNullOrWhiteSpace(fallbackNextSceneNameAfterClear))
+            {
+                _fallbackSceneAdvanceTriggered = true;
+                Time.timeScale = 1f;
+                SceneManager.LoadScene(fallbackNextSceneNameAfterClear, LoadSceneMode.Single);
             }
 
             return;

@@ -1,6 +1,6 @@
 # Tower Defense AI Memory - Architecture
 Version: 1.9.0
-Updated: 2026-05-19
+Updated: 2026-05-20
 Depends on: `docs/ai-memory/td-memory-main.md`
 
 ## 当前架构判断
@@ -196,3 +196,26 @@ Depends on: `docs/ai-memory/td-memory-main.md`
 - 道路功能层和道路美术层分离
 - 多入口 / 多防御点关系由拓扑编辑器和场景引用共同维护
 - 文档必须明确“项目里存在”与“当前主链启用”不是一回事
+
+## 2026-05-20 Chapter-Level Wiring
+- 当前正式主线的 `chapter` 与 `level` 桥接先走 scene-local wiring，而不是完全依赖 `CampaignFlowAsset`。
+- `Chapter1`
+  - 自己收口开场剧情
+  - 剧情结束后直接切到 `level 1`
+- `StoryNpcWalkIntro2D`
+  - 当前负责 `chapter4` 与 `chapter8` 里的“NPC 入场 -> 自动对话 -> 切塔防关卡”
+  - 通过场景序列化字段显式指定下一关分别是 `Level 2` 与 `level 4`
+- `Chapter5`
+  - 自己收口过场与角色对白
+  - 对话结束后直接切到 `Level 3`
+- `WaveSpawner`
+  - 当关卡清完且没有激活 `CampaignFlow` 时，使用 `fallbackNextSceneNameAfterClear` 进入下一章
+  - 当前四关分别回到 `chapter2 / chapter5 / chapter6 / chapter9`
+- `TowerDefenseGame`
+  - 负责失败态收口
+  - `Game Over` 面板出现后，点击任意位置重开当前关卡
+- 当前 `Build Settings` 已显式包含：
+  - `level 1`
+  - `Level 2`
+  - `Level 3`
+  - `level 4`

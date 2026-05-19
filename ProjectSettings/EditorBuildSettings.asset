@@ -8,16 +8,16 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Opening.unity
     guid: 6c2c6f4bf63b49f6a937d2f9bf2771bb
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/MainMenu.unity
     guid: 4f1ddf0c558a4cf2b4a92c7c7e3f90a4
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/LevelSelect.unity
     guid: 0fd777729449419d9d89f93e559a388f
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/SampleScene.unity
     guid: 9e1cee5aa42f0034dbddb8c8c5e577bc
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/StoryInterludePlaceholder.unity
     guid: 3f54b6d7e2974e1d9ec6d1a8b65201aa
   - enabled: 1
@@ -26,6 +26,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/chapter1.unity
     guid: ea200b3a2ea191041821892ed9f20f4c
+  - enabled: 1
+    path: Assets/Scenes/level 1.unity
+    guid: 814fb17ca30489a4383121fbcb79fe9a
   - enabled: 1
     path: Assets/chapter2.unity
     guid: 790f1a97186d8144c8830e47f4f28662
@@ -39,8 +42,14 @@ EditorBuildSettings:
     path: Assets/chapter4.unity
     guid: 36d9c7c0b1d8692468e4a9fd0fc9f84e
   - enabled: 1
+    path: Assets/Scenes/Level 2.unity
+    guid: 20623c9ba6b64f848def5982550cbb3f
+  - enabled: 1
     path: Assets/chapter5.unity
     guid: 9b8b7032579d12743b0411a91858ab0e
+  - enabled: 1
+    path: Assets/Scenes/Level 3.unity
+    guid: df35711a7b7ba3a4fa5ac14d3c85ed79
   - enabled: 1
     path: Assets/chapter6.unity
     guid: 9adbf3b8c153a394ab55f7faf2dc11e3
@@ -50,6 +59,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/chapter8.unity
     guid: 1f1325ba326d8f142a99bdade27af790
+  - enabled: 1
+    path: Assets/Scenes/level 4.unity
+    guid: 20994a99ccbbcc24187fecca934127b5
   - enabled: 1
     path: Assets/chapter9.unity
     guid: 50c20662ffbfd784b8bad2213913f07d

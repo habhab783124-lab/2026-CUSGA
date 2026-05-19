@@ -429,8 +429,8 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
     private void BuildDialogueLines()
     {
         queuedLines.Clear();
-        queuedLines.Add(SpeakerA("<size=150%>听说西区又减配额了。这周每人每天三百毫升水。</size>"));
-        queuedLines.Add(SpeakerB("<size=150%>三百？上个月还有五百。</size>"));
+        queuedLines.Add(SpeakerA("<size=150%>听说西区又减配额了。这周每人每天三十升水。</size>"));
+        queuedLines.Add(SpeakerB("<size=150%>三十？上个月还有五十。</size>"));
         queuedLines.Add(SpeakerA("<size=150%>有什么办法。废料厂受到攻击停产，净水材料跟不上了。</size>"));
         queuedLines.Add(SpeakerB("<size=150%>那帮城外的变异体……要不是他们天天进攻，废料厂也不会停。</size>"));
     }

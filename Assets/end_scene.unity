@@ -171,7 +171,7 @@ MonoBehaviour:
   sceneCamera: {fileID: 27614541}
   endTitle: END
   reflectionText: "\u8C22\u8C22\u4F60\u4E00\u8DEF\u966A\u6211\u4EEC\u8D70\u5230\u8FD9\u91CC\u3002\n\u6545\u4E8B\u6682\u65F6\u544A\u4E00\u6BB5\u843D\uFF0C\u4F46\u613F\u4F60\u4E5F\u80FD\u8BB0\u4F4F\u8FD9\u6BB5\u65C5\u7A0B\u3002"
-  creditsText: "\u5236\u4F5C\u4EBA\u5458\n\u7A0B\u5E8F\uFF1A\u5360\u4F4D\n\u7F8E\u672F\uFF1A\u5360\u4F4D\n\u5267\u60C5\uFF1A\u5360\u4F4D\n\u97F3\u4E50\uFF1A\u5360\u4F4D\n\u7279\u522B\u611F\u8C22\uFF1A\u4F60"
+  creditsText: "\u5236\u4F5C\u4EBA\u5458\nrei\n\u7279\u522B\u611F\u8C22\uFF1A\u4F60"
   initialDelay: 0.4
   titleFadeDuration: 0.8
   titleHoldDuration: 0.8
@@ -347,7 +347,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u8C22\u8C22\u4F60\u4E00\u8DEF\u966A\u6211\u4EEC\u8D70\u5230\u8FD9\u91CC\u3002\n\u6545\u4E8B\u6682\u65F6\u544A\u4E00\u6BB5\u843D\uFF0C\u4F46\u613F\u4F60\u4E5F\u80FD\u8BB0\u4F4F\u8FD9\u6BB5\u65C5\u7A0B\u3002"
+  m_text: "\u8C22\u8C22\u4F60\u4E00\u8DEF\u966A\u6211\u4EEC\u8D70\u5230\u8FD9\u91CC\u3002\n\u6545\u4E8B\u6682\u65F6\u544A\u4E00\u6BB5\u843D\uFF0C\u4F46\u613F\u4F60\u4E5F\u80FD\u8BB0\u4F4F\u8FD9\u6BB5\u65C5\u7A0B\u3002\n\u672A\u5B8C\u5F85\u7EED\u2026\u2026"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
@@ -821,7 +821,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u5236\u4F5C\u4EBA\u5458\nrei\n\u7279\u522B\u611F\u8C22\uFF1A\u4F60"
+  m_text: "\u5236\u4F5C\u4EBA\u5458\nrei\nparadisezz\n\u71AC\u591C\u7684\u5C0F\u4F73\u540C\u5B66\n\n\u7279\u522B\u611F\u8C22\uFF1A\u4F60"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
   m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
