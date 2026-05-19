@@ -778,7 +778,12 @@ public sealed class TowerDefenseHudPresenter
     {
         if (state.PlacedStructureState.HasSelection)
         {
-            return $"{state.PlacedStructureState.Title}\n{state.PlacedStructureState.Details}";
+            if (string.IsNullOrWhiteSpace(state.PlacedStructureState.Details))
+            {
+                return state.PlacedStructureState.Title;
+            }
+
+            return $"{state.PlacedStructureState.Title}  |  {state.PlacedStructureState.Details}";
         }
 
         if (!string.IsNullOrWhiteSpace(_structureStatusTextTemplate))

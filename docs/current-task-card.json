@@ -1,27 +1,34 @@
 {
   "status": "in_progress",
   "task_source": "user_latest_request",
-  "source_excerpt": "执行",
+  "source_excerpt": "帮我上传一次到我的分支，备注为合并项目前；执行",
   "selected_historical_excerpt_used": false,
   "do_scope": [
-    "保持当前分支不变",
-    "提交当前项目改动",
-    "推送到当前分支远端",
-    "排除明显临时/缓存文件"
+    "检查当前分支和工作区状态",
+    "更新任务卡到本次快照推送动作",
+    "运行任务门禁脚本",
+    "只暂存真实项目改动并排除本地临时产物",
+    "创建一次备注为合并项目前的提交",
+    "把当前分支推送到对应远程分支"
   ],
   "not_do_scope": [
-    "不再切换到别的分支",
-    "不额外整理只提交某一类文件",
-    "不继续修改业务逻辑"
+    "不额外修改玩法场景预制体或脚本行为",
+    "不清理或重构当前已有功能改动",
+    "不提交 .codex-temp-* .dotnet 或 *.lscache 之类本地缓存",
+    "不切换分支也不额外做同步或合并"
   ],
   "affected_targets": [
-    "当前工作区中的项目改动",
     "docs/current-task-card.md",
-    "docs/current-task-card.json"
+    "docs/current-task-card.json",
+    "当前工作区内需要保留的已跟踪改动",
+    "当前工作区内需要保留的未跟踪项目文件",
+    ".git 提交历史与当前远程分支"
   ],
   "success_criteria": [
-    "当前分支产生一条新的提交",
-    "该提交成功 push 到 origin/构建工作流"
+    "当前需要保留的项目改动被成功提交",
+    "提交信息准确为合并项目前",
+    "当前分支成功推送到对应远程分支",
+    "本地临时缓存和工具目录没有被误提交"
   ],
   "approved": true
 }

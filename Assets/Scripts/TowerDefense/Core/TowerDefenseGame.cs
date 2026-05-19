@@ -365,6 +365,7 @@ public class TowerDefenseGame : MonoBehaviour
     /// 这样做的目的，是把“状态计算”和“界面呈现”分开，减少总控脚本继续膨胀。
     /// </summary>
     private TowerDefenseHudPresenter _hudPresenter;
+    private StructureSelectionRangeVisualizer _selectionRangeVisualizer;
 
     /// <summary>
     /// 对外暴露只读的结算状态，方便 HUD、敌人和其他运行时对象判断当前是否已经 Game Over。
@@ -397,6 +398,9 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private void OnDestroy()
     {
+        _selectionRangeVisualizer?.Dispose();
+        _selectionRangeVisualizer = null;
+
         _placementVisualController?.Dispose();
         _placementVisualController = null;
 
@@ -929,6 +933,13 @@ public class TowerDefenseGame : MonoBehaviour
 
         _placementVisualController.BindPlacementPreviewRoot(_placementPreviewRoot);
         _placementInteractionController?.BindPresentation(_placementVisualController, _hudPresenter, _towerCatalog);
+
+        if (_selectionRangeVisualizer == null)
+        {
+            _selectionRangeVisualizer = new StructureSelectionRangeVisualizer(GetSelectionRangeColor);
+        }
+
+        _selectionRangeVisualizer.BindRoot(_placementPreviewRoot);
     }
 
     private void InitializeAudioCoordinator()
@@ -1000,6 +1011,7 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private void RefreshHud()
     {
+        RefreshSelectedStructureRangeVisualization();
         _presentationCoordinator?.RefreshHud();
     }
 
@@ -1023,6 +1035,7 @@ public class TowerDefenseGame : MonoBehaviour
     {
         _selectedRelayTower = null;
         _selectedDefenseTower = null;
+        _selectionRangeVisualizer?.Hide();
     }
 
     /// <summary>
@@ -1179,7 +1192,9 @@ public class TowerDefenseGame : MonoBehaviour
 
         if (_selectedDefenseTower != null)
         {
-            string detail = $"POWER {_selectedDefenseTower.PowerRequired}";
+            string powerState = _selectedDefenseTower.IsPowered ? "powered" : "unpowered";
+            string detail =
+                $"POWER {_selectedDefenseTower.PowerRequired}  |  STATE {powerState}";
             return new PlacedStructureHudState(true, GetTowerDisplayName(_selectedDefenseTower.BuildType), detail);
         }
 
@@ -1560,5 +1575,72 @@ public class TowerDefenseGame : MonoBehaviour
         placementPreviewRootReference = _placementPreviewRoot;
         RefreshPlacementRuleContext();
         _placementVisualController?.BindPlacementPreviewRoot(_placementPreviewRoot);
+        _selectionRangeVisualizer?.BindRoot(_placementPreviewRoot);
+    }
+
+    /// <summary>
+    /// 同步“当前已选中建筑”的范围显示。
+    ///
+    /// 这里故意把刷新入口挂在 `RefreshHud()` 之前，
+    /// 因为选中建筑后的可视化和状态栏本质上是同一批状态变化：
+    /// - HUD 要更新标题 / 详情
+    /// - 世界里的范围辅助线也要跟着切换
+    ///
+    /// 这样外部只需要继续走现有的 `RefreshHud()` 门面，
+    /// 不需要再记住额外调用一套“刷新选中范围”的分支。
+    /// </summary>
+    private void RefreshSelectedStructureRangeVisualization()
+    {
+        if (_selectionRangeVisualizer == null)
+        {
+            return;
+        }
+
+        if (_selectedRelayTower != null)
+        {
+            _selectionRangeVisualizer.ShowRelayCoverage(_selectedRelayTower);
+            return;
+        }
+
+        if (_selectedDefenseTower != null)
+        {
+            _selectionRangeVisualizer.ShowDefenseRange(_selectedDefenseTower);
+            return;
+        }
+
+        _selectionRangeVisualizer.Hide();
+    }
+
+    /// <summary>
+    /// 统一解析“当前这类建筑的范围线颜色”。
+    ///
+    /// 这里优先复用塔目录里已经存在的语义强调色，
+    /// 保持：
+    /// - 继电器仍然偏橙
+    /// - 单体塔偏蓝
+    /// - 减速塔偏青绿
+    /// - 轰炸塔偏橙红
+    ///
+    /// 这样玩家在看 UI 卡片颜色和世界范围线时，会自然把两层认知连起来。
+    /// </summary>
+    private Color GetSelectionRangeColor(TowerType towerType)
+    {
+        if (_towerCatalog != null && _towerCatalog.TryGetDefinition(towerType, out TowerDefinition definition) && definition != null)
+        {
+            return definition.AccentColor;
+        }
+
+        switch (towerType)
+        {
+            case TowerType.Relay:
+                return relayPresentation.AccentColor;
+            case TowerType.SlowField:
+                return slowFieldPresentation.AccentColor;
+            case TowerType.Bombard:
+                return bombardPresentation.AccentColor;
+            case TowerType.SingleTarget:
+            default:
+                return singleTargetPresentation.AccentColor;
+        }
     }
 }
