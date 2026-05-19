@@ -396,9 +396,9 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
         currentPlayerAnimationState = stateName;
     }
 
-#if UNITY_EDITOR
     private static Sprite[] LoadSpritesAtPath(string assetPath)
     {
+#if UNITY_EDITOR
         Object[] assets = AssetDatabase.LoadAllAssetsAtPath(assetPath);
         List<Sprite> sprites = new List<Sprite>();
         foreach (Object asset in assets)
@@ -411,11 +411,17 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
 
         sprites.Sort((a, b) => EditorUtility.NaturalCompare(a.name, b.name));
         return sprites.ToArray();
+#else
+        return new Sprite[0];
+#endif
     }
 
     private static Sprite LoadSpriteAtPath(string assetPath)
     {
+#if UNITY_EDITOR
         return AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
-    }
+#else
+        return null;
 #endif
+    }
 }
