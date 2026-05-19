@@ -22,6 +22,11 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
     [SerializeField] private float secondsPerCharacter = 0.03f;
     [SerializeField] private DialogueBubbleView typingSfxReferenceBubble;
 
+    [Header("Open SFX")]
+    [SerializeField] private AudioClip openSfx;
+    [SerializeField] private string openSfxResourcePath = "StoryAudio/SFX/对话框浮现音效1";
+    [SerializeField] [Range(0f, 1f)] private float openSfxVolume = 1f;
+
     [Header("展开/关闭")]
     [SerializeField] private float openDuration = 0.32f;
     [SerializeField] private float closeDuration = 0.24f;
@@ -56,6 +61,7 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
     private AudioSource typingAudioSource;
     private DialogueBubbleView.ExternalTypingSfxPlayer typingSfxPlayer;
     private CenterBubbleTransitionDriver transitionDriver;
+    private AudioSource openSfxAudioSource;
 
     public bool IsOpen => transitionDriver != null ? transitionDriver.IsOpen : isOpen;
     public bool IsTransitioning => transitionDriver != null ? transitionDriver.IsTransitioning : transitionRoutine != null;
@@ -67,6 +73,7 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
         ResolveTargetRenderer();
         CacheInitialVisualStateIfNeeded();
         EnsureTransitionDriver();
+        EnsureOpenSfxAudioSource();
         ConfigureTransitionDriver();
         EnsureNarrationPresenter();
         ConfigureNarrationPresenter();
@@ -158,7 +165,9 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
     public void PlayOpen(Action onComplete = null)
     {
         EnsureTransitionDriver();
+        EnsureOpenSfxAudioSource();
         ConfigureTransitionDriver();
+        PlayOpenSfx();
         transitionDriver.PlayOpen(onComplete);
     }
 
@@ -537,6 +546,47 @@ public sealed class Chapter2CenterBubbleController : MonoBehaviour
     private void EnsureTypingSfxReference()
     {
         typingSfxReferenceBubble = DialogueBubbleView.ResolveTypingSfxReference(typingSfxReferenceBubble);
+    }
+
+    private void EnsureOpenSfxAudioSource()
+    {
+        if (openSfxAudioSource == null)
+        {
+            Transform existing = transform.Find("Chapter2CenterBubbleOpenSfx");
+            openSfxAudioSource = existing != null ? existing.GetComponent<AudioSource>() : null;
+        }
+
+        if (openSfxAudioSource == null)
+        {
+            GameObject go = new GameObject("Chapter2CenterBubbleOpenSfx", typeof(AudioSource));
+            go.transform.SetParent(transform, false);
+            openSfxAudioSource = go.GetComponent<AudioSource>();
+        }
+
+        openSfxAudioSource.playOnAwake = false;
+        openSfxAudioSource.loop = false;
+        openSfxAudioSource.spatialBlend = 0f;
+    }
+
+    private void PlayOpenSfx()
+    {
+        if (openSfxAudioSource == null)
+        {
+            return;
+        }
+
+        AudioClip clip = openSfx;
+        if (clip == null && !string.IsNullOrWhiteSpace(openSfxResourcePath))
+        {
+            clip = Resources.Load<AudioClip>(openSfxResourcePath);
+        }
+
+        if (clip == null)
+        {
+            return;
+        }
+
+        openSfxAudioSource.PlayOneShot(clip, Mathf.Clamp01(openSfxVolume));
     }
 
     private IEnumerator PlayOpenRoutine(Action onComplete)

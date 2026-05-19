@@ -789,17 +789,37 @@ MonoBehaviour:
   dialogueId: chapter3_Chen
   chen: {fileID: 122054168}
   chenStopPoint: {fileID: 0}
-  chenStopConfig: {fileID: 0}
-  chenSpriteRenderer: {fileID: 0}
-  chenAnimator: {fileID: 0}
+  chenStopConfig: {fileID: 122054170}
+  chenSpriteRenderer: {fileID: 122054167}
+  chenAnimator: {fileID: 122054169}
   chenStopOffsetFromPlayer: {x: -1.25, y: 0}
   chenMoveSpeed: 3.5
   chenArriveEpsilon: 0.04
   chenStartExtraRightBeyondCamera: 0.75
   offscreenMarginWorld: 2.5
-  chenWalkLeftFrames: []
-  chenWalkRightFrames: []
-  chenIdleSprite: {fileID: 0}
+  chenWalkLeftFrames:
+  - {fileID: -369702943, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2142474081, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2098524698, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2046068377, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -1289958125, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: 962985988, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -1276910788, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: 1422783262, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2046455638, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2118035383, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  chenWalkRightFrames:
+  - {fileID: -649326195, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 383418462, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 1456302690, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 702979644, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: -1163956243, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 1769017905, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: -798478279, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: -405345037, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 740805072, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 2129486555, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  chenIdleSprite: {fileID: 21300000, guid: fce32e4c2667ab6438a26d9443b07987, type: 3}
   chenWalkFramesPerSecond: 8
   playerInteractor: {fileID: 323238203}
   playerExitMoveSpeed: 3.5

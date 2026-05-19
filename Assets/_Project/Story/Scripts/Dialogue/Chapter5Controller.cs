@@ -10,8 +10,11 @@ public sealed class Chapter5Controller : MonoBehaviour
     [SerializeField] private string busObjectName = "Bus";
     [SerializeField] private float busMoveSpeed = 3f;
     [SerializeField] private float busArriveEpsilon = 0.02f;
+    [SerializeField] private float busStartExtraLeftBeyondCamera = 0f;
+    [SerializeField] private float busStopRightScreenMargin = 0.5f;
 
     private Transform bus;
+    private SpriteRenderer busSpriteRenderer;
     private Vector3 busTargetPosition;
     private bool hasCachedBusTargetPosition;
     private bool busEntranceStarted;
@@ -74,6 +77,11 @@ public sealed class Chapter5Controller : MonoBehaviour
                 bus = busObject.transform;
             }
         }
+
+        if (bus != null && busSpriteRenderer == null)
+        {
+            busSpriteRenderer = bus.GetComponentInChildren<SpriteRenderer>(true);
+        }
     }
 
     private void CacheBusTargetPosition()
@@ -82,6 +90,14 @@ public sealed class Chapter5Controller : MonoBehaviour
         {
             busTargetPosition = bus.position;
             hasCachedBusTargetPosition = true;
+
+            Camera cam = Camera.main;
+            if (cam != null && cam.orthographic && busSpriteRenderer != null)
+            {
+                float halfCameraWidth = cam.orthographicSize * cam.aspect;
+                float halfBusWidth = GetBusHalfWidthWorld();
+                busTargetPosition.x = cam.transform.position.x + halfCameraWidth - halfBusWidth - busStopRightScreenMargin;
+            }
         }
     }
 
@@ -94,8 +110,20 @@ public sealed class Chapter5Controller : MonoBehaviour
 
         Camera cam = Camera.main;
         float halfWidth = cam != null && cam.orthographic ? cam.orthographicSize * cam.aspect : 10f;
-        float startX = cam != null ? cam.transform.position.x - halfWidth - 4f : -20f;
+        float startX = cam != null ? cam.transform.position.x - halfWidth - busStartExtraLeftBeyondCamera : -30f;
         bus.position = new Vector3(startX, busTargetPosition.y, busTargetPosition.z);
+    }
+
+    private float GetBusHalfWidthWorld()
+    {
+        if (busSpriteRenderer == null || busSpriteRenderer.sprite == null)
+        {
+            return 0f;
+        }
+
+        float spriteHalfWidth = busSpriteRenderer.sprite.bounds.extents.x;
+        float scaleX = bus != null ? Mathf.Abs(bus.lossyScale.x) : 1f;
+        return spriteHalfWidth * scaleX;
     }
 
     private void StartBusEntrance()
