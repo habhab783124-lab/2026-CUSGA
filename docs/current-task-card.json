@@ -1,17 +1,17 @@
 {
-  "status": "completed",
+  "status": "in_progress",
   "task_source": "user_latest_request",
-  "source_excerpt": "帮我把现在项目的完整状态push到我的分支，备注为完成塔防关卡制作，注意要上传当前的所有修改；执行",
-  "selected_historical_excerpt_used": false,
+  "source_excerpt": "重新执行push到新分支，我刚刚漏了一个删除，继续push",
+  "selected_historical_excerpt_used": true,
   "do_scope": [
-    "检查当前分支与工作区状态",
-    "通过任务门禁后统一提交当前全部修改",
-    "推送到当前远程分支"
+    "基于当前分支创建新分支 第一次大合并",
+    "将当前工作区状态提交到新分支",
+    "将新分支推送到远程"
   ],
   "not_do_scope": [
     "不额外修改项目代码、场景、资源或文档内容",
-    "不切换到别的分支",
-    "不做新的合并、变基或同步"
+    "不做新的合并、变基或同步",
+    "不处理两个嵌套临时仓库目录的内部内容"
   ],
   "affected_targets": [
     "当前工作区所有已改动文件",
@@ -19,9 +19,9 @@
     "docs/current-task-card.json"
   ],
   "success_criteria": [
-    "当前工作区的全部修改已提交",
-    "该提交已推送到当前分支对应的远程分支",
-    "提交备注为 完成塔防关卡制作"
+    "新分支 第一次大合并 创建成功",
+    "当前工作区状态已在该分支提交",
+    "远程已存在 origin/第一次大合并，提交备注为 塔防关卡"
   ],
   "approved": true
 }
