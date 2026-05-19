@@ -1,6 +1,6 @@
 # 塔防开发规则与历史
 Version: 2.1.0
-Updated: 2026-05-18
+Updated: 2026-05-20
 Depends on: `docs/ai-memory/td-memory-main.md`
 
 ## 当前项目规则
@@ -117,3 +117,17 @@ Depends on: `docs/ai-memory/td-memory-main.md`
 ### R4 剧情与主链收口
 - 决定 `Story_Intro_01 / StoryInterludePlaceholder / Story_Demo` 与当前 Build Settings 的最终关系
 - 把正式塔防关卡链接回主线
+
+## 2026-05-20 Scene Flow Checkpoint
+- 当前 `chapter <-> level` 正式切换链已经接通并进入 `Build Settings`。
+- 但当前仍然并存两套流程思路：
+  - 显式场景跳转
+  - 尚未完全启用的 `CampaignFlowAsset` 主链
+- 当前显式跳转链路：
+  - `chapter1 -> level 1 -> chapter2`
+  - `chapter4 -> Level 2 -> chapter5 -> Level 3 -> chapter6`
+  - `chapter8 -> level 4 -> chapter9`
+- 当前失败规则：
+  - 四个正式塔防关卡在 `Game Over` 出现后，点击任意位置重开当前关卡
+- 本阶段新增历史：
+  - `2026-05-20`：把 `chapter1 / chapter4 / chapter5 / chapter8` 与 `level 1 / Level 2 / Level 3 / level 4` 的场景切换正式接通；`WaveSpawner` 新增胜利后 fallback 场景；`TowerDefenseGame` 新增 `Game Over` 后点击重开当前关卡；四个正式塔防关卡加入 `Build Settings`

@@ -57,6 +57,10 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
     [SerializeField] private bool unlockPlayerWhenNpcArrives = true;
     [SerializeField] private bool restoreInteractionPromptAfter = true;
     [SerializeField] private bool restoreInteractionInputAfter = true;
+    [SerializeField] private bool autoLoadNextSceneAfterDialogue = false;
+    [SerializeField] private string nextSceneName = string.Empty;
+    [SerializeField] private float fadeOutToBlackDuration = 0.75f;
+    [SerializeField] private float fadeInFromBlackDuration = 0.75f;
     [SerializeField] private UnityEvent onNpcArrived;
 
     private AudioSource alarmAudioSource;
@@ -64,6 +68,7 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
     private string currentNpcAnimationState;
     private Coroutine npcSpriteAnimationRoutine;
     private bool npcAnimatorDisabledForSpriteAnimation;
+    private bool transitionQueued;
 
     private void Awake()
     {
@@ -298,6 +303,7 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
     {
         if (dialogueRunner == null || dialogueRunner.IsPlaying || string.IsNullOrWhiteSpace(arrivedDialogueId))
         {
+            QueueSceneTransition();
             return;
         }
 
@@ -305,6 +311,7 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
         if (dialogue == null || dialogue.Count == 0)
         {
             Debug.LogWarning($"StoryNpcWalkIntro2D: dialogue id '{arrivedDialogueId}' returned no lines.", this);
+            QueueSceneTransition();
             return;
         }
 
@@ -341,6 +348,23 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
                 playerInteractor.SetInteractionInputEnabled(true);
             }
         }
+
+        QueueSceneTransition();
+    }
+
+    /// <summary>
+    /// `StoryNpcWalkIntro2D` 负责 chapter4 / chapter8 里“NPC 入场 + 自动播完到站对话”的整段流程。
+    /// 所以这里直接在对话结束回调里切场景，最贴近真实的剧情完成时机。
+    /// </summary>
+    private void QueueSceneTransition()
+    {
+        if (!autoLoadNextSceneAfterDialogue || transitionQueued || string.IsNullOrWhiteSpace(nextSceneName))
+        {
+            return;
+        }
+
+        transitionQueued = true;
+        ScreenFadeTransition.Play(nextSceneName, fadeOutToBlackDuration, fadeInFromBlackDuration, startOpaque: false);
     }
 
     private void ApplyFacing(float deltaXWorld)

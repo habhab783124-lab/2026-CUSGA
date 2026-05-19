@@ -49,6 +49,12 @@ public sealed class Chapter1 : MonoBehaviour
     [SerializeField] [Range(0f, 1f)] private float musicVolume = 1f;
     [SerializeField] private bool loopMusic = true;
 
+    [Header("场景切换")]
+    [SerializeField] private bool autoLoadNextSceneOnDialogueEnd = true;
+    [SerializeField] private string nextSceneName = "level 1";
+    [SerializeField] private float fadeOutToBlackDuration = 0.75f;
+    [SerializeField] private float fadeInFromBlackDuration = 0.75f;
+
     private AudioSource audioSource;
     private Canvas overlayCanvas;
     private TextMeshProUGUI npcText;
@@ -65,6 +71,7 @@ public sealed class Chapter1 : MonoBehaviour
     private Chapter1AdvanceStage advanceStage;
     private AudioSource npcTypingAudioSource;
     private DialogueBubbleView.ExternalTypingSfxPlayer npcTypingSfxPlayer;
+    private bool transitionQueued;
 
     private void Awake()
     {
@@ -525,6 +532,23 @@ public sealed class Chapter1 : MonoBehaviour
         {
             centerBubbleScreen.SetClosedImmediate();
         }
+
+        QueueSceneTransition();
+    }
+
+    /// <summary>
+    /// Chapter1 的任务是把开场剧情完整交付给玩家。
+    /// 一旦对话播完，就直接切进第一关塔防，避免这里再停一拍要求额外确认。
+    /// </summary>
+    private void QueueSceneTransition()
+    {
+        if (!autoLoadNextSceneOnDialogueEnd || transitionQueued || string.IsNullOrWhiteSpace(nextSceneName))
+        {
+            return;
+        }
+
+        transitionQueued = true;
+        ScreenFadeTransition.Play(nextSceneName, fadeOutToBlackDuration, fadeInFromBlackDuration, startOpaque: false);
     }
 
     private void ShowNpcText(string content)
