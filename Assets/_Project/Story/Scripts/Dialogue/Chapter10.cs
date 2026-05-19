@@ -21,9 +21,6 @@ public sealed class Chapter10 : MonoBehaviour
     [SerializeField] private Vector3 playerBubbleOffset = new(220f, -180f, 10f);
     [SerializeField] private Vector3 npcBubbleOffset = new(-220f, 180f, 10f);
 
-    [Header("点击推进")]
-    [SerializeField] private int mouseButton = 0;
-
     [Header("音乐")]
     [SerializeField] private AudioClip backgroundMusic;
     [SerializeField] private string musicResourcePath = "StoryAudio/BGM/TruthRevealedBGM";
@@ -34,14 +31,20 @@ public sealed class Chapter10 : MonoBehaviour
     [SerializeField] private string finalMessage = "凌……希望以后我们都不用再淋雨了。";
     [SerializeField] [Min(0f)] private float finalMessageDelay = 1.5f;
     [SerializeField] [Min(0.01f)] private float finalMessageFadeDuration = 1.2f;
+    [SerializeField] [Min(0f)] private float finalMessageHoldDuration = 2f;
     [SerializeField] private float finalMessageFontSize = 54f;
     [SerializeField] private Color finalMessageColor = Color.white;
+
+    [Header("转场")]
+    [SerializeField] private string nextSceneName = "end_scene";
+    [SerializeField] [Min(0f)] private float fadeOutToBlackDuration = 1f;
+    [SerializeField] [Min(0f)] private float fadeInFromBlackDuration = 1f;
 
     private Canvas overlayCanvas;
     private TextMeshProUGUI finalMessageText;
     private CanvasGroup finalMessageCanvasGroup;
     private Coroutine finalMessageRoutine;
-    private bool waitingForFinalClick;
+    private bool transitionQueued;
     private AudioSource audioSource;
 
     private void Awake()
@@ -93,13 +96,6 @@ public sealed class Chapter10 : MonoBehaviour
     private void Update()
     {
         UpdateBubbleAnchors();
-        if (waitingForFinalClick && Input.GetMouseButtonDown(mouseButton))
-        {
-            waitingForFinalClick = false;
-            if (dialogueRunner != null) dialogueRunner.HideDialogueBubble();
-            StopFinalMessageRoutineIfNeeded();
-            finalMessageRoutine = StartCoroutine(ShowFinalMessageAfterDelayRoutine());
-        }
     }
 
     private void ApplyDefaultLinesIfNeeded()
@@ -218,13 +214,12 @@ public sealed class Chapter10 : MonoBehaviour
 
     private void StartDialogue()
     {
-        waitingForFinalClick = false;
         StopFinalMessageRoutineIfNeeded();
         HideFinalMessageImmediate();
         UpdateBubbleAnchors();
         if (dialogueRunner == null || lines == null || lines.Count == 0)
         {
-            finalMessageRoutine = StartCoroutine(ShowFinalMessageAfterDelayRoutine());
+            finalMessageRoutine = StartCoroutine(ShowFinalMessageThenTransitionRoutine());
             return;
         }
         dialogueRunner.PlayConversation(null, playerBubbleAnchor, npcBubbleAnchor, lines, OnDialogueFinished);
@@ -248,10 +243,16 @@ public sealed class Chapter10 : MonoBehaviour
 
     private void OnDialogueFinished()
     {
-        waitingForFinalClick = true;
+        if (dialogueRunner != null)
+        {
+            dialogueRunner.HideDialogueBubble();
+        }
+
+        StopFinalMessageRoutineIfNeeded();
+        finalMessageRoutine = StartCoroutine(ShowFinalMessageThenTransitionRoutine());
     }
 
-    private IEnumerator ShowFinalMessageAfterDelayRoutine()
+    private IEnumerator ShowFinalMessageThenTransitionRoutine()
     {
         EnsureFinalMessageUi();
         ApplyFont();
@@ -269,6 +270,12 @@ public sealed class Chapter10 : MonoBehaviour
             yield return null;
         }
         if (finalMessageCanvasGroup != null) finalMessageCanvasGroup.alpha = 1f;
+        if (finalMessageHoldDuration > 0f)
+        {
+            yield return new WaitForSeconds(finalMessageHoldDuration);
+        }
+
+        QueueSceneTransition();
         finalMessageRoutine = null;
     }
 
@@ -283,6 +290,17 @@ public sealed class Chapter10 : MonoBehaviour
         if (finalMessageRoutine == null) return;
         StopCoroutine(finalMessageRoutine);
         finalMessageRoutine = null;
+    }
+
+    private void QueueSceneTransition()
+    {
+        if (transitionQueued || string.IsNullOrWhiteSpace(nextSceneName))
+        {
+            return;
+        }
+
+        transitionQueued = true;
+        ScreenFadeTransition.Play(nextSceneName, fadeOutToBlackDuration, fadeInFromBlackDuration, startOpaque: false);
     }
 
     public static IReadOnlyList<DialogueLine> Get(string id)

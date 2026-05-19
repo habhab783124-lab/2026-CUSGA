@@ -713,7 +713,7 @@ public sealed class Chapter1 : MonoBehaviour
     {
         return new List<DialogueLine>
         {
-            Npc("第三小队，[pause]<size=150%>东侧防区出现少量变异体。</size>"),
+            Npc("第三小队，东侧防区出现少量变异体。"),
             Npc("[speed=0.05]清理者，凌，编号Urzu7，请立即前往指定火力点，接管外墙防御单元。"),
             Npc("目标威胁等级：低。执行标准清理流程。"),
             Player("收到！为了伊甸！"),
