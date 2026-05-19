@@ -50,8 +50,6 @@ public class EnemyPath : MonoBehaviour
     [SerializeField] private float arrowSpacing = 1.8f;
     [SerializeField] private float arrowSize = 0.38f;
     [SerializeField] private float hotspotRadius = 0.42f;
-    [SerializeField] private float waypointMarkerRadius = 0.32f;
-    [SerializeField] private float waypointLabelSize = 0.26f;
     [SerializeField] private float turnHotspotThreshold = 20f;
     [SerializeField] private int readabilitySortingOrder = 2;
 
@@ -167,17 +165,6 @@ public class EnemyPath : MonoBehaviour
         }
 
         RefreshReadabilityVisuals(force: true);
-    }
-
-    private void Update()
-    {
-        if (Application.isPlaying)
-        {
-            return;
-        }
-
-        CacheWaypoints();
-        RefreshReadabilityVisuals(force: false);
     }
 
     /// <summary>
@@ -447,7 +434,6 @@ public class EnemyPath : MonoBehaviour
 
         Transform arrowsRoot = BattlefieldReadabilityVisualUtility.EnsureChild(readabilityRoot, "DirectionArrows");
         Transform hotspotsRoot = BattlefieldReadabilityVisualUtility.EnsureChild(readabilityRoot, "TurnHotspots");
-        Transform waypointMarkersRoot = BattlefieldReadabilityVisualUtility.EnsureChild(readabilityRoot, "WaypointMarkers");
 
         int arrowIndex = 0;
         for (int segmentIndex = 0; segmentIndex < _localRoutePoints.Count - 1; segmentIndex++)
@@ -646,8 +632,6 @@ public class EnemyPath : MonoBehaviour
             hash = hash * 31 + arrowSpacing.GetHashCode();
             hash = hash * 31 + arrowSize.GetHashCode();
             hash = hash * 31 + hotspotRadius.GetHashCode();
-            hash = hash * 31 + waypointMarkerRadius.GetHashCode();
-            hash = hash * 31 + waypointLabelSize.GetHashCode();
             hash = hash * 31 + turnHotspotThreshold.GetHashCode();
             hash = hash * 31 + readabilitySortingOrder;
             hash = hash * 31 + (readabilityRootReference != null ? readabilityRootReference.GetInstanceID() : 0);
@@ -886,40 +870,6 @@ public static class BattlefieldReadabilityVisualUtility
         };
 
         SetPolyline(lineRenderer, points, false, width, color);
-    }
-
-    public static TextMesh EnsureTextMesh(
-        Transform parent,
-        string childName,
-        int sortingOrder,
-        float characterSize,
-        Color color)
-    {
-        Transform child = EnsureChild(parent, childName);
-        TextMesh textMesh = child.GetComponent<TextMesh>();
-        if (textMesh == null)
-        {
-            textMesh = child.gameObject.AddComponent<TextMesh>();
-        }
-
-        textMesh.anchor = TextAnchor.MiddleCenter;
-        textMesh.alignment = TextAlignment.Center;
-        textMesh.characterSize = Mathf.Max(0.05f, characterSize);
-        textMesh.fontSize = 48;
-        textMesh.color = color;
-
-        MeshRenderer renderer = child.GetComponent<MeshRenderer>();
-        if (renderer != null)
-        {
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
-            renderer.sortingOrder = sortingOrder;
-        }
-
-        child.localRotation = Quaternion.identity;
-        child.localScale = Vector3.one;
-        child.gameObject.SetActive(true);
-        return textMesh;
     }
 
     /// <summary>

@@ -16,6 +16,7 @@ public readonly struct TowerDefenseHudSceneReferences
         TMP_Text baseHealthText,
         TMP_Text waveText,
         TMP_Text selectionText,
+        TMP_Text structureStatusText,
         Button relayTowerButton,
         Button defenseTowerButton,
         Button slowFieldTowerButton,
@@ -31,6 +32,7 @@ public readonly struct TowerDefenseHudSceneReferences
         BaseHealthText = baseHealthText;
         WaveText = waveText;
         SelectionText = selectionText;
+        StructureStatusText = structureStatusText;
         RelayTowerButton = relayTowerButton;
         DefenseTowerButton = defenseTowerButton;
         SlowFieldTowerButton = slowFieldTowerButton;
@@ -47,6 +49,7 @@ public readonly struct TowerDefenseHudSceneReferences
     public TMP_Text BaseHealthText { get; }
     public TMP_Text WaveText { get; }
     public TMP_Text SelectionText { get; }
+    public TMP_Text StructureStatusText { get; }
     public Button RelayTowerButton { get; }
     public Button DefenseTowerButton { get; }
     public Button SlowFieldTowerButton { get; }
@@ -133,6 +136,7 @@ public sealed class TowerDefenseSceneBootstrapper
             baseHealthText: hudSceneReferences.BaseHealthText,
             waveText: hudSceneReferences.WaveText,
             selectionText: hudSceneReferences.SelectionText,
+            structureStatusText: hudSceneReferences.StructureStatusText,
             relayTowerButton: hudSceneReferences.RelayTowerButton,
             defenseTowerButton: hudSceneReferences.DefenseTowerButton,
             slowFieldTowerButton: hudSceneReferences.SlowFieldTowerButton,

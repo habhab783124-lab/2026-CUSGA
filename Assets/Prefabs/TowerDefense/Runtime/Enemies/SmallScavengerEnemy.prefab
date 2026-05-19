@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 18041264370856023}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.99999994, z: 0}
+  m_LocalPosition: {x: 0, y: 2.8058825, z: 0}
   m_LocalScale: {x: 1.1764705, y: 1.1764705, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -105,7 +105,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 12
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -127,6 +127,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2955791358491000165}
   - component: {fileID: 4703230808979152243}
+  - component: {fileID: 1206501366421812862}
   m_Layer: 0
   m_Name: VisualScaleRoot
   m_TagString: Untagged
@@ -189,8 +190,8 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
+  m_SortingOrder: 10
+  m_Sprite: {fileID: 1653053245, guid: 476151479b50a6f4685c6fca0a0c4e19, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -201,6 +202,27 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!95 &1206501366421812862
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4517063768651193088}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: b5960f7b8f156df44aaca4d1e2c25402, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &5863667738006183233
 GameObject:
   m_ObjectHideFlags: 0
@@ -252,7 +274,6 @@ MonoBehaviour:
   bodyRendererReference: {fileID: 4703230808979152243}
   visualScaleRootReference: {fileID: 2955791358491000165}
   bodyColor: {r: 0.9, g: 0.25, b: 0.25, a: 1}
-  shieldTintColor: {r: 0.42, g: 0.9, b: 1, a: 1}
   slowTintColor: {r: 0.42, g: 0.95, b: 0.9, a: 1}
   standardHitFlashColor: {r: 1, g: 0.96, b: 0.9, a: 1}
   bombardHitFlashColor: {r: 1, g: 0.74, b: 0.45, a: 1}
@@ -264,7 +285,6 @@ MonoBehaviour:
   slowHitPulseScale: 1.04
   hitPulseDuration: 0.12
   healthBarFillColor: {r: 0.2, g: 0.9, b: 0.35, a: 1}
-  healthBarShieldColor: {r: 0.44, g: 0.9, b: 1, a: 1}
   healthBarBackgroundColor: {r: 0.15, g: 0.15, b: 0.15, a: 1}
   healthBarFillSpriteOverride: {fileID: 0}
   healthBarBackgroundSpriteOverride: {fileID: 0}
@@ -272,6 +292,7 @@ MonoBehaviour:
   healthBarFillReference: {fileID: 73256587356198457}
   healthBarFillRendererReference: {fileID: 6767933192600016444}
   healthBarBackgroundRendererReference: {fileID: 2381135231609418050}
+  enableRuntimeVisualDiagnostics: 1
 --- !u!212 &3537248986107967254
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -396,7 +417,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 12
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0

@@ -171,6 +171,7 @@ public sealed class TowerPlacementBuildExecutor
         _setCurrentScrap?.Invoke(currentScrap - cost);
         _invalidatePlacementAreaOverlayCache?.Invoke();
         _setStatusMessage?.Invoke($"Deployed {towerDisplayName} for {cost} SCRAP.");
+        TowerDefenseGame.Instance?.PlayPlaceStructureSound();
         TowerDefenseGame.Instance?.ShowTransientHudNotice($"-{cost} SCRAP spent.", 2.2f);
         _logPlacementDiagnostic?.Invoke($"TryPlace succeeded: tower={towerType} world={worldPosition} cost={cost} remainingScrap={currentScrap - cost}");
         _refreshHud?.Invoke();

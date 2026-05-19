@@ -1,28 +1,27 @@
 {
-  "status": "approved",
+  "status": "in_progress",
   "task_source": "user_latest_request",
-  "source_excerpt": "帮我push一次到图片中的这个分支上",
+  "source_excerpt": "执行",
   "selected_historical_excerpt_used": false,
   "do_scope": [
-    "检查当前工作区状态与目标分支是否存在",
-    "将当前改动整理成一次提交",
-    "push 到 origin/优化地图开发工具并修复关卡场景"
+    "保持当前分支不变",
+    "提交当前项目改动",
+    "推送到当前分支远端",
+    "排除明显临时/缓存文件"
   ],
   "not_do_scope": [
-    "不顺带改代码逻辑",
-    "不顺带改关卡内容",
-    "不处理无关分支",
-    "不做额外功能开发"
+    "不再切换到别的分支",
+    "不额外整理只提交某一类文件",
+    "不继续修改业务逻辑"
   ],
   "affected_targets": [
+    "当前工作区中的项目改动",
     "docs/current-task-card.md",
-    "docs/current-task-card.json",
-    "git commit",
-    "origin/优化地图开发工具并修复关卡场景"
+    "docs/current-task-card.json"
   ],
   "success_criteria": [
-    "当前改动完成一次提交",
-    "成功 push 到 origin/优化地图开发工具并修复关卡场景"
+    "当前分支产生一条新的提交",
+    "该提交成功 push 到 origin/构建工作流"
   ],
   "approved": true
 }

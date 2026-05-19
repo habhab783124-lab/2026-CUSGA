@@ -33,6 +33,18 @@ public sealed class TowerPlacementSupportCoordinator
         public float Radius { get; }
     }
 
+    private readonly struct PlacementBlockerShape
+    {
+        public PlacementBlockerShape(Collider2D collider)
+        {
+            Collider = collider;
+            Bounds = collider != null ? collider.bounds : default;
+        }
+
+        public Collider2D Collider { get; }
+        public Bounds Bounds { get; }
+    }
+
     public delegate bool PlacementValidator(Vector3 worldPosition, TowerType towerType, out string invalidReason);
 
     private readonly Vector2 _initialPlacementSquareCenter;
@@ -51,6 +63,8 @@ public sealed class TowerPlacementSupportCoordinator
     private readonly Func<TowerPowerGridCoordinator> _powerGridCoordinatorQuery;
     private readonly Func<bool> _isGameOverQuery;
     private readonly Action<string> _logPlacementDiagnostic;
+    private readonly Dictionary<TowerType, float> _placementRadiusCache = new Dictionary<TowerType, float>(4);
+    private readonly Dictionary<TowerType, Vector2> _placementCenterOffsetCache = new Dictionary<TowerType, Vector2>(4);
 
     public TowerPlacementSupportCoordinator(
         Vector2 initialPlacementSquareCenter,
@@ -100,6 +114,8 @@ public sealed class TowerPlacementSupportCoordinator
             return;
         }
 
+        _placementRadiusCache.Clear();
+        _placementCenterOffsetCache.Clear();
         placementRules.BindSceneReferences(_buildZoneQuery != null ? _buildZoneQuery() : null, _placedTowerRootQuery != null ? _placedTowerRootQuery() : null);
     }
 
@@ -157,8 +173,58 @@ public sealed class TowerPlacementSupportCoordinator
     /// </summary>
     public float GetPlacementRadius(TowerType towerType)
     {
-        TowerDefinition definition = _towerCatalogQuery != null ? _towerCatalogQuery()?.GetDefinition(towerType) : null;
-        return definition != null ? definition.PlacementRadius : 0.5f;
+        if (_placementRadiusCache.TryGetValue(towerType, out float cachedRadius) && cachedRadius > 0f)
+        {
+            return cachedRadius;
+        }
+
+        GameObject prototype = GetPrototype(towerType);
+        if (prototype != null)
+        {
+            CircleCollider2D collider = prototype.GetComponent<CircleCollider2D>();
+            if (collider != null)
+            {
+                Vector3 scale = prototype.transform.lossyScale;
+                float dominantXYScale = Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
+                float derivedRadius = Mathf.Abs(collider.radius * dominantXYScale);
+                if (derivedRadius > 0f)
+                {
+                    _placementRadiusCache[towerType] = derivedRadius;
+                    return derivedRadius;
+                }
+            }
+        }
+
+        return 0.5f;
+    }
+
+    /// <summary>
+    /// Reads the authored CircleCollider2D center offset from the runtime prefab and converts it
+    /// into world-space offset using the prefab scale.
+    /// </summary>
+    public Vector2 GetPlacementCenterOffset(TowerType towerType)
+    {
+        if (_placementCenterOffsetCache.TryGetValue(towerType, out Vector2 cachedOffset))
+        {
+            return cachedOffset;
+        }
+
+        GameObject prototype = GetPrototype(towerType);
+        if (prototype != null)
+        {
+            CircleCollider2D collider = prototype.GetComponent<CircleCollider2D>();
+            if (collider != null)
+            {
+                Vector3 scale = prototype.transform.lossyScale;
+                Vector2 worldOffset = new Vector2(
+                    collider.offset.x * scale.x,
+                    collider.offset.y * scale.y);
+                _placementCenterOffsetCache[towerType] = worldOffset;
+                return worldOffset;
+            }
+        }
+
+        return Vector2.zero;
     }
 
     /// <summary>
@@ -347,16 +413,14 @@ public sealed class TowerPlacementSupportCoordinator
     public Func<Vector3, bool> BuildPlacementOverlayValidator(TowerType towerType)
     {
         BuildZone buildZone = _buildZoneQuery != null ? _buildZoneQuery() : null;
-        Bounds buildBounds = buildZone != null ? buildZone.WorldBounds : new Bounds(Vector3.zero, Vector3.zero);
-
-        List<Bounds> blockerBounds = CollectPlacementBlockerBounds();
+        List<PlacementBlockerShape> blockerShapes = CollectPlacementBlockerShapes();
         List<PlacedStructureFootprint> placedStructureFootprints = CollectPlacedStructureFootprints();
         List<RelayTower> relays = CollectPlacedRelays();
         float placementRadius = GetPlacementRadius(towerType);
 
         return worldPosition =>
         {
-            if (!IsInsideBounds2D(buildBounds, worldPosition))
+            if (buildZone == null || !buildZone.ContainsPoint(worldPosition))
             {
                 return false;
             }
@@ -366,9 +430,20 @@ public sealed class TowerPlacementSupportCoordinator
                 return false;
             }
 
-            for (int blockerIndex = 0; blockerIndex < blockerBounds.Count; blockerIndex++)
+            for (int blockerIndex = 0; blockerIndex < blockerShapes.Count; blockerIndex++)
             {
-                if (IsInsideBounds2D(blockerBounds[blockerIndex], worldPosition))
+                PlacementBlockerShape blockerShape = blockerShapes[blockerIndex];
+                if (blockerShape.Collider == null)
+                {
+                    continue;
+                }
+
+                if (!IsInsideBounds2D(blockerShape.Bounds, worldPosition))
+                {
+                    continue;
+                }
+
+                if (blockerShape.Collider.OverlapPoint(worldPosition))
                 {
                     return false;
                 }
@@ -389,9 +464,9 @@ public sealed class TowerPlacementSupportCoordinator
         };
     }
 
-    private List<Bounds> CollectPlacementBlockerBounds()
+    private List<PlacementBlockerShape> CollectPlacementBlockerShapes()
     {
-        List<Bounds> bounds = new List<Bounds>(16);
+        List<PlacementBlockerShape> shapes = new List<PlacementBlockerShape>(16);
         PlacementBlocker[] blockers = UnityEngine.Object.FindObjectsByType<PlacementBlocker>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         for (int i = 0; i < blockers.Length; i++)
         {
@@ -407,10 +482,10 @@ public sealed class TowerPlacementSupportCoordinator
                 continue;
             }
 
-            bounds.Add(blockerCollider.bounds);
+            shapes.Add(new PlacementBlockerShape(blockerCollider));
         }
 
-        return bounds;
+        return shapes;
     }
 
     private List<PlacedStructureFootprint> CollectPlacedStructureFootprints()
@@ -449,7 +524,8 @@ public sealed class TowerPlacementSupportCoordinator
                 continue;
             }
 
-            footprints.Add(new PlacedStructureFootprint(child.position, GetPlacementRadius(towerType)));
+            Vector2 centerOffset = GetPlacementCenterOffset(towerType);
+            footprints.Add(new PlacedStructureFootprint((Vector2)child.position + centerOffset, GetPlacementRadius(towerType)));
         }
 
         return footprints;

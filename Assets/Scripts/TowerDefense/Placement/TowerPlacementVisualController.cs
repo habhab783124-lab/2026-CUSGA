@@ -175,8 +175,10 @@ public sealed class TowerPlacementVisualController : IDisposable
 
         if (IsPlacementAreaOverlayPreparedFor(towerType))
         {
-            _placementAreaOverlayRenderer.ShowPrepared(_placementPreviewRoot, overlayBounds);
-            return;
+            if (_placementAreaOverlayRenderer.ShowPrepared(_placementPreviewRoot, overlayBounds))
+            {
+                return;
+            }
         }
 
         RefreshPlacementAreaOverlay(towerType, true, overlayBounds, validator);
@@ -420,12 +422,38 @@ public sealed class TowerPlacementVisualController : IDisposable
 
         GameObject placementRing = new GameObject("PlacementRing");
         placementRing.transform.SetParent(_placementPreviewInstance.transform, false);
-        placementRing.transform.localPosition = Vector3.zero;
-        placementRing.transform.localScale = Vector3.one * (_getPlacementRadius(towerType) * 2.35f);
+        placementRing.transform.localPosition = ResolvePlacementRingLocalOffset(towerType);
+        placementRing.transform.localScale = Vector3.one * (_getPlacementRadius(towerType) * 2f);
 
         _placementPreviewRingRenderer = placementRing.AddComponent<SpriteRenderer>();
         _placementPreviewRingRenderer.sprite = ringSprite;
         _placementPreviewRingRenderer.sortingOrder = 14;
+    }
+
+    private Vector3 ResolvePlacementRingLocalOffset(TowerType towerType)
+    {
+        if (_getPrototype == null)
+        {
+            return Vector3.zero;
+        }
+
+        GameObject prototype = _getPrototype(towerType);
+        if (prototype == null)
+        {
+            return Vector3.zero;
+        }
+
+        CircleCollider2D collider = prototype.GetComponent<CircleCollider2D>();
+        if (collider == null)
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 scale = prototype.transform.lossyScale;
+        return new Vector3(
+            collider.offset.x * scale.x,
+            collider.offset.y * scale.y,
+            0f);
     }
 
     /// <summary>

@@ -190,15 +190,7 @@ MonoBehaviour:
   accentFontAsset: {fileID: 0}
   titleCopy: Power Grid Defense
   subtitleCopy: Power Grid Defense / Prototype Access Terminal
-  descriptionCopy: 'Enter the current tower-defense test mission here.
-
-
-    Use
-    generators and turrets to expand your defense network under limited energy.
-
-
-    Press
-    Start below to load the active gameplay scene.'
+  descriptionCopy: "Enter the current tower-defense test mission here.\n\nUse generators and turrets to expand your defense network under limited energy.\n\nPress Start below to load the active gameplay scene."
   hintCopy: START will open the mission selection page
   startPrimaryCopy: Start
   startSecondaryCopy: OPEN LEVEL SELECT / MISSION TERMINAL
@@ -420,8 +412,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Press Enter / Space or click Start
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
-  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -629,8 +621,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: ENTRY NODE / MAIN MENU
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
-  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -761,10 +753,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Power Grid Defense
+  m_text: "\u7535\u91CF\u9632\u7EBF"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
-  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -963,10 +955,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: OPEN LEVEL SELECT / MISSION TERMINAL
+  m_text: ENTER BATTLEFIELD / SAMPLE SCENE
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
-  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1099,8 +1091,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Power Grid Defense / Prototype Access Terminal
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
-  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1231,10 +1223,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Start
+  m_text: "\u5F00\u59CB\u6E38\u620F"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
-  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1365,18 +1357,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Enter the current tower-defense test mission here.
-
-
-    Use generators
-    and turrets to expand your defense network under limited energy.
-
-
-    Press
-    Start below to load the active gameplay scene.'
+  m_text: "\u5728\u8FD9\u91CC\u8FDB\u5165\u5F53\u524D\u5854\u9632\u6D4B\u8BD5\u5173\u5361\u3002\n\n\u4F60\u5C06\u4F7F\u7528\u53D1\u7535\u673A\u4E0E\u70AE\u5854\uFF0C\u5728\u6709\u9650\u7535\u91CF\u4E0B\u6CBF\u90E8\u7F72\u7F51\u7EDC\u9010\u6B65\u6269\u5F20\u9632\u7EBF\u3002\n\n\u70B9\u51FB\u4E0B\u65B9\u5F00\u59CB\uFF0C\u5373\u53EF\u5207\u6362\u5230\u5F53\u524D\u5236\u4F5C\u4E2D\u7684\u73A9\u6CD5\u573A\u666F\u3002"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
-  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1691,7 +1675,7 @@ RectTransform:
   m_GameObject: {fileID: 1674773598}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1646251665}
@@ -1882,10 +1866,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: START will open the mission selection page
+  m_text: START will load SampleScene directly
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
-  m_sharedMaterial: {fileID: -3917803508833336906, guid: f6e63696f4e52e344b3de1bc53f5dd99, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []

@@ -87,22 +87,23 @@ public sealed class PlacementAreaOverlayRenderer : IDisposable
     /// <summary>
     /// 如果缓存纹理还有效，就只改位置和显示状态，不再重建纹理。
     /// </summary>
-    public void ShowPrepared(Transform parent, Bounds worldBounds)
+    public bool ShowPrepared(Transform parent, Bounds worldBounds)
     {
         if (_overlayObject == null || _spriteRenderer == null || _spriteRenderer.sprite == null)
         {
-            return;
+            return false;
         }
 
         if (parent == null || worldBounds.size.x <= Mathf.Epsilon || worldBounds.size.y <= Mathf.Epsilon)
         {
             Hide();
-            return;
+            return false;
         }
 
         EnsureOverlayObject(parent);
         ApplyOverlayTransform(worldBounds);
         _overlayObject.SetActive(true);
+        return true;
     }
 
     public void Hide()
