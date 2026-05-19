@@ -1,9 +1,9 @@
 # 当前任务卡
-Status: 进行中
+Status: 已完成
 Updated: 2026-05-20
 
 ## 当前任务
-- 修复当前分支 `第一次大合并` 的 PR 冲突，当前明确冲突文件为 `Assets/_Project/Fonts/zpix SDF.asset`。
+- 当前分支 `第一次大合并` 的 PR 冲突已修复，当前明确冲突文件为 `Assets/_Project/Fonts/zpix SDF.asset`。
 
 ## 本次只做
 - 检查当前分支与冲突来源。

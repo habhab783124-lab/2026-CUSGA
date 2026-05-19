@@ -1,5 +1,5 @@
 {
-  "status": "in_progress",
+  "status": "completed",
   "task_source": "user_latest_request",
   "source_excerpt": "当前分支提交的pr有一个冲突，解决这个冲突；执行",
   "selected_historical_excerpt_used": false,
