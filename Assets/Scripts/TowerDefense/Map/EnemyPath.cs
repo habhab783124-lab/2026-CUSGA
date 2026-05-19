@@ -41,10 +41,17 @@ public class EnemyPath : MonoBehaviour
     [SerializeField] private Color routeLineColor = new Color(1f, 0.62f, 0.26f, 0.92f);
     [SerializeField] private Color routeArrowColor = new Color(1f, 0.93f, 0.72f, 0.96f);
     [SerializeField] private Color hotspotColor = new Color(1f, 0.52f, 0.26f, 0.92f);
+    [SerializeField] private bool showWaypointMarkers = true;
+    [SerializeField] private bool showWaypointMarkersInPlayMode = false;
+    [SerializeField] private bool showTurnHotspotsInPlayMode = false;
+    [SerializeField] private Color waypointMarkerColor = new Color(0.2f, 0.95f, 1f, 0.96f);
+    [SerializeField] private Color waypointLabelColor = Color.white;
     [SerializeField] private float routeLineWidth = 0.22f;
     [SerializeField] private float arrowSpacing = 1.8f;
     [SerializeField] private float arrowSize = 0.38f;
     [SerializeField] private float hotspotRadius = 0.42f;
+    [SerializeField] private float waypointMarkerRadius = 0.32f;
+    [SerializeField] private float waypointLabelSize = 0.26f;
     [SerializeField] private float turnHotspotThreshold = 20f;
     [SerializeField] private int readabilitySortingOrder = 2;
 
@@ -160,6 +167,17 @@ public class EnemyPath : MonoBehaviour
         }
 
         RefreshReadabilityVisuals(force: true);
+    }
+
+    private void Update()
+    {
+        if (Application.isPlaying)
+        {
+            return;
+        }
+
+        CacheWaypoints();
+        RefreshReadabilityVisuals(force: false);
     }
 
     /// <summary>
@@ -429,6 +447,7 @@ public class EnemyPath : MonoBehaviour
 
         Transform arrowsRoot = BattlefieldReadabilityVisualUtility.EnsureChild(readabilityRoot, "DirectionArrows");
         Transform hotspotsRoot = BattlefieldReadabilityVisualUtility.EnsureChild(readabilityRoot, "TurnHotspots");
+        Transform waypointMarkersRoot = BattlefieldReadabilityVisualUtility.EnsureChild(readabilityRoot, "WaypointMarkers");
 
         int arrowIndex = 0;
         for (int segmentIndex = 0; segmentIndex < _localRoutePoints.Count - 1; segmentIndex++)
@@ -477,55 +496,132 @@ public class EnemyPath : MonoBehaviour
         BattlefieldReadabilityVisualUtility.SetChildrenActiveFromIndex(arrowsRoot, arrowIndex, false);
 
         int hotspotIndex = 0;
-        for (int waypointIndex = 1; waypointIndex < _localRoutePoints.Count - 1; waypointIndex++)
+        if (ShouldShowTurnHotspots())
         {
-            Vector3 previousDirection = (_localRoutePoints[waypointIndex] - _localRoutePoints[waypointIndex - 1]).normalized;
-            Vector3 nextDirection = (_localRoutePoints[waypointIndex + 1] - _localRoutePoints[waypointIndex]).normalized;
-            float turnAngle = Vector3.Angle(previousDirection, nextDirection);
-            if (turnAngle < turnHotspotThreshold)
+            for (int waypointIndex = 1; waypointIndex < _localRoutePoints.Count - 1; waypointIndex++)
             {
-                continue;
+                Vector3 previousDirection = (_localRoutePoints[waypointIndex] - _localRoutePoints[waypointIndex - 1]).normalized;
+                Vector3 nextDirection = (_localRoutePoints[waypointIndex + 1] - _localRoutePoints[waypointIndex]).normalized;
+                float turnAngle = Vector3.Angle(previousDirection, nextDirection);
+                if (turnAngle < turnHotspotThreshold)
+                {
+                    continue;
+                }
+
+                Transform hotspot = BattlefieldReadabilityVisualUtility.EnsureChild(hotspotsRoot, $"Hotspot_{hotspotIndex:00}");
+                hotspot.gameObject.SetActive(true);
+                hotspot.localPosition = _localRoutePoints[waypointIndex];
+                hotspot.localRotation = Quaternion.identity;
+                hotspot.localScale = Vector3.one;
+
+                LineRenderer hotspotRing = BattlefieldReadabilityVisualUtility.EnsureLineRenderer(
+                    hotspot,
+                    "HotspotRing",
+                    readabilitySortingOrder + 1,
+                    routeLineWidth * 0.6f,
+                    hotspotColor,
+                    loop: true,
+                    sharedMaterialOverride: readabilityMaterialOverride);
+                BattlefieldReadabilityVisualUtility.SetCircle(
+                    hotspotRing,
+                    hotspotRadius,
+                    22,
+                    routeLineWidth * 0.6f,
+                    hotspotColor);
+
+                LineRenderer hotspotDiamond = BattlefieldReadabilityVisualUtility.EnsureLineRenderer(
+                    hotspot,
+                    "HotspotDiamond",
+                    readabilitySortingOrder + 2,
+                    routeLineWidth * 0.45f,
+                    routeArrowColor,
+                    loop: true,
+                    sharedMaterialOverride: readabilityMaterialOverride);
+                BattlefieldReadabilityVisualUtility.SetDiamond(
+                    hotspotDiamond,
+                    hotspotRadius * 0.62f,
+                    routeLineWidth * 0.45f,
+                    routeArrowColor);
+
+                hotspotIndex++;
             }
+        }
 
-            Transform hotspot = BattlefieldReadabilityVisualUtility.EnsureChild(hotspotsRoot, $"Hotspot_{hotspotIndex:00}");
-            hotspot.gameObject.SetActive(true);
-            hotspot.localPosition = _localRoutePoints[waypointIndex];
-            hotspot.localRotation = Quaternion.identity;
-            hotspot.localScale = Vector3.one;
+        BattlefieldReadabilityVisualUtility.SetChildrenActiveFromIndex(hotspotsRoot, hotspotIndex, false);
+        RebuildWaypointMarkers(waypointMarkersRoot);
+    }
 
-            LineRenderer hotspotRing = BattlefieldReadabilityVisualUtility.EnsureLineRenderer(
-                hotspot,
-                "HotspotRing",
-                readabilitySortingOrder + 1,
-                routeLineWidth * 0.6f,
-                hotspotColor,
+    private void RebuildWaypointMarkers(Transform waypointMarkersRoot)
+    {
+        if (waypointMarkersRoot == null)
+        {
+            return;
+        }
+
+        if (!ShouldShowWaypointMarkers())
+        {
+            BattlefieldReadabilityVisualUtility.SetChildrenActiveFromIndex(waypointMarkersRoot, 0, false);
+            return;
+        }
+
+        for (int waypointIndex = 0; waypointIndex < _localRoutePoints.Count; waypointIndex++)
+        {
+            Transform marker = BattlefieldReadabilityVisualUtility.EnsureChild(waypointMarkersRoot, $"WaypointMarker_{waypointIndex:00}");
+            marker.gameObject.SetActive(true);
+            marker.localPosition = _localRoutePoints[waypointIndex];
+            marker.localRotation = Quaternion.identity;
+            marker.localScale = Vector3.one;
+
+            LineRenderer markerRing = BattlefieldReadabilityVisualUtility.EnsureLineRenderer(
+                marker,
+                "MarkerRing",
+                readabilitySortingOrder + 4,
+                routeLineWidth * 0.48f,
+                waypointMarkerColor,
                 loop: true,
                 sharedMaterialOverride: readabilityMaterialOverride);
             BattlefieldReadabilityVisualUtility.SetCircle(
-                hotspotRing,
-                hotspotRadius,
-                22,
-                routeLineWidth * 0.6f,
-                hotspotColor);
+                markerRing,
+                waypointMarkerRadius,
+                20,
+                routeLineWidth * 0.48f,
+                waypointMarkerColor);
 
-            LineRenderer hotspotDiamond = BattlefieldReadabilityVisualUtility.EnsureLineRenderer(
-                hotspot,
-                "HotspotDiamond",
-                readabilitySortingOrder + 2,
-                routeLineWidth * 0.45f,
+            LineRenderer markerDiamond = BattlefieldReadabilityVisualUtility.EnsureLineRenderer(
+                marker,
+                "MarkerDiamond",
+                readabilitySortingOrder + 5,
+                routeLineWidth * 0.36f,
                 routeArrowColor,
                 loop: true,
                 sharedMaterialOverride: readabilityMaterialOverride);
             BattlefieldReadabilityVisualUtility.SetDiamond(
-                hotspotDiamond,
-                hotspotRadius * 0.62f,
-                routeLineWidth * 0.45f,
+                markerDiamond,
+                waypointMarkerRadius * 0.55f,
+                routeLineWidth * 0.36f,
                 routeArrowColor);
 
-            hotspotIndex++;
+            TextMesh label = BattlefieldReadabilityVisualUtility.EnsureTextMesh(
+                marker,
+                "MarkerLabel",
+                readabilitySortingOrder + 6,
+                waypointLabelSize,
+                waypointLabelColor);
+            label.text = (waypointIndex + 1).ToString();
+            label.transform.localPosition = new Vector3(0f, waypointMarkerRadius + waypointLabelSize * 0.7f, 0f);
         }
 
-        BattlefieldReadabilityVisualUtility.SetChildrenActiveFromIndex(hotspotsRoot, hotspotIndex, false);
+        BattlefieldReadabilityVisualUtility.SetChildrenActiveFromIndex(waypointMarkersRoot, _localRoutePoints.Count, false);
+    }
+
+    private bool ShouldShowWaypointMarkers()
+    {
+        return showWaypointMarkers && (!Application.isPlaying || showWaypointMarkersInPlayMode);
+    }
+
+    private bool ShouldShowTurnHotspots()
+    {
+        return !Application.isPlaying || showTurnHotspotsInPlayMode;
     }
 
     /// <summary>
@@ -541,10 +637,17 @@ public class EnemyPath : MonoBehaviour
             hash = hash * 31 + routeLineColor.GetHashCode();
             hash = hash * 31 + routeArrowColor.GetHashCode();
             hash = hash * 31 + hotspotColor.GetHashCode();
+            hash = hash * 31 + showWaypointMarkers.GetHashCode();
+            hash = hash * 31 + showWaypointMarkersInPlayMode.GetHashCode();
+            hash = hash * 31 + showTurnHotspotsInPlayMode.GetHashCode();
+            hash = hash * 31 + waypointMarkerColor.GetHashCode();
+            hash = hash * 31 + waypointLabelColor.GetHashCode();
             hash = hash * 31 + routeLineWidth.GetHashCode();
             hash = hash * 31 + arrowSpacing.GetHashCode();
             hash = hash * 31 + arrowSize.GetHashCode();
             hash = hash * 31 + hotspotRadius.GetHashCode();
+            hash = hash * 31 + waypointMarkerRadius.GetHashCode();
+            hash = hash * 31 + waypointLabelSize.GetHashCode();
             hash = hash * 31 + turnHotspotThreshold.GetHashCode();
             hash = hash * 31 + readabilitySortingOrder;
             hash = hash * 31 + (readabilityRootReference != null ? readabilityRootReference.GetInstanceID() : 0);
@@ -783,6 +886,40 @@ public static class BattlefieldReadabilityVisualUtility
         };
 
         SetPolyline(lineRenderer, points, false, width, color);
+    }
+
+    public static TextMesh EnsureTextMesh(
+        Transform parent,
+        string childName,
+        int sortingOrder,
+        float characterSize,
+        Color color)
+    {
+        Transform child = EnsureChild(parent, childName);
+        TextMesh textMesh = child.GetComponent<TextMesh>();
+        if (textMesh == null)
+        {
+            textMesh = child.gameObject.AddComponent<TextMesh>();
+        }
+
+        textMesh.anchor = TextAnchor.MiddleCenter;
+        textMesh.alignment = TextAlignment.Center;
+        textMesh.characterSize = Mathf.Max(0.05f, characterSize);
+        textMesh.fontSize = 48;
+        textMesh.color = color;
+
+        MeshRenderer renderer = child.GetComponent<MeshRenderer>();
+        if (renderer != null)
+        {
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.sortingOrder = sortingOrder;
+        }
+
+        child.localRotation = Quaternion.identity;
+        child.localScale = Vector3.one;
+        child.gameObject.SetActive(true);
+        return textMesh;
     }
 
     /// <summary>
