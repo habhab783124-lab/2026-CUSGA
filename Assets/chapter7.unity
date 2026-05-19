@@ -407,6 +407,9 @@ MonoBehaviour:
   endingZoomDuration: 2.2
   endingZoomScaleMultiplier: 1.9
   endingZoomAnchorNormalized: {x: 0, y: -0.25}
+  nextSceneName: chapter8
+  fadeOutToBlackDuration: 1
+  fadeInFromBlackDuration: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

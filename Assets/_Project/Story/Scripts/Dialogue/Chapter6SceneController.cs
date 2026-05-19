@@ -46,8 +46,13 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
     [SerializeField] private float busStartExtraLeftBeyondCamera = 8f;
     [SerializeField] private float busStopRightScreenMargin = 0.1f;
     [SerializeField] private float busYPosition = 0.5f;
-    [SerializeField] private int busSortingOrder = 1;
+    [SerializeField] private int busSortingOrder = 0;
     [SerializeField] private Vector3 busScale = new(1.4f, 1.4f, 1f);
+
+    [Header("Transition")]
+    [SerializeField] private string nextSceneName = "chapter7";
+    [SerializeField] private float fadeOutToBlackDuration = 1f;
+    [SerializeField] private float fadeInFromBlackDuration = 1f;
 
     private const string Chapter6IntroDialogueId = "chapter6_intro";
     private const int Chapter6BusInsertAfterLineIndex = 25;
@@ -65,6 +70,7 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
     private List<DialogueLine> pendingDialogueLinesAfterBus;
     private Coroutine shenSpriteAnimationRoutine;
     private bool shenAnimatorDisabledForSpriteAnimation;
+    private bool transitionQueued;
 
     protected override void Reset()
     {
@@ -289,7 +295,7 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
         IReadOnlyList<DialogueLine> lines = Chapter6.Get(dialogueId);
         if (lines == null || lines.Count == 0)
         {
-            ReleaseMovementLock();
+            CompleteScene();
             sequenceRoutine = null;
             yield break;
         }
@@ -302,7 +308,7 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
         }
         else
         {
-            PlayDialogueSegment(resolvedLines, ReleaseMovementLock);
+            PlayDialogueSegment(resolvedLines, CompleteScene);
         }
 
         sequenceRoutine = null;
@@ -371,11 +377,11 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
         {
             List<DialogueLine> remainingLines = pendingDialogueLinesAfterBus;
             pendingDialogueLinesAfterBus = null;
-            PlayDialogueSegment(remainingLines, ReleaseMovementLock);
+            PlayDialogueSegment(remainingLines, CompleteScene);
         }
         else
         {
-            ReleaseMovementLock();
+            CompleteScene();
         }
 
         sequenceRoutine = null;
@@ -544,6 +550,23 @@ public sealed class Chapter6SceneController : StoryCutsceneControllerBase
     private void ReleaseMovementLock()
     {
         SetPlayerCutsceneLock(playerInteractor, false);
+    }
+
+    private void CompleteScene()
+    {
+        ReleaseMovementLock();
+        QueueSceneTransition();
+    }
+
+    private void QueueSceneTransition()
+    {
+        if (transitionQueued || string.IsNullOrWhiteSpace(nextSceneName))
+        {
+            return;
+        }
+
+        transitionQueued = true;
+        ScreenFadeTransition.Play(nextSceneName, fadeOutToBlackDuration, fadeInFromBlackDuration, startOpaque: false);
     }
 
     private void OnDestroy()

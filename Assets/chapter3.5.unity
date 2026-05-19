@@ -327,6 +327,9 @@ MonoBehaviour:
   chapter35BubbleFontSize: 1
   playerExitMoveSpeed: 3.5
   playerOffscreenMarginWorld: 1.5
+  nextSceneName: chapter4
+  fadeOutToBlackDuration: 1
+  fadeInFromBlackDuration: 1
 --- !u!95 &1266906327
 Animator:
   serializedVersion: 5

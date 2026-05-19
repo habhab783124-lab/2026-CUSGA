@@ -38,6 +38,11 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
     [SerializeField] private float playerExitMoveSpeed = 3.5f;
     [SerializeField] private float playerOffscreenMarginWorld = 1.5f;
 
+    [Header("Transition")]
+    [SerializeField] private string nextSceneName = "chapter4";
+    [SerializeField] private float fadeOutToBlackDuration = 1f;
+    [SerializeField] private float fadeInFromBlackDuration = 1f;
+
     private Vector3 targetPosition;
     private Coroutine introRoutine;
     private Coroutine exitRoutine;
@@ -49,6 +54,7 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
     private int dialogueIndex;
     private bool dialogueSequenceActive;
     private bool waitingForExitClick;
+    private bool transitionQueued;
     private string currentAnimationState;
 
     private void Awake()
@@ -223,6 +229,8 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
         Camera cam = Camera.main;
         if (cam == null)
         {
+            QueueSceneTransition();
+            exitRoutine = null;
             yield break;
         }
 
@@ -238,6 +246,18 @@ public sealed class Chapter35PlayerIntro : MonoBehaviour
 
         PlayAnimationState(playerIdleStateName);
         exitRoutine = null;
+        QueueSceneTransition();
+    }
+
+    private void QueueSceneTransition()
+    {
+        if (transitionQueued || string.IsNullOrWhiteSpace(nextSceneName))
+        {
+            return;
+        }
+
+        transitionQueued = true;
+        ScreenFadeTransition.Play(nextSceneName, fadeOutToBlackDuration, fadeInFromBlackDuration, startOpaque: false);
     }
 
     private void EnsureAnimator()

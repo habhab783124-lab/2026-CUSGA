@@ -60,6 +60,11 @@ public sealed class Chapter7SceneController : StoryCutsceneControllerBase
     [SerializeField] private float endingZoomScaleMultiplier = 1.12f;
     [SerializeField] private Vector2 endingZoomAnchorNormalized = new Vector2(0f, -0.16f);
 
+    [Header("Transition")]
+    [SerializeField] private string nextSceneName = "chapter8";
+    [SerializeField] private float fadeOutToBlackDuration = 1f;
+    [SerializeField] private float fadeInFromBlackDuration = 1f;
+
     private const int BrightLineIndex = 14;
     private const int CanTryLineIndex = 17;
     private const int EllipsisLineIndex = 30;
@@ -81,6 +86,7 @@ public sealed class Chapter7SceneController : StoryCutsceneControllerBase
     private Vector3 originalBackgroundLocalPosition;
     private Vector3 originalBackgroundLocalScale;
     private bool hasCachedOriginalBackgroundTransform;
+    private bool transitionQueued;
 
     protected override void Reset()
     {
@@ -313,6 +319,7 @@ public sealed class Chapter7SceneController : StoryCutsceneControllerBase
 
         yield return PlayEndingZoom();
         CleanupSceneState(stopAudio: false);
+        QueueSceneTransition();
     }
 
     private IEnumerator PlayDialogueRange(IList<DialogueLine> source, int startIndexInclusive, int endIndexInclusive)
@@ -648,6 +655,17 @@ public sealed class Chapter7SceneController : StoryCutsceneControllerBase
         StopAudioSource(ambientNoiseAudioSource);
         StopAudioSource(pulseBgmAudioSource);
         StopAudioSource(starBgmAudioSource);
+    }
+
+    private void QueueSceneTransition()
+    {
+        if (transitionQueued || string.IsNullOrWhiteSpace(nextSceneName))
+        {
+            return;
+        }
+
+        transitionQueued = true;
+        ScreenFadeTransition.Play(nextSceneName, fadeOutToBlackDuration, fadeInFromBlackDuration, startOpaque: false);
     }
 
     private static void StopAudioSource(AudioSource source)
