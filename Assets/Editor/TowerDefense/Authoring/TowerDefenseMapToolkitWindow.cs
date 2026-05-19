@@ -166,6 +166,11 @@ namespace TowerDefense.Editor
         internal const string Level02ScenePath = "Assets/Scenes/Level02.unity";
         internal const string Level03ScenePath = "Assets/Scenes/Level03.unity";
         internal const string Level04ScenePath = "Assets/Scenes/Level04.unity";
+        internal const string FinalLevel01ScenePath = "Assets/Scenes/level 1.unity";
+        internal const string FinalLevel02ScenePath = "Assets/Scenes/Level 2.unity";
+        internal const string FinalLevel03ScenePath = "Assets/Scenes/Level 3.unity";
+        internal const string FinalLevel04ScenePath = "Assets/Scenes/level 4.unity";
+        internal const string TowerDefenseUiTemplateScenePath = "Assets/Scenes/TowerDefenseUiTemplate.unity";
 
         internal const string RelayPrefabPath = "Assets/Prefabs/TowerDefense/Runtime/RelayTowerPrototype.prefab";
         internal const string SingleTargetPrefabPath = "Assets/Prefabs/TowerDefense/Runtime/SingleTargetTowerPrototype.prefab";
@@ -189,6 +194,24 @@ namespace TowerDefense.Editor
                     yield return child;
                 }
             }
+        }
+
+        /// <summary>
+        /// Lists the four final tower-defense scenes that now share one unified runtime HUD.
+        ///
+        /// We keep this separate from older Level02/03/04 authoring constants because those
+        /// legacy scenes are still referenced by some editor tooling, while the UI sync flow now
+        /// needs to explicitly target the user's final playable four-level set.
+        /// </summary>
+        internal static IReadOnlyList<string> GetFinalTowerDefenseScenePaths()
+        {
+            return new[]
+            {
+                FinalLevel01ScenePath,
+                FinalLevel02ScenePath,
+                FinalLevel03ScenePath,
+                FinalLevel04ScenePath
+            };
         }
 
         /// <summary>
@@ -882,24 +905,13 @@ namespace TowerDefense.Editor
         /// </summary>
         internal static void SyncSceneFromTemplate(Scene templateScene, Scene targetScene)
         {
-            GameObject sampleHud = FindObjectByName(templateScene, "HUDCanvas");
-            GameObject targetHud = FindObjectByName(targetScene, "HUDCanvas");
-            if (sampleHud != null)
-            {
-                if (targetHud != null)
-                {
-                    Undo.DestroyObjectImmediate(targetHud);
-                }
-
-                GameObject clonedHud = Object.Instantiate(sampleHud);
-                clonedHud.name = sampleHud.name;
-                SceneManager.MoveGameObjectToScene(clonedHud, targetScene);
-                Undo.RegisterCreatedObjectUndo(clonedHud, "鍚屾 HUDCanvas");
-            }
+            ReplaceNamedRootFromTemplate(templateScene, targetScene, "HUDCanvas", "同步 HUDCanvas");
+            ReplaceNamedRootFromTemplate(templateScene, targetScene, "EventSystem", "同步 EventSystem");
 
             EnsureNamedRoot(targetScene, "PlacedTowers");
             EnsureNamedRoot(targetScene, "PlacementPreviewRoot");
             EnsureNamedRoot(targetScene, "EnemiesRoot");
+            TMP_Text selectionText = EnsureSelectionHudCompatibility(targetScene);
 
             TowerDefenseGame targetGame = FindFirstComponentInScene<TowerDefenseGame>(targetScene);
             if (targetGame != null)
@@ -917,7 +929,8 @@ namespace TowerDefense.Editor
                 AssignObjectReferenceByName(serializedGame, "scrapTextReference", FindTextByName(targetScene, "ScrapText"));
                 AssignObjectReferenceByName(serializedGame, "baseHealthTextReference", FindTextByName(targetScene, "BaseHealthText"));
                 AssignObjectReferenceByName(serializedGame, "waveTextReference", FindTextByName(targetScene, "WaveText"));
-                AssignObjectReferenceByName(serializedGame, "selectionTextReference", FindTextByName(targetScene, "SelectionText"));
+                AssignObjectReferenceByName(serializedGame, "selectionTextReference", selectionText);
+                AssignObjectReferenceByName(serializedGame, "structureStatusTextReference", FindTextByName(targetScene, "StructureStatusText"));
                 AssignObjectReferenceByName(serializedGame, "relayTowerButtonReference", FindComponentByName<Button>(targetScene, "RelayTowerButton"));
                 AssignObjectReferenceByName(serializedGame, "defenseTowerButtonReference", FindComponentByName<Button>(targetScene, "DefenseTowerButton"));
                 AssignObjectReferenceByName(serializedGame, "slowFieldTowerButtonReference", FindComponentByName<Button>(targetScene, "SlowFieldTowerButton"));
@@ -952,6 +965,96 @@ namespace TowerDefense.Editor
             }
 
             EditorSceneManager.MarkSceneDirty(targetScene);
+        }
+
+        /// <summary>
+        /// Replaces a same-name root in the target scene with the template copy.
+        ///
+        /// For the HUD sync flow we intentionally rebuild the shared runtime shell wholesale
+        /// instead of diffing child-by-child. That keeps the final scenes aligned with the
+        /// template and ensures old per-level UI objects stop being the runtime entry point.
+        /// </summary>
+        internal static void ReplaceNamedRootFromTemplate(Scene templateScene, Scene targetScene, string rootName, string undoLabel)
+        {
+            GameObject sourceRoot = FindRootObjectByName(templateScene, rootName);
+            if (sourceRoot == null)
+            {
+                return;
+            }
+
+            GameObject existingRoot = FindRootObjectByName(targetScene, rootName);
+            if (existingRoot != null)
+            {
+                Undo.DestroyObjectImmediate(existingRoot);
+            }
+
+            GameObject clonedRoot = Object.Instantiate(sourceRoot);
+            clonedRoot.name = sourceRoot.name;
+            SceneManager.MoveGameObjectToScene(clonedRoot, targetScene);
+            Undo.RegisterCreatedObjectUndo(clonedRoot, string.IsNullOrWhiteSpace(undoLabel) ? $"同步 {rootName}" : undoLabel);
+        }
+
+        /// <summary>
+        /// Rebuilds a minimal `SelectionText` card when the current HUD template no longer ships it.
+        ///
+        /// The runtime still writes tactical selection copy into `SelectionText`, so the final
+        /// scenes need a compatible sink even after we retire the old per-level HUD. We intentionally
+        /// clone the new `StructureStatusCard` styling instead of reviving the legacy card so the
+        /// final four levels stay visually aligned with the current template direction.
+        /// </summary>
+        internal static TMP_Text EnsureSelectionHudCompatibility(Scene scene)
+        {
+            TMP_Text existingSelectionText = FindTextByName(scene, "SelectionText");
+            if (existingSelectionText != null)
+            {
+                return existingSelectionText;
+            }
+
+            GameObject structureStatusCard = FindObjectByName(scene, "StructureStatusCard");
+            if (structureStatusCard == null)
+            {
+                return null;
+            }
+
+            GameObject clonedCard = Object.Instantiate(structureStatusCard);
+            clonedCard.name = "SelectionCard";
+            SceneManager.MoveGameObjectToScene(clonedCard, scene);
+            Undo.RegisterCreatedObjectUndo(clonedCard, "创建 SelectionCard 兼容节点");
+
+            Transform originalParent = structureStatusCard.transform.parent;
+            if (originalParent != null)
+            {
+                clonedCard.transform.SetParent(originalParent, false);
+            }
+
+            clonedCard.transform.SetSiblingIndex(structureStatusCard.transform.GetSiblingIndex());
+
+            Transform labelTransform = clonedCard.transform.Find("StructureStatusLabel");
+            if (labelTransform != null)
+            {
+                labelTransform.name = "SelectionLabel";
+                TMP_Text labelText = labelTransform.GetComponent<TMP_Text>();
+                if (labelText != null)
+                {
+                    labelText.text = "SELECTION";
+                }
+            }
+
+            Transform valueTransform = clonedCard.transform.Find("StructureStatusText");
+            if (valueTransform == null)
+            {
+                return null;
+            }
+
+            valueTransform.name = "SelectionText";
+            TMP_Text selectionText = valueTransform.GetComponent<TMP_Text>();
+            if (selectionText != null)
+            {
+                selectionText.text = string.Empty;
+            }
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            return selectionText;
         }
 
         /// <summary>
@@ -1557,6 +1660,54 @@ namespace TowerDefense.Editor
             TowerDefenseMapToolkitWindow window = GetWindow<TowerDefenseMapToolkitWindow>("地图工具箱");
             window.minSize = new Vector2(620f, 420f);
             window.TryAdoptSceneContext();
+        }
+
+        [MenuItem("Tools/Tower Defense/同步最终四关 UI 模板")]
+        public static void SyncFinalTowerDefenseLevelsFromUiTemplate()
+        {
+            string templateScenePath = TowerDefenseMapToolkitUtility.TowerDefenseUiTemplateScenePath;
+            if (!File.Exists(templateScenePath))
+            {
+                EditorUtility.DisplayDialog("同步最终四关 UI 模板失败", "未找到 TowerDefenseUiTemplate 场景。", "确定");
+                return;
+            }
+
+            Scene originalActiveScene = SceneManager.GetActiveScene();
+            Scene templateScene = EditorSceneManager.OpenScene(templateScenePath, OpenSceneMode.Additive);
+
+            try
+            {
+                TowerDefenseMapToolkitUtility.EnsureSelectionHudCompatibility(templateScene);
+                EditorSceneManager.SaveScene(templateScene);
+
+                foreach (string targetScenePath in TowerDefenseMapToolkitUtility.GetFinalTowerDefenseScenePaths())
+                {
+                    if (!File.Exists(targetScenePath))
+                    {
+                        continue;
+                    }
+
+                    Scene targetScene = EditorSceneManager.OpenScene(targetScenePath, OpenSceneMode.Additive);
+                    try
+                    {
+                        TowerDefenseMapToolkitUtility.SyncSceneFromTemplate(templateScene, targetScene);
+                        EditorSceneManager.SaveScene(targetScene);
+                    }
+                    finally
+                    {
+                        EditorSceneManager.CloseScene(targetScene, true);
+                    }
+                }
+            }
+            finally
+            {
+                EditorSceneManager.CloseScene(templateScene, true);
+
+                if (!string.IsNullOrWhiteSpace(originalActiveScene.path) && File.Exists(originalActiveScene.path))
+                {
+                    EditorSceneManager.OpenScene(originalActiveScene.path, OpenSceneMode.Single);
+                }
+            }
         }
 
         private void OnEnable()

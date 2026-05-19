@@ -105,7 +105,7 @@ MonoBehaviour:
   singleTargetTuning:
     attackRange: 2.8
     attackRangePerUpgrade: 0.25
-    attackInterval: 0.72
+    attackInterval: 0.6
     attackIntervalPerUpgradeDelta: -0.08
     baseDamage: 1
     damagePerUpgrade: 1

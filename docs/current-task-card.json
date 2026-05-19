@@ -1,31 +1,27 @@
 {
   "status": "in_progress",
   "task_source": "user_latest_request",
-  "source_excerpt": "如果你要，我下一步可以直接帮你把当前这个已合并状态再推送到远程 构建工作流；执行",
+  "source_excerpt": "帮我把现在项目的完整状态push到我的分支，备注为完成塔防关卡制作，注意要上传当前的所有修改；执行",
   "selected_historical_excerpt_used": false,
   "do_scope": [
-    "检查当前分支与远程状态",
-    "更新任务卡到本次推送已合并分支动作",
-    "运行任务门禁脚本",
-    "把当前构建工作流推送到 origin/构建工作流",
-    "确认远程已更新"
+    "检查当前分支与工作区状态",
+    "通过任务门禁后统一提交当前全部修改",
+    "推送到当前远程分支"
   ],
   "not_do_scope": [
-    "不再改项目代码场景预制体脚本或资源",
-    "不清理 .codex-temp-* .dotnet 或 *.lscache 之类本地缓存",
+    "不额外修改项目代码、场景、资源或文档内容",
     "不切换到别的分支",
-    "不再做新的合并变基或同步"
+    "不做新的合并、变基或同步"
   ],
   "affected_targets": [
+    "当前工作区所有已改动文件",
     "docs/current-task-card.md",
-    "docs/current-task-card.json",
-    ".git 提交历史与远程 origin/构建工作流",
-    "当前分支构建工作流"
+    "docs/current-task-card.json"
   ],
   "success_criteria": [
-    "构建工作流当前本地提交成功推送到 origin/构建工作流",
-    "远程分支包含本次 main 合并结果",
-    "本地临时文件没有被误提交或误删除"
+    "当前工作区的全部修改已提交",
+    "该提交已推送到当前分支对应的远程分支",
+    "提交备注为 完成塔防关卡制作"
   ],
   "approved": true
 }

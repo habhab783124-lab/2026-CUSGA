@@ -1,6 +1,6 @@
 # Tower Defense AI Memory - Architecture
 Version: 1.9.0
-Updated: 2026-05-18
+Updated: 2026-05-19
 Depends on: `docs/ai-memory/td-memory-main.md`
 
 ## 当前架构判断

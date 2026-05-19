@@ -156,7 +156,7 @@ MonoBehaviour:
     signatureVerticalBobAmplitude: 0
     signatureVerticalBobSpeed: 2
   slowFieldTuning:
-    attackRange: 2.35
+    attackRange: 2.8
     attackRangePerUpgrade: 0.3
     attackInterval: 1
     attackIntervalPerUpgradeDelta: -0.05

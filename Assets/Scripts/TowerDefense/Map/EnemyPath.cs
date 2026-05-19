@@ -41,11 +41,7 @@ public class EnemyPath : MonoBehaviour
     [SerializeField] private Color routeLineColor = new Color(1f, 0.62f, 0.26f, 0.92f);
     [SerializeField] private Color routeArrowColor = new Color(1f, 0.93f, 0.72f, 0.96f);
     [SerializeField] private Color hotspotColor = new Color(1f, 0.52f, 0.26f, 0.92f);
-    [SerializeField] private bool showWaypointMarkers = true;
-    [SerializeField] private bool showWaypointMarkersInPlayMode = false;
     [SerializeField] private bool showTurnHotspotsInPlayMode = false;
-    [SerializeField] private Color waypointMarkerColor = new Color(0.2f, 0.95f, 1f, 0.96f);
-    [SerializeField] private Color waypointLabelColor = Color.white;
     [SerializeField] private float routeLineWidth = 0.22f;
     [SerializeField] private float arrowSpacing = 1.8f;
     [SerializeField] private float arrowSize = 0.38f;
@@ -534,75 +530,6 @@ public class EnemyPath : MonoBehaviour
         }
 
         BattlefieldReadabilityVisualUtility.SetChildrenActiveFromIndex(hotspotsRoot, hotspotIndex, false);
-        RebuildWaypointMarkers(waypointMarkersRoot);
-    }
-
-    private void RebuildWaypointMarkers(Transform waypointMarkersRoot)
-    {
-        if (waypointMarkersRoot == null)
-        {
-            return;
-        }
-
-        if (!ShouldShowWaypointMarkers())
-        {
-            BattlefieldReadabilityVisualUtility.SetChildrenActiveFromIndex(waypointMarkersRoot, 0, false);
-            return;
-        }
-
-        for (int waypointIndex = 0; waypointIndex < _localRoutePoints.Count; waypointIndex++)
-        {
-            Transform marker = BattlefieldReadabilityVisualUtility.EnsureChild(waypointMarkersRoot, $"WaypointMarker_{waypointIndex:00}");
-            marker.gameObject.SetActive(true);
-            marker.localPosition = _localRoutePoints[waypointIndex];
-            marker.localRotation = Quaternion.identity;
-            marker.localScale = Vector3.one;
-
-            LineRenderer markerRing = BattlefieldReadabilityVisualUtility.EnsureLineRenderer(
-                marker,
-                "MarkerRing",
-                readabilitySortingOrder + 4,
-                routeLineWidth * 0.48f,
-                waypointMarkerColor,
-                loop: true,
-                sharedMaterialOverride: readabilityMaterialOverride);
-            BattlefieldReadabilityVisualUtility.SetCircle(
-                markerRing,
-                waypointMarkerRadius,
-                20,
-                routeLineWidth * 0.48f,
-                waypointMarkerColor);
-
-            LineRenderer markerDiamond = BattlefieldReadabilityVisualUtility.EnsureLineRenderer(
-                marker,
-                "MarkerDiamond",
-                readabilitySortingOrder + 5,
-                routeLineWidth * 0.36f,
-                routeArrowColor,
-                loop: true,
-                sharedMaterialOverride: readabilityMaterialOverride);
-            BattlefieldReadabilityVisualUtility.SetDiamond(
-                markerDiamond,
-                waypointMarkerRadius * 0.55f,
-                routeLineWidth * 0.36f,
-                routeArrowColor);
-
-            TextMesh label = BattlefieldReadabilityVisualUtility.EnsureTextMesh(
-                marker,
-                "MarkerLabel",
-                readabilitySortingOrder + 6,
-                waypointLabelSize,
-                waypointLabelColor);
-            label.text = (waypointIndex + 1).ToString();
-            label.transform.localPosition = new Vector3(0f, waypointMarkerRadius + waypointLabelSize * 0.7f, 0f);
-        }
-
-        BattlefieldReadabilityVisualUtility.SetChildrenActiveFromIndex(waypointMarkersRoot, _localRoutePoints.Count, false);
-    }
-
-    private bool ShouldShowWaypointMarkers()
-    {
-        return showWaypointMarkers && (!Application.isPlaying || showWaypointMarkersInPlayMode);
     }
 
     private bool ShouldShowTurnHotspots()
@@ -623,11 +550,7 @@ public class EnemyPath : MonoBehaviour
             hash = hash * 31 + routeLineColor.GetHashCode();
             hash = hash * 31 + routeArrowColor.GetHashCode();
             hash = hash * 31 + hotspotColor.GetHashCode();
-            hash = hash * 31 + showWaypointMarkers.GetHashCode();
-            hash = hash * 31 + showWaypointMarkersInPlayMode.GetHashCode();
             hash = hash * 31 + showTurnHotspotsInPlayMode.GetHashCode();
-            hash = hash * 31 + waypointMarkerColor.GetHashCode();
-            hash = hash * 31 + waypointLabelColor.GetHashCode();
             hash = hash * 31 + routeLineWidth.GetHashCode();
             hash = hash * 31 + arrowSpacing.GetHashCode();
             hash = hash * 31 + arrowSize.GetHashCode();

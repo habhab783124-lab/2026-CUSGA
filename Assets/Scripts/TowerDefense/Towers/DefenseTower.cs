@@ -869,6 +869,7 @@ public class DefenseTower : MonoBehaviour
         _spriteRenderer.sprite = ResolveBodySprite();
         _spriteRenderer.color = Color.white;
         RefreshTypeSignatureStyle();
+        TowerRenderSorting.ApplyPlacedTowerTopmostSorting(transform, _spriteRenderer);
     }
 
     /// <summary>
@@ -1137,7 +1138,7 @@ public class DefenseTower : MonoBehaviour
         _typeSignatureRenderer.color = IsPowered
             ? tuning.signatureColor
             : new Color(offlineColor.r, offlineColor.g, offlineColor.b, Mathf.Max(0.16f, tuning.signatureColor.a * 0.75f));
-        _typeSignatureRenderer.sortingOrder = (_spriteRenderer != null ? _spriteRenderer.sortingOrder : 0) + 1;
+        TowerRenderSorting.ApplyPlacedTowerAdornmentSorting(_typeSignatureRenderer, _spriteRenderer, 1);
         _typeSignatureRenderer.gameObject.SetActive(TowerTypeUtility.IsCombatTower(buildType));
     }
 
@@ -1180,7 +1181,7 @@ public class DefenseTower : MonoBehaviour
                 0f);
             pipTransform.localScale = new Vector3(levelPipScale, levelPipScale, 1f);
             pipRenderer.color = IsPowered ? levelPipColor : new Color(offlineColor.r, offlineColor.g, offlineColor.b, 0.92f);
-            pipRenderer.sortingOrder = (_spriteRenderer != null ? _spriteRenderer.sortingOrder : 0) + levelPipSortingOffset;
+            TowerRenderSorting.ApplyPlacedTowerAdornmentSorting(pipRenderer, _spriteRenderer, levelPipSortingOffset);
         }
     }
 
@@ -1310,7 +1311,7 @@ public class DefenseTower : MonoBehaviour
             feedbackRenderer.sharedMaterial = feedbackMaterial;
         }
 
-        feedbackRenderer.sortingOrder = (_spriteRenderer != null ? _spriteRenderer.sortingOrder : 0) + sortingOffset;
+        TowerRenderSorting.ApplyPlacedTowerEffectSorting(feedbackRenderer, _spriteRenderer, sortingOffset);
         Transform feedbackParent = feedbackParentOverride != null
             ? feedbackParentOverride
             : (feedbackRootReference != null ? feedbackRootReference : transform);
@@ -1347,8 +1348,7 @@ public class DefenseTower : MonoBehaviour
         instance.transform.localScale = new Vector3(scale, scale, 1f);
 
         SpriteRenderer[] renderers = instance.GetComponentsInChildren<SpriteRenderer>(true);
-        int baseSortingOrder = (_spriteRenderer != null ? _spriteRenderer.sortingOrder : 0) + sortingOffset;
-        int firstRendererOrder = renderers.Length > 0 ? renderers[0].sortingOrder : 0;
+        TowerRenderSorting.ApplyPlacedTowerEffectSorting(renderers, _spriteRenderer, sortingOffset);
         for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
         {
             SpriteRenderer renderer = renderers[rendererIndex];
@@ -1358,7 +1358,6 @@ public class DefenseTower : MonoBehaviour
             }
 
             renderer.color = color;
-            renderer.sortingOrder = baseSortingOrder + (renderer.sortingOrder - firstRendererOrder);
             if (feedbackMaterial != null)
             {
                 renderer.sharedMaterial = feedbackMaterial;
