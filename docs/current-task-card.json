@@ -1,27 +1,27 @@
 {
   "status": "in_progress",
   "task_source": "user_latest_request",
-  "source_excerpt": "重新执行push到新分支，我刚刚漏了一个删除，继续push",
-  "selected_historical_excerpt_used": true,
+  "source_excerpt": "当前分支提交的pr有一个冲突，解决这个冲突；执行",
+  "selected_historical_excerpt_used": false,
   "do_scope": [
-    "基于当前分支创建新分支 第一次大合并",
-    "将当前工作区状态提交到新分支",
-    "将新分支推送到远程"
+    "检查当前分支与冲突来源",
+    "处理 Assets/_Project/Fonts/zpix SDF.asset 的冲突",
+    "提交并推送冲突修复到当前分支"
   ],
   "not_do_scope": [
-    "不额外修改项目代码、场景、资源或文档内容",
-    "不做新的合并、变基或同步",
+    "不顺带修改别的玩法、场景或 UI 内容",
+    "不处理与这次冲突无关的历史改动",
     "不处理两个嵌套临时仓库目录的内部内容"
   ],
   "affected_targets": [
-    "当前工作区所有已改动文件",
+    "Assets/_Project/Fonts/zpix SDF.asset",
     "docs/current-task-card.md",
     "docs/current-task-card.json"
   ],
   "success_criteria": [
-    "新分支 第一次大合并 创建成功",
-    "当前工作区状态已在该分支提交",
-    "远程已存在 origin/第一次大合并，提交备注为 塔防关卡"
+    "Assets/_Project/Fonts/zpix SDF.asset 的 PR 冲突被消除",
+    "修复提交已推送到 origin/第一次大合并",
+    "当前分支保持可继续提交状态"
   ],
   "approved": true
 }
