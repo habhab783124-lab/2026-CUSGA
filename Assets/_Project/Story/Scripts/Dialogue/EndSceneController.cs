@@ -166,12 +166,14 @@ public sealed class EndSceneController : MonoBehaviour
 
         Transform existing = canvas.transform.Find(objectName);
         TextMeshProUGUI text = existing != null ? existing.GetComponent<TextMeshProUGUI>() : null;
+        bool createdNewTextObject = false;
         if (text == null)
         {
             GameObject textObject = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI), typeof(CanvasGroup));
             textObject.transform.SetParent(canvas.transform, false);
             text = textObject.GetComponent<TextMeshProUGUI>();
             group = textObject.GetComponent<CanvasGroup>();
+            createdNewTextObject = true;
         }
         else if (group == null)
         {
@@ -185,7 +187,17 @@ public sealed class EndSceneController : MonoBehaviour
         rect.anchoredPosition = anchoredPosition;
         rect.sizeDelta = sizeDelta;
 
-        text.fontSize = fontSize;
+        // 方案 A：Scene 里手改的字号应该成为权威来源。
+        //
+        // 所以这里只在“第一次创建文本对象”时写入默认字号，
+        // 对已经存在的文本对象，不再在编辑态强行把字号改回序列化字段。
+        // 这样你在 Scene 里直接调 `TMP_Text.fontSize`，
+        // OnValidate 不会立刻又把它打回旧值。
+        if (createdNewTextObject)
+        {
+            text.fontSize = fontSize;
+        }
+
         text.color = color;
         text.alignment = TextAlignmentOptions.Center;
         text.enableWordWrapping = true;
@@ -228,21 +240,18 @@ public sealed class EndSceneController : MonoBehaviour
         if (titleText != null)
         {
             titleText.text = endTitle;
-            titleText.fontSize = titleFontSize;
             titleText.color = titleColor;
         }
 
         if (reflectionTextUi != null)
         {
             reflectionTextUi.text = reflectionText;
-            reflectionTextUi.fontSize = reflectionFontSize;
             reflectionTextUi.color = reflectionColor;
         }
 
         if (creditsTextUi != null)
         {
             creditsTextUi.text = creditsText;
-            creditsTextUi.fontSize = creditsFontSize;
             creditsTextUi.color = creditsColor;
         }
     }
@@ -254,14 +263,29 @@ public sealed class EndSceneController : MonoBehaviour
             endTitle = titleText.text;
         }
 
+        if (titleText != null && titleText.fontSize > 0f && !Mathf.Approximately(titleText.fontSize, titleFontSize))
+        {
+            titleFontSize = titleText.fontSize;
+        }
+
         if (reflectionTextUi != null && !string.IsNullOrWhiteSpace(reflectionTextUi.text) && reflectionTextUi.text != reflectionText)
         {
             reflectionText = reflectionTextUi.text;
         }
 
+        if (reflectionTextUi != null && reflectionTextUi.fontSize > 0f && !Mathf.Approximately(reflectionTextUi.fontSize, reflectionFontSize))
+        {
+            reflectionFontSize = reflectionTextUi.fontSize;
+        }
+
         if (creditsTextUi != null && !string.IsNullOrWhiteSpace(creditsTextUi.text) && creditsTextUi.text != creditsText)
         {
             creditsText = creditsTextUi.text;
+        }
+
+        if (creditsTextUi != null && creditsTextUi.fontSize > 0f && !Mathf.Approximately(creditsTextUi.fontSize, creditsFontSize))
+        {
+            creditsFontSize = creditsTextUi.fontSize;
         }
     }
 

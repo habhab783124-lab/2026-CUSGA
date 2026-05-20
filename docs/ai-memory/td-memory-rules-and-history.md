@@ -37,6 +37,10 @@ Depends on: `docs/ai-memory/td-memory-main.md`
 - 道路功能层与道路美术层保持分离。
 - 不要把“场景存在”和“已正式进当前 Build Settings”混为一谈。
 - 敌人移动动画优先挂在 `VisualScaleRoot` 显示层，不要误绑到 prefab 根节点的空 `SpriteRenderer`。
+- `Scene` 视图中的作者化视觉结果是表现层权威来源。
+- 默认不允许出现“Scene 里改了视觉，但进入 Play 后被运行时脚本覆盖回旧值”的实现。
+- 对字体大小、布局、颜色、缩放、图片、文本样式等视觉字段，运行时脚本应优先读取 Scene 中当前值，而不是盲目写死回自己的默认值。
+- 除非用户明确要求某个效果必须是运行时专属差异，否则后续开发默认必须保证 `Play` 视图与 `Scene` 视图视觉一致。
 
 ### Git 与协作规则
 - 项目采用 fork 工作流。
@@ -99,6 +103,7 @@ Depends on: `docs/ai-memory/td-memory-main.md`
 - 2026-05-18：在 `try.unity` 中新增 `EnemyAnimationPreviewRoot` 和 8 个 `Preview_*Enemy` 场景实例，用于 Scene 视图下直接检查怪物动画接入情况
 - 2026-05-18：把 8 个敌人 prefab 的血条规则从“统一绝对高度”修正为“怪物最高点 + 固定间距”，并让作者工具按该规则动态计算 `HealthBarRoot` 位置
 - 2026-05-18：新增 `EnemyPrefabTuning.unity` 和 `EnemyPrefabTuningWindow`，把怪物 prefab 的 Scene 微调流程收口为“专用场景 + 小范围 Transform 回写”，不再依赖对整只实例 `Apply All`
+- 2026-05-20：新增长期视觉一致性准则：`Scene` 视图作者化结果是权威来源，后续开发默认必须保证 `Play` 与 `Scene` 视觉一致，运行时脚本不得擅自覆盖 Scene 中的视觉修改
 
 ## 当前路线图
 ### R1 关卡内容
