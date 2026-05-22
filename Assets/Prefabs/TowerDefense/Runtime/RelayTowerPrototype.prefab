@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 200664728290553532}
   - component: {fileID: 7573883768484613963}
   - component: {fileID: 6607233590577023882}
+  - component: {fileID: 990000000000000001}
   m_Layer: 0
   m_Name: RelayTowerPrototype
   m_TagString: Untagged
@@ -142,3 +143,23 @@ CircleCollider2D:
   m_Offset: {x: 0, y: -1.137223}
   serializedVersion: 2
   m_Radius: 0.4425774
+--- !u!114 &990000000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9207050540261146186}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8d82ec2a4a4f3cb1f95fbe0c4a1e63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sourceRendererReference: {fileID: 200664728290553532}
+  sortingBaseOrder: 300
+  sortingOrdersPerUnit: 20
+  topLayerSortingOffset: 24
+  healthBarSortingOffset: 40
+  splitIntoBaseAndTop: 1
+  topLayerStartNormalized: 0.38
+  autoSortHealthBarRenderers: 0
