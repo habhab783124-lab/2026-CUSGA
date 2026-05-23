@@ -122,6 +122,8 @@ public sealed class WaveSpawner : MonoBehaviour
     [SerializeField] private EnemyCatalogAsset enemyCatalogAsset;
     [SerializeField] private bool continueCampaignAfterClear;
     [SerializeField] private string fallbackNextSceneNameAfterClear;
+    [SerializeField] private float fadeOutToBlackDurationAfterClear = 0.75f;
+    [SerializeField] private float fadeInFromBlackDurationAfterClear = 0.75f;
 
     [Header("Scene References (Fallback)")]
     [SerializeField] private EnemyPath enemyPathReference;
@@ -230,19 +232,30 @@ public sealed class WaveSpawner : MonoBehaviour
                 _levelClearMessageShown = true;
             }
 
-            if (!_campaignAdvanceTriggered && continueCampaignAfterClear && Enemy.ActiveEnemyCount == 0)
+            if (!_campaignAdvanceTriggered && Enemy.ActiveEnemyCount == 0)
             {
-                if (CampaignFlowController.HasActiveCampaign && CampaignFlowController.AdvanceToNextStep())
+                if (TowerDefenseGame.Instance != null)
                 {
-                    _campaignAdvanceTriggered = true;
+                    if (TowerDefenseGame.Instance.BeginLevelClearSequence(
+                            continueCampaignAfterClear,
+                            fallbackNextSceneNameAfterClear,
+                            fadeOutToBlackDurationAfterClear,
+                            fadeInFromBlackDurationAfterClear,
+                            startOpaqueOnContinue: true))
+                    {
+                        _campaignAdvanceTriggered = true;
+                    }
                 }
-            }
-
-            if (!_fallbackSceneAdvanceTriggered && Enemy.ActiveEnemyCount == 0 && !string.IsNullOrWhiteSpace(fallbackNextSceneNameAfterClear))
-            {
-                _fallbackSceneAdvanceTriggered = true;
-                Time.timeScale = 1f;
-                SceneManager.LoadScene(fallbackNextSceneNameAfterClear, LoadSceneMode.Single);
+                else if (!_fallbackSceneAdvanceTriggered && !string.IsNullOrWhiteSpace(fallbackNextSceneNameAfterClear))
+                {
+                    _fallbackSceneAdvanceTriggered = true;
+                    Time.timeScale = 1f;
+                    ScreenFadeTransition.Play(
+                        fallbackNextSceneNameAfterClear,
+                        fadeOutToBlackDurationAfterClear,
+                        fadeInFromBlackDurationAfterClear,
+                        startOpaque: false);
+                }
             }
 
             return;

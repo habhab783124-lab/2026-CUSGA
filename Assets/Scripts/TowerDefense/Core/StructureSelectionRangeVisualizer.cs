@@ -29,7 +29,7 @@ public sealed class StructureSelectionRangeVisualizer
     /// 这里刻意比放置覆盖层、起手区标记和预览环更高一点，
     /// 避免玩家已经点中了建筑，但范围线又被别的教学层遮住，看起来像“没生效”。
     /// </summary>
-    private const int RangeSortingOrder = 18;
+    private const int RangeSortingOrder = 400;
 
     /// <summary>
     /// 线宽保持轻一点，避免喧宾夺主。

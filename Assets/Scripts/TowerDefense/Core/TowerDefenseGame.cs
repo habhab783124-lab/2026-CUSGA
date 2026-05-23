@@ -182,6 +182,7 @@ public class TowerDefenseGame : MonoBehaviour
     [Header("Scene Flow")]
     [SerializeField] private bool restartCurrentSceneOnGameOverClick = true;
     [SerializeField] private float gameOverRestartClickDelaySeconds = 0.2f;
+    [SerializeField] private float levelClearContinueClickDelaySeconds = 0.2f;
 
     [Header("Tower Presentation")]
     [SerializeField] private TowerPresentationAuthoring relayPresentation = new TowerPresentationAuthoring
@@ -373,6 +374,14 @@ public class TowerDefenseGame : MonoBehaviour
     private StructureSelectionRangeVisualizer _selectionRangeVisualizer;
     private bool _gameOverRestartTriggered;
     private float _gameOverRestartAllowedAtUnscaledTime;
+    private bool _levelClearPresentationActive;
+    private bool _levelClearContinueTriggered;
+    private float _levelClearContinueAllowedAtUnscaledTime;
+    private bool _continueCampaignAfterLevelClear;
+    private string _fallbackNextSceneNameAfterLevelClear = string.Empty;
+    private float _levelClearFadeOutDuration = 0.75f;
+    private float _levelClearFadeInDuration = 0.75f;
+    private bool _levelClearStartOpaqueOnContinue;
 
     /// <summary>
     /// 对外暴露只读的结算状态，方便 HUD、敌人和其他运行时对象判断当前是否已经 Game Over。
@@ -441,6 +450,11 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private void Update()
     {
+        if (HandleLevelClearContinueInput())
+        {
+            return;
+        }
+
         _inputCoordinator?.Tick();
         HandleGameOverRestartInput();
     }
@@ -1277,6 +1291,41 @@ public class TowerDefenseGame : MonoBehaviour
     }
 
     /// <summary>
+    /// 胜利后不再立即切剧情，
+    /// 而是先进入一个短暂停住的胜利界面，
+    /// 等玩家点击确认后再继续切场。
+    ///
+    /// 这样胜利反馈就不会像以前那样一闪而过，
+    /// 也更符合你现在希望的“塔防胜利 -> 胜利界面 -> 点击继续 -> 2D 剧情”的节奏。
+    /// </summary>
+    public bool BeginLevelClearSequence(
+        bool continueCampaignAfterClear,
+        string fallbackNextSceneNameAfterClear,
+        float fadeOutToBlackDurationAfterClear,
+        float fadeInFromBlackDurationAfterClear,
+        bool startOpaqueOnContinue = false)
+    {
+        if (IsGameOver || _levelClearPresentationActive || _levelClearContinueTriggered)
+        {
+            return false;
+        }
+
+        _placementInteractionController?.ForceCancelPlacementDrag();
+        _continueCampaignAfterLevelClear = continueCampaignAfterClear;
+        _fallbackNextSceneNameAfterLevelClear = fallbackNextSceneNameAfterClear ?? string.Empty;
+        _levelClearFadeOutDuration = Mathf.Max(0f, fadeOutToBlackDurationAfterClear);
+        _levelClearFadeInDuration = Mathf.Max(0f, fadeInFromBlackDurationAfterClear);
+        _levelClearStartOpaqueOnContinue = startOpaqueOnContinue;
+        _levelClearPresentationActive = true;
+        _levelClearContinueTriggered = false;
+        _levelClearContinueAllowedAtUnscaledTime = Time.unscaledTime + Mathf.Max(0f, levelClearContinueClickDelaySeconds);
+
+        Time.timeScale = 0f;
+        _presentationCoordinator?.ShowVictory();
+        return true;
+    }
+
+    /// <summary>
     /// 失败后的补救路径非常明确：
     /// 先停住战斗并展示 Game Over，
     /// 然后在一个很短的无缩放时间窗口后，允许玩家点击任意位置重开当前关卡。
@@ -1332,6 +1381,76 @@ public class TowerDefenseGame : MonoBehaviour
         _gameOverRestartTriggered = true;
         Time.timeScale = 1f;
         SceneManager.LoadScene(activeScene.name, LoadSceneMode.Single);
+    }
+
+    private bool HandleLevelClearContinueInput()
+    {
+        if (!_levelClearPresentationActive)
+        {
+            return false;
+        }
+
+        if (Time.unscaledTime < _levelClearContinueAllowedAtUnscaledTime)
+        {
+            return true;
+        }
+
+        if (!DidPressRestartAfterGameOver())
+        {
+            return true;
+        }
+
+        if (_levelClearContinueTriggered)
+        {
+            return true;
+        }
+
+        _levelClearContinueTriggered = true;
+        Time.timeScale = 1f;
+
+        bool shouldAdvanceCampaign = _continueCampaignAfterLevelClear && CampaignFlowController.HasActiveCampaign;
+        bool transitioned = shouldAdvanceCampaign
+            ? CampaignFlowController.AdvanceToNextStepOrLoadFallback(
+                _fallbackNextSceneNameAfterLevelClear,
+                _levelClearFadeOutDuration,
+                _levelClearFadeInDuration,
+                _levelClearStartOpaqueOnContinue)
+            : !string.IsNullOrWhiteSpace(_fallbackNextSceneNameAfterLevelClear) &&
+              CampaignFlowController.AdvanceToNextStepOrLoadFallback(
+                  _fallbackNextSceneNameAfterLevelClear,
+                  _levelClearFadeOutDuration,
+                  _levelClearFadeInDuration,
+                  _levelClearStartOpaqueOnContinue);
+
+        if (!transitioned)
+        {
+            Debug.LogWarning("TowerDefenseGame 无法在胜利界面后继续切场：既没有活动战役流程，也没有有效的 fallback 场景名。", this);
+            _levelClearContinueTriggered = false;
+            return true;
+        }
+
+        HideForSceneTransition();
+        _levelClearPresentationActive = false;
+        return true;
+    }
+
+    /// <summary>
+    /// 在胜利点击继续后的真正切场开始前，
+    /// 先把当前塔防场景里最醒目的可见层收掉。
+    ///
+    /// 这里优先隐藏：
+    /// - HUD 与结果面板
+    /// - 路线预览 / 放置覆盖层
+    /// - 选中范围线
+    ///
+    /// 再叠加立即黑场，
+    /// 玩家看到的就会是干净纯黑，而不是塔防界面残留。
+    /// </summary>
+    private void HideForSceneTransition()
+    {
+        _presentationCoordinator?.HideGameplayPresentationForSceneTransition();
+        _selectionRangeVisualizer?.Hide();
+        _placementSupportCoordinator?.HidePlacementAreaOverlay();
     }
 
 

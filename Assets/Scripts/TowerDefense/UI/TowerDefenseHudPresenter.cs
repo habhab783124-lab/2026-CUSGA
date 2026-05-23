@@ -556,6 +556,22 @@ public sealed class TowerDefenseHudPresenter
         }
     }
 
+    private static void SetActiveIfPresent(Component component, bool visible)
+    {
+        if (component != null)
+        {
+            component.gameObject.SetActive(visible);
+        }
+    }
+
+    private static void SetActiveIfPresent(GameObject target, bool visible)
+    {
+        if (target != null)
+        {
+            target.SetActive(visible);
+        }
+    }
+
     private static string BuildSceneMetricText(string template, string fallbackLabel, string value)
     {
         string label = fallbackLabel;
@@ -712,6 +728,56 @@ public sealed class TowerDefenseHudPresenter
     /// </summary>
     public void ShowGameOver(string title, string hint)
     {
+        ShowResultPanel(title, hint);
+    }
+
+    /// <summary>
+    /// 当前项目还没有独立的 VictoryPanel 结构，
+    /// 所以先复用同一块结果面板来承载胜利结算。
+    ///
+    /// 这样做的重点不是长期 UI 命名有多优雅，
+    /// 而是先把“胜利后停住 -> 玩家点击继续 -> 再切剧情”这条体验链接通，
+    /// 同时不强迫现有关卡场景立刻重接一整套新引用。
+    /// </summary>
+    public void ShowVictory(string title, string hint)
+    {
+        ShowResultPanel(title, hint);
+    }
+
+    /// <summary>
+    /// 单独控制 `Game Over` 面板显隐。
+    /// </summary>
+    public void SetGameOverVisible(bool visible)
+    {
+        if (_gameOverPanel != null)
+        {
+            _gameOverPanel.SetActive(visible);
+        }
+    }
+
+    /// <summary>
+    /// 在真正跨场景过渡前，把塔防 HUD 与结果面板统一隐藏。
+    ///
+    /// 这样黑场压上来时，玩家不会再看到旧的胜利界面、HUD 或拖拽提示残留一帧。
+    /// </summary>
+    public void HideAllGameplayPresentationForSceneTransition()
+    {
+        SetActiveIfPresent(_scrapText, false);
+        SetActiveIfPresent(_baseHealthText, false);
+        SetActiveIfPresent(_waveText, false);
+        SetActiveIfPresent(_selectionText, false);
+        SetActiveIfPresent(_structureStatusText, false);
+        SetActiveIfPresent(_relayTowerButton, false);
+        SetActiveIfPresent(_defenseTowerButton, false);
+        SetActiveIfPresent(_slowFieldTowerButton, false);
+        SetActiveIfPresent(_bombardTowerButton, false);
+        SetActiveIfPresent(_clearSelectionButton, false);
+        SetActiveIfPresent(_dragPreviewPanel, false);
+        SetActiveIfPresent(_gameOverPanel, false);
+    }
+
+    private void ShowResultPanel(string title, string hint)
+    {
         if (_gameOverPanel != null)
         {
             _gameOverPanel.SetActive(true);
@@ -725,17 +791,6 @@ public sealed class TowerDefenseHudPresenter
         if (_gameOverHint != null)
         {
             _gameOverHint.text = hint;
-        }
-    }
-
-    /// <summary>
-    /// 单独控制 `Game Over` 面板显隐。
-    /// </summary>
-    public void SetGameOverVisible(bool visible)
-    {
-        if (_gameOverPanel != null)
-        {
-            _gameOverPanel.SetActive(visible);
         }
     }
 

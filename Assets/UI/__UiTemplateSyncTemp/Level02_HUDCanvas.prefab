@@ -1500,7 +1500,6 @@ MonoBehaviour:
   backgroundImageReference: {fileID: 7670756115352476225}
   iconImageReference: {fileID: 8630416449738388838}
   accentGraphicReferences:
-  - {fileID: 2199088931372760681}
   - {fileID: 5945893016981870723}
   - {fileID: 5654490819336906569}
   - {fileID: 2815651881002615716}

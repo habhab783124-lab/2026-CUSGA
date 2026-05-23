@@ -14,64 +14,61 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   campaignId: MainCampaign
   completionSceneName: MainMenu
+  defaultFadeOutToBlackDuration: 0.75
+  defaultFadeInFromBlackDuration: 0.75
+  defaultStartOpaqueOnLoad: 0
   steps:
   - segmentType: 0
-    sceneName: Story_Intro_01
-    scenePath: Assets/Scenes/Story_Intro_01.unity
-    displayName: 剧情序章
-    designerNote: 第一段 2D 横板可交互剧情场景。
+    sceneName: chapter1
+    scenePath: Assets/chapter1.unity
+    displayName: Chapter 1
+    designerNote: 第一段正式 2D 横板剧情场景。
     continuePrompt: 按 Enter / Space 进入第一段塔防战斗。
   - segmentType: 1
-    sceneName: SampleScene
-    scenePath: Assets/Scenes/SampleScene.unity
+    sceneName: level 1
+    scenePath: Assets/Scenes/level 1.unity
     displayName: 防线 01
-    designerNote: 第一段可游玩的塔防遭遇战。
+    designerNote: 第一段正式塔防关卡。
     continuePrompt: 清完这一关的波次后，继续进入下一段剧情。
   - segmentType: 0
-    sceneName: StoryInterludePlaceholder
-    scenePath: Assets/Scenes/StoryInterludePlaceholder.unity
-    displayName: 剧情过桥 01
-    designerNote: 第一关与第二关之间的剧情占位场景。
+    sceneName: chapter2
+    scenePath: Assets/chapter2.unity
+    displayName: Chapter 2
+    designerNote: 第一关塔防后的正式剧情场景。
     continuePrompt: 按 Enter / Space 继续进入下一段防守任务。
   - segmentType: 1
-    sceneName: Level02
-    scenePath: Assets/Scenes/Level02.unity
+    sceneName: Level 2
+    scenePath: Assets/Scenes/Level 2.unity
     displayName: 防线 02
-    designerNote: 第二段塔防遭遇战。
+    designerNote: 第二段正式塔防关卡。
     continuePrompt: 清完这一关的波次后，继续进入下一段剧情。
   - segmentType: 0
-    sceneName: StoryInterludePlaceholder
-    scenePath: Assets/Scenes/StoryInterludePlaceholder.unity
-    displayName: 剧情过桥 02
-    designerNote: 第二关与第三关之间的剧情占位场景。
+    sceneName: chapter5
+    scenePath: Assets/chapter5.unity
+    displayName: Chapter 5
+    designerNote: 第二关塔防后的正式剧情场景。
     continuePrompt: 按 Enter / Space 继续进入下一段防守任务。
   - segmentType: 1
-    sceneName: Level03
-    scenePath: Assets/Scenes/Level03.unity
+    sceneName: Level 3
+    scenePath: Assets/Scenes/Level 3.unity
     displayName: 防线 03
-    designerNote: 第三段塔防遭遇战。
+    designerNote: 第三段正式塔防关卡。
     continuePrompt: 清完这一关的波次后，继续进入下一段剧情。
   - segmentType: 0
-    sceneName: StoryInterludePlaceholder
-    scenePath: Assets/Scenes/StoryInterludePlaceholder.unity
-    displayName: 剧情过桥 03
-    designerNote: 第三关与第四关之间的剧情占位场景。
+    sceneName: chapter6
+    scenePath: Assets/chapter6.unity
+    displayName: Chapter 6
+    designerNote: 第三关塔防后的正式剧情场景。
     continuePrompt: 按 Enter / Space 继续进入下一段防守任务。
   - segmentType: 1
-    sceneName: Level04
-    scenePath: Assets/Scenes/Level04.unity
+    sceneName: level 4
+    scenePath: Assets/Scenes/level 4.unity
     displayName: 防线 04
-    designerNote: 第四段塔防遭遇战。
+    designerNote: 第四段正式塔防关卡。
     continuePrompt: 清完这一关的波次后，继续进入下一段剧情。
   - segmentType: 0
-    sceneName: StoryInterludePlaceholder
-    scenePath: Assets/Scenes/StoryInterludePlaceholder.unity
-    displayName: 最终战前剧情
-    designerNote: 最终防守任务前的剧情占位场景。
-    continuePrompt: 按 Enter / Space 进入最终防守任务。
-  - segmentType: 1
-    sceneName: Level05
-    scenePath: Assets/Scenes/Level05.unity
-    displayName: 防线 05
-    designerNote: 最终塔防遭遇战占位段。
-    continuePrompt: 清完最终波次，结束当前这条战役流程。
+    sceneName: chapter9
+    scenePath: Assets/chapter9.unity
+    displayName: Chapter 9
+    designerNote: 第四关塔防后的正式剧情场景。
+    continuePrompt: 按 Enter / Space 继续进入后续剧情。

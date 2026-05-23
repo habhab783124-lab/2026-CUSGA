@@ -157,6 +157,37 @@ public sealed class TowerDefensePresentationCoordinator
     }
 
     /// <summary>
+    /// 关卡胜利后先停在结果界面，
+    /// 等玩家确认后再切到下一段剧情。
+    ///
+    /// 这里和 `ShowGameOver()` 一样，只负责表现层收尾：
+    /// - 显示胜利界面
+    /// - 广播“等待继续”的状态消息
+    /// - 刷新 HUD
+    ///
+    /// 真正什么时候继续切场，仍然由总控在点击后决定。
+    /// </summary>
+    public void ShowVictory()
+    {
+        _hudPresenter?.ShowVictory(
+            title: "VICTORY",
+            hint: "Click anywhere to continue.");
+
+        SetStatusMessage("Operation clear. Click anywhere to continue.");
+        RefreshHud();
+    }
+
+    /// <summary>
+    /// 在真正开始跨场景过渡前，把塔防 HUD 和结果面板先整体收掉。
+    ///
+    /// 这样黑场一旦压上来，玩家不会再看见旧场景 UI 还留在屏幕上闪一帧。
+    /// </summary>
+    public void HideGameplayPresentationForSceneTransition()
+    {
+        _hudPresenter?.HideAllGameplayPresentationForSceneTransition();
+    }
+
+    /// <summary>
     /// 把当前会话状态与交互状态组装成 HUD 快照。
     /// HUD 只消费这份结果，不反向耦合总控或别的组件的内部字段。
     /// </summary>
