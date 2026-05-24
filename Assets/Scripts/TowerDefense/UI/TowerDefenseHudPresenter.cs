@@ -2,6 +2,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 /// <summary>
 /// `HudNoticeTone` 描述一条 HUD 反馈在视觉上应该偏向什么语气。
@@ -322,6 +323,7 @@ public sealed class TowerDefenseHudPresenter
     private TMP_Text _slowFieldTowerButtonText;
     private TMP_Text _bombardTowerButtonText;
     private TMP_Text _clearSelectionButtonText;
+    private TMP_Text _demolishSelectedStructureButtonText;
     private TMP_Text _dragPreviewLabel;
 
     private Button _relayTowerButton;
@@ -329,6 +331,7 @@ public sealed class TowerDefenseHudPresenter
     private Button _slowFieldTowerButton;
     private Button _bombardTowerButton;
     private Button _clearSelectionButton;
+    private Button _demolishSelectedStructureButton;
     private GameObject _gameOverPanel;
     private GameObject _dragPreviewPanel;
 
@@ -365,6 +368,7 @@ public sealed class TowerDefenseHudPresenter
         Button slowFieldTowerButton,
         Button bombardTowerButton,
         Button clearSelectionButton,
+        Button demolishSelectedStructureButton,
         GameObject gameOverPanel,
         TMP_Text gameOverTitle,
         TMP_Text gameOverHint,
@@ -381,6 +385,7 @@ public sealed class TowerDefenseHudPresenter
         _slowFieldTowerButton = slowFieldTowerButton;
         _bombardTowerButton = bombardTowerButton;
         _clearSelectionButton = clearSelectionButton;
+        _demolishSelectedStructureButton = demolishSelectedStructureButton;
         _gameOverPanel = gameOverPanel;
         _gameOverTitle = gameOverTitle;
         _gameOverHint = gameOverHint;
@@ -395,6 +400,7 @@ public sealed class TowerDefenseHudPresenter
         _slowFieldTowerButtonText = _slowFieldTowerButton != null ? _slowFieldTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
         _bombardTowerButtonText = _bombardTowerButton != null ? _bombardTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
         _clearSelectionButtonText = _clearSelectionButton != null ? _clearSelectionButton.GetComponentInChildren<TMP_Text>(true) : null;
+        _demolishSelectedStructureButtonText = _demolishSelectedStructureButton != null ? _demolishSelectedStructureButton.GetComponentInChildren<TMP_Text>(true) : null;
     }
 
     /// <summary>
@@ -459,6 +465,21 @@ public sealed class TowerDefenseHudPresenter
             _clearSelectionButtonText = _clearSelectionButton.GetComponentInChildren<TMP_Text>(true);
         }
 
+        if (_demolishSelectedStructureButton == null)
+        {
+            _demolishSelectedStructureButton = FindButtonByName("DeleteSelectedStructureButton");
+        }
+
+        if (_demolishSelectedStructureButton == null)
+        {
+            _demolishSelectedStructureButton = CreateRuntimeDemolishButton();
+        }
+
+        if (_demolishSelectedStructureButtonText == null && _demolishSelectedStructureButton != null)
+        {
+            _demolishSelectedStructureButtonText = _demolishSelectedStructureButton.GetComponentInChildren<TMP_Text>(true);
+        }
+
         EnsureDragPreviewDoesNotBlockRaycasts();
         CacheSceneAuthoredTextTemplates();
 
@@ -472,6 +493,7 @@ public sealed class TowerDefenseHudPresenter
         WarnIfMissing(_slowFieldTowerButton, "SlowFieldTowerButton");
         WarnIfMissing(_bombardTowerButton, "BombardTowerButton");
         WarnIfMissing(_clearSelectionButton, "ClearSelectionButton");
+        WarnIfMissing(_demolishSelectedStructureButton, "DeleteSelectedStructureButton");
         WarnIfMissing(_gameOverPanel, "GameOverPanel");
         WarnIfMissing(_gameOverTitle, "GameOverTitle");
         WarnIfMissing(_gameOverHint, "GameOverHint");
@@ -570,6 +592,26 @@ public sealed class TowerDefenseHudPresenter
         {
             target.SetActive(visible);
         }
+    }
+
+    private static Button FindButtonByName(string buttonName)
+    {
+        if (string.IsNullOrWhiteSpace(buttonName))
+        {
+            return null;
+        }
+
+        Button[] buttons = Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int index = 0; index < buttons.Length; index++)
+        {
+            Button button = buttons[index];
+            if (button != null && string.Equals(button.name, buttonName, StringComparison.Ordinal))
+            {
+                return button;
+            }
+        }
+
+        return null;
     }
 
     private static string BuildSceneMetricText(string template, string fallbackLabel, string value)
@@ -756,6 +798,40 @@ public sealed class TowerDefenseHudPresenter
     }
 
     /// <summary>
+    /// 把“删除当前选中建筑”的按钮显示控制也统一交给 HUD Presenter。
+    ///
+    /// 这里故意不把判定逻辑塞进 UI 层，
+    /// Presenter 只接受上层告诉它“现在该不该显示”，避免 UI 反向依赖总控内部状态。
+    /// </summary>
+    public void SetDemolishSelectedStructureButtonVisible(bool visible)
+    {
+        if (_demolishSelectedStructureButton != null)
+        {
+            _demolishSelectedStructureButton.gameObject.SetActive(visible);
+        }
+    }
+
+    /// <summary>
+    /// 统一给删除按钮注册点击事件。
+    ///
+    /// 用脚本绑定而不是依赖场景 YAML 里的 onClick，
+    /// 可以让运行时兜底创建出来的按钮和场景里作者化的按钮走同一条接线逻辑。
+    /// </summary>
+    public void BindDemolishSelectedStructureButton(Action onClick)
+    {
+        if (_demolishSelectedStructureButton == null)
+        {
+            return;
+        }
+
+        _demolishSelectedStructureButton.onClick.RemoveAllListeners();
+        if (onClick != null)
+        {
+            _demolishSelectedStructureButton.onClick.AddListener(() => onClick());
+        }
+    }
+
+    /// <summary>
     /// 在真正跨场景过渡前，把塔防 HUD 与结果面板统一隐藏。
     ///
     /// 这样黑场压上来时，玩家不会再看到旧的胜利界面、HUD 或拖拽提示残留一帧。
@@ -772,6 +848,7 @@ public sealed class TowerDefenseHudPresenter
         SetActiveIfPresent(_slowFieldTowerButton, false);
         SetActiveIfPresent(_bombardTowerButton, false);
         SetActiveIfPresent(_clearSelectionButton, false);
+        SetActiveIfPresent(_demolishSelectedStructureButton, false);
         SetActiveIfPresent(_dragPreviewPanel, false);
         SetActiveIfPresent(_gameOverPanel, false);
     }
@@ -792,6 +869,72 @@ public sealed class TowerDefenseHudPresenter
         {
             _gameOverHint.text = hint;
         }
+    }
+
+    private Button CreateRuntimeDemolishButton()
+    {
+        Canvas targetCanvas = ResolveHudCanvas();
+        if (targetCanvas == null)
+        {
+            return null;
+        }
+
+        GameObject buttonObject = new GameObject("DeleteSelectedStructureButton");
+        buttonObject.transform.SetParent(targetCanvas.transform, false);
+
+        RectTransform rectTransform = buttonObject.AddComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(1f, 1f);
+        rectTransform.anchorMax = new Vector2(1f, 1f);
+        rectTransform.pivot = new Vector2(1f, 1f);
+        rectTransform.anchoredPosition = new Vector2(-24f, -24f);
+        rectTransform.sizeDelta = new Vector2(172f, 46f);
+
+        Image background = buttonObject.AddComponent<Image>();
+        background.color = new Color(0.78f, 0.16f, 0.16f, 0.96f);
+        background.raycastTarget = true;
+
+        Button button = buttonObject.AddComponent<Button>();
+        ColorBlock colors = button.colors;
+        colors.normalColor = background.color;
+        colors.highlightedColor = new Color(0.88f, 0.24f, 0.24f, 1f);
+        colors.pressedColor = new Color(0.62f, 0.12f, 0.12f, 1f);
+        colors.selectedColor = colors.highlightedColor;
+        colors.disabledColor = new Color(0.42f, 0.14f, 0.14f, 0.5f);
+        button.colors = colors;
+        button.transition = Selectable.Transition.ColorTint;
+
+        GameObject labelObject = new GameObject("Label");
+        labelObject.transform.SetParent(buttonObject.transform, false);
+        RectTransform labelRect = labelObject.AddComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+
+        TMP_Text label = labelObject.AddComponent<TextMeshProUGUI>();
+        label.text = "Delete";
+        label.fontSize = 26f;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = new Color(1f, 0.96f, 0.96f, 1f);
+        label.raycastTarget = false;
+
+        buttonObject.SetActive(false);
+        return button;
+    }
+
+    private static Canvas ResolveHudCanvas()
+    {
+        Canvas[] canvases = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int index = 0; index < canvases.Length; index++)
+        {
+            Canvas canvas = canvases[index];
+            if (canvas != null && string.Equals(canvas.name, "HUDCanvas", StringComparison.Ordinal))
+            {
+                return canvas;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>

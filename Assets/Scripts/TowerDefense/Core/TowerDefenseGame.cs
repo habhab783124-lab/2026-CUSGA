@@ -284,6 +284,7 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private Button slowFieldTowerButtonReference;
     [SerializeField] private Button bombardTowerButtonReference;
     [SerializeField] private Button clearSelectionButtonReference;
+    [SerializeField] private Button demolishSelectedStructureButtonReference;
     [SerializeField] private GameObject gameOverPanelReference;
     [SerializeField] private TMP_Text gameOverTitleReference;
     [SerializeField] private TMP_Text gameOverHintReference;
@@ -382,6 +383,7 @@ public class TowerDefenseGame : MonoBehaviour
     private float _levelClearFadeOutDuration = 0.75f;
     private float _levelClearFadeInDuration = 0.75f;
     private bool _levelClearStartOpaqueOnContinue;
+    private const float DemolishRefundRatio = 0.5f;
 
     /// <summary>
     /// 对外暴露只读的结算状态，方便 HUD、敌人和其他运行时对象判断当前是否已经 Game Over。
@@ -609,6 +611,7 @@ public class TowerDefenseGame : MonoBehaviour
     {
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectRelayTower();
+        RefreshHud();
     }
 
     /// <summary>
@@ -618,18 +621,21 @@ public class TowerDefenseGame : MonoBehaviour
     {
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectSingleTargetTower();
+        RefreshHud();
     }
 
     public void SelectSlowFieldTower()
     {
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectSlowFieldTower();
+        RefreshHud();
     }
 
     public void SelectBombardTower()
     {
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectBombardTower();
+        RefreshHud();
     }
 
     /// <summary>
@@ -724,10 +730,19 @@ public class TowerDefenseGame : MonoBehaviour
         if (_selectedRelayTower != null)
         {
             RelayTower relayTower = _selectedRelayTower;
+            int refundAmount = CalculateRelayDemolishRefund(relayTower);
             ClearPlacedStructureSelection();
             Destroy(relayTower.gameObject);
             InvalidatePlacementAreaOverlayCache();
-            SetStatusMessage($"Relay #{relayTower.RelayNumber} dismantled.");
+            if (refundAmount > 0)
+            {
+                AddScrap(refundAmount);
+            }
+
+            SetStatusMessage(
+                refundAmount > 0
+                    ? $"Relay #{relayTower.RelayNumber} dismantled. Refunded {refundAmount} SCRAP."
+                    : $"Relay #{relayTower.RelayNumber} dismantled.");
             RefreshHud();
             return true;
         }
@@ -735,10 +750,19 @@ public class TowerDefenseGame : MonoBehaviour
         if (_selectedDefenseTower != null)
         {
             DefenseTower defenseTower = _selectedDefenseTower;
+            int refundAmount = CalculateDefenseTowerDemolishRefund(defenseTower);
             ClearPlacedStructureSelection();
             Destroy(defenseTower.gameObject);
             InvalidatePlacementAreaOverlayCache();
-            SetStatusMessage($"{GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber} dismantled.");
+            if (refundAmount > 0)
+            {
+                AddScrap(refundAmount);
+            }
+
+            SetStatusMessage(
+                refundAmount > 0
+                    ? $"{GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber} dismantled. Refunded {refundAmount} SCRAP."
+                    : $"{GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber} dismantled.");
             RefreshHud();
             return true;
         }
@@ -923,6 +947,7 @@ public class TowerDefenseGame : MonoBehaviour
             canAffordTower: CanAffordTower,
             refreshStarterZoneMarker: () => _placementSupportCoordinator?.RefreshStarterZoneMarker());
         _hudPresenter.SetTheme(hudTheme.ToRuntimeTheme());
+        _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());
         _presentationCoordinator.BindPresentation(_hudPresenter, _towerCatalog);
         _sceneBootstrapper = new TowerDefenseSceneBootstrapper();
         InitializeAudioCoordinator();
@@ -1034,6 +1059,7 @@ public class TowerDefenseGame : MonoBehaviour
     private void RefreshHud()
     {
         RefreshSelectedStructureRangeVisualization();
+        _hudPresenter?.SetDemolishSelectedStructureButtonVisible(HasSelectedPlacedStructure());
         _presentationCoordinator?.RefreshHud();
     }
 
@@ -1058,6 +1084,11 @@ public class TowerDefenseGame : MonoBehaviour
         _selectedRelayTower = null;
         _selectedDefenseTower = null;
         _selectionRangeVisualizer?.Hide();
+    }
+
+    private bool HasSelectedPlacedStructure()
+    {
+        return _selectedRelayTower != null || _selectedDefenseTower != null;
     }
 
     /// <summary>
@@ -1249,7 +1280,8 @@ public class TowerDefenseGame : MonoBehaviour
         _placementInteractionController?.SetSelectionSilently(TowerType.None);
         _selectedRelayTower = relayTower;
         _selectedDefenseTower = null;
-        SetStatusMessage($"Selected relay #{relayTower.RelayNumber}. Press U to upgrade or Delete to dismantle.");
+        int refundAmount = CalculateRelayDemolishRefund(relayTower);
+        SetStatusMessage($"Selected relay #{relayTower.RelayNumber}. Press U to upgrade or click Delete to dismantle for {refundAmount} SCRAP.");
         RefreshHud();
     }
 
@@ -1264,7 +1296,8 @@ public class TowerDefenseGame : MonoBehaviour
         _placementInteractionController?.SetSelectionSilently(TowerType.None);
         _selectedDefenseTower = defenseTower;
         _selectedRelayTower = null;
-        SetStatusMessage($"Selected {GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber}. Press U to upgrade or Delete to dismantle.");
+        int refundAmount = CalculateDefenseTowerDemolishRefund(defenseTower);
+        SetStatusMessage($"Selected {GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber}. Press U to upgrade or click Delete to dismantle for {refundAmount} SCRAP.");
         RefreshHud();
     }
 
@@ -1559,6 +1592,28 @@ public class TowerDefenseGame : MonoBehaviour
         return _placementSupportCoordinator != null ? _placementSupportCoordinator.GetPlacementRadius(towerType) : 0.5f;
     }
 
+    private int CalculateRelayDemolishRefund(RelayTower relayTower)
+    {
+        if (relayTower == null)
+        {
+            return 0;
+        }
+
+        int totalInvestedCost = Mathf.Max(0, relayTowerCost) + relayTower.CalculateAccumulatedUpgradeCost();
+        return Mathf.FloorToInt(totalInvestedCost * DemolishRefundRatio);
+    }
+
+    private int CalculateDefenseTowerDemolishRefund(DefenseTower defenseTower)
+    {
+        if (defenseTower == null)
+        {
+            return 0;
+        }
+
+        int totalInvestedCost = Mathf.Max(0, GetTowerCost(defenseTower.BuildType)) + defenseTower.CalculateAccumulatedUpgradeCost();
+        return Mathf.FloorToInt(totalInvestedCost * DemolishRefundRatio);
+    }
+
     /// <summary>
     /// 读取塔型对应的扩张方格边长。
     /// </summary>
@@ -1712,6 +1767,7 @@ public class TowerDefenseGame : MonoBehaviour
                 slowFieldTowerButtonReference,
                 bombardTowerButtonReference,
                 clearSelectionButtonReference,
+                demolishSelectedStructureButtonReference,
                 gameOverPanelReference,
                 gameOverTitleReference,
                 gameOverHintReference,
@@ -1728,6 +1784,7 @@ public class TowerDefenseGame : MonoBehaviour
         _placedTowerRoot = bootstrapResult.PlacedTowerRoot;
         _placementPreviewRoot = bootstrapResult.PlacementPreviewRoot;
         _battlefieldMapDefinition = battlefieldMapReference != null ? battlefieldMapReference : FindFirstObjectByType<BattlefieldMapDefinition>();
+        _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());
 
         mainCameraReference = _mainCamera;
         buildZoneReference = _buildZone;

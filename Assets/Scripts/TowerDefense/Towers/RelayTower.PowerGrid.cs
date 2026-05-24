@@ -86,6 +86,23 @@ public partial class RelayTower
         return upgradeCostBase + (CurrentLevel - 1) * upgradeCostPerLevel;
     }
 
+    /// <summary>
+    /// 删除返还需要看“总投入”，而不只是当前级别的单次建造费。
+    ///
+    /// 这里把继电器自身已经花掉的升级成本也一起算出来，
+    /// 这样后续总控在做 50% 返还时不需要反向猜测这座继电器升过几次。
+    /// </summary>
+    public int CalculateAccumulatedUpgradeCost()
+    {
+        int totalUpgradeCost = 0;
+        for (int level = 1; level < CurrentLevel; level++)
+        {
+            totalUpgradeCost += upgradeCostBase + (level - 1) * upgradeCostPerLevel;
+        }
+
+        return Mathf.Max(0, totalUpgradeCost);
+    }
+
     public int PreviewUpgradedSupplyCapacity()
     {
         if (!CanUpgrade)
