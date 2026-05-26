@@ -334,6 +334,8 @@ public sealed class TowerDefenseHudPresenter
     private Button _demolishSelectedStructureButton;
     private GameObject _gameOverPanel;
     private GameObject _dragPreviewPanel;
+    private GameObject _topBarRoot;
+    private GameObject _bottomBarRoot;
 
     /// <summary>
     /// 由总控把 HUD 主题快照注入进来。
@@ -394,6 +396,7 @@ public sealed class TowerDefenseHudPresenter
 
         EnsureDragPreviewDoesNotBlockRaycasts();
         CacheSceneAuthoredTextTemplates();
+        CaptureOptionalHudRoots();
 
         _relayTowerButtonText = _relayTowerButton != null ? _relayTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
         _defenseTowerButtonText = _defenseTowerButton != null ? _defenseTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
@@ -482,6 +485,7 @@ public sealed class TowerDefenseHudPresenter
 
         EnsureDragPreviewDoesNotBlockRaycasts();
         CacheSceneAuthoredTextTemplates();
+        CaptureOptionalHudRoots();
 
         WarnIfMissing(_scrapText, "ScrapText");
         WarnIfMissing(_baseHealthText, "BaseHealthText");
@@ -838,6 +842,8 @@ public sealed class TowerDefenseHudPresenter
     /// </summary>
     public void HideAllGameplayPresentationForSceneTransition()
     {
+        SetActiveIfPresent(_topBarRoot, false);
+        SetActiveIfPresent(_bottomBarRoot, false);
         SetActiveIfPresent(_scrapText, false);
         SetActiveIfPresent(_baseHealthText, false);
         SetActiveIfPresent(_waveText, false);
@@ -851,6 +857,35 @@ public sealed class TowerDefenseHudPresenter
         SetActiveIfPresent(_demolishSelectedStructureButton, false);
         SetActiveIfPresent(_dragPreviewPanel, false);
         SetActiveIfPresent(_gameOverPanel, false);
+    }
+
+    /// <summary>
+    /// The authored HUD keeps some decorative and layout-only elements grouped under larger roots
+    /// such as `TopBar` and `BottomBar`. Hiding only the child texts and buttons still leaves those
+    /// larger bars visible behind the formal victory page, which is why the user could still see
+    /// the normal HUD framing after clearing a level.
+    ///
+    /// We treat these roots as optional because older scenes may not have exactly the same
+    /// structure. When they exist, they join the transition-hide group together with the gameplay
+    /// widgets above.
+    /// </summary>
+    private void CaptureOptionalHudRoots()
+    {
+        Canvas hudCanvas = ResolveHudCanvas();
+        if (hudCanvas == null)
+        {
+            return;
+        }
+
+        if (_topBarRoot == null)
+        {
+            _topBarRoot = FindChildGameObject(hudCanvas.transform, "TopBar");
+        }
+
+        if (_bottomBarRoot == null)
+        {
+            _bottomBarRoot = FindChildGameObject(hudCanvas.transform, "BottomBar");
+        }
     }
 
     private void ShowResultPanel(string title, string hint)
@@ -935,6 +970,17 @@ public sealed class TowerDefenseHudPresenter
         }
 
         return null;
+    }
+
+    private static GameObject FindChildGameObject(Transform parent, string childName)
+    {
+        if (parent == null || string.IsNullOrWhiteSpace(childName))
+        {
+            return null;
+        }
+
+        Transform child = parent.Find(childName);
+        return child != null ? child.gameObject : null;
     }
 
     /// <summary>

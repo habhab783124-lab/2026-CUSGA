@@ -178,6 +178,22 @@ public sealed class TowerDefensePresentationCoordinator
     }
 
     /// <summary>
+    /// 当正式胜利页 prefab 接管展示时，
+    /// 表现协调层只需要继续维护 HUD 状态消息和局部刷新，
+    /// 不再强制把旧结果面板拉出来。
+    /// </summary>
+    public void ShowVictorySummaryOnly()
+    {
+        // The formal hologram victory page owns the player's attention at this point.
+        // Leaving the combat HUD visible underneath makes the result page look broken and
+        // visually conflicts with the preview-scene design, so we proactively hide the
+        // gameplay HUD before keeping only the continuation status alive.
+        _hudPresenter?.HideAllGameplayPresentationForSceneTransition();
+        SetStatusMessage("Operation clear. Click anywhere to continue.");
+        RefreshHud();
+    }
+
+    /// <summary>
     /// 在真正开始跨场景过渡前，把塔防 HUD 和结果面板先整体收掉。
     ///
     /// 这样黑场一旦压上来，玩家不会再看见旧场景 UI 还留在屏幕上闪一帧。

@@ -290,6 +290,7 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private TMP_Text gameOverHintReference;
     [SerializeField] private GameObject dragPreviewPanelReference;
     [SerializeField] private TMP_Text dragPreviewLabelReference;
+    [SerializeField] private VictoryResultPageView victoryResultPageViewReference;
 
     /// <summary>
     /// `_sessionState` 负责保存这一局的资源、基地、波次和结算状态。
@@ -384,6 +385,7 @@ public class TowerDefenseGame : MonoBehaviour
     private float _levelClearFadeInDuration = 0.75f;
     private bool _levelClearStartOpaqueOnContinue;
     private const float DemolishRefundRatio = 0.5f;
+    private const string VictoryResultPagePrefabResourcePath = "TowerDefense/UI/VictoryResultPage";
 
     /// <summary>
     /// 对外暴露只读的结算状态，方便 HUD、敌人和其他运行时对象判断当前是否已经 Game Over。
@@ -577,6 +579,16 @@ public class TowerDefenseGame : MonoBehaviour
     public void SetStatusMessage(string message)
     {
         _presentationCoordinator?.SetStatusMessage(message);
+    }
+
+    public void ContinueAfterVictoryPresentation()
+    {
+        if (!_levelClearPresentationActive)
+        {
+            return;
+        }
+
+        HandleLevelClearContinueInputFromUi();
     }
 
     public void ShowTransientHudNotice(string message, float duration = 2.5f, HudNoticeTone tone = HudNoticeTone.Auto)
@@ -1354,7 +1366,7 @@ public class TowerDefenseGame : MonoBehaviour
         _levelClearContinueAllowedAtUnscaledTime = Time.unscaledTime + Mathf.Max(0f, levelClearContinueClickDelaySeconds);
 
         Time.timeScale = 0f;
-        _presentationCoordinator?.ShowVictory();
+        ShowFormalVictoryPresentation();
         return true;
     }
 
@@ -1433,6 +1445,11 @@ public class TowerDefenseGame : MonoBehaviour
             return true;
         }
 
+        return HandleLevelClearContinueInputFromUi();
+    }
+
+    private bool HandleLevelClearContinueInputFromUi()
+    {
         if (_levelClearContinueTriggered)
         {
             return true;
@@ -1481,6 +1498,11 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private void HideForSceneTransition()
     {
+        if (victoryResultPageViewReference != null)
+        {
+            victoryResultPageViewReference.Hide();
+        }
+
         _presentationCoordinator?.HideGameplayPresentationForSceneTransition();
         _selectionRangeVisualizer?.Hide();
         _placementSupportCoordinator?.HidePlacementAreaOverlay();
@@ -1785,6 +1807,7 @@ public class TowerDefenseGame : MonoBehaviour
         _placementPreviewRoot = bootstrapResult.PlacementPreviewRoot;
         _battlefieldMapDefinition = battlefieldMapReference != null ? battlefieldMapReference : FindFirstObjectByType<BattlefieldMapDefinition>();
         _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());
+        EnsureVictoryResultPageView();
 
         mainCameraReference = _mainCamera;
         buildZoneReference = _buildZone;
@@ -1806,6 +1829,92 @@ public class TowerDefenseGame : MonoBehaviour
         {
             Debug.LogWarning("TowerDefenseGame is missing one or more tower prototype references. Check the scene wiring.");
         }
+    }
+
+    private void EnsureVictoryResultPageView()
+    {
+        if (victoryResultPageViewReference != null)
+        {
+            victoryResultPageViewReference.BindContinueAction(ContinueAfterVictoryPresentation);
+            return;
+        }
+
+        VictoryResultPageView existingView = FindFirstObjectByType<VictoryResultPageView>(FindObjectsInactive.Include);
+        if (existingView != null)
+        {
+            victoryResultPageViewReference = existingView;
+            victoryResultPageViewReference.BindContinueAction(ContinueAfterVictoryPresentation);
+            victoryResultPageViewReference.Hide();
+            return;
+        }
+
+        GameObject prefabRoot = Resources.Load<GameObject>(VictoryResultPagePrefabResourcePath);
+        if (prefabRoot == null)
+        {
+            Debug.LogWarning($"TowerDefenseGame could not load VictoryResultPage prefab from Resources path '{VictoryResultPagePrefabResourcePath}'.", this);
+            return;
+        }
+
+        GameObject instantiatedRoot = Instantiate(prefabRoot);
+        instantiatedRoot.name = prefabRoot.name;
+        instantiatedRoot.transform.localScale = Vector3.one;
+
+        VictoryResultPageView instantiatedView = instantiatedRoot.GetComponent<VictoryResultPageView>();
+        if (instantiatedView == null)
+        {
+            // The runtime page should stay recoverable even if the prefab was authored before the
+            // formal page view script existed. Adding the component here keeps old prefab copies
+            // usable while we continue refining the visual asset.
+            instantiatedView = instantiatedRoot.AddComponent<VictoryResultPageView>();
+        }
+
+        instantiatedView.BindContinueAction(ContinueAfterVictoryPresentation);
+        instantiatedView.Hide();
+        victoryResultPageViewReference = instantiatedView;
+    }
+
+    private void ShowFormalVictoryPresentation()
+    {
+        EnsureVictoryResultPageView();
+        if (victoryResultPageViewReference != null)
+        {
+            VictoryResultPageContent content = BuildVictoryResultPageContent();
+            victoryResultPageViewReference.Show(content);
+            _presentationCoordinator?.ShowVictorySummaryOnly();
+            return;
+        }
+
+        _presentationCoordinator?.ShowVictory();
+    }
+
+    private VictoryResultPageContent BuildVictoryResultPageContent()
+    {
+        int currentBaseHealth = _sessionState != null ? _sessionState.CurrentBaseHealth : 0;
+        int startingBase = Mathf.Max(1, startingBaseHealth);
+        int integrityPercent = Mathf.RoundToInt((currentBaseHealth / (float)startingBase) * 100f);
+        int currentScrap = _sessionState != null ? _sessionState.CurrentScrap : 0;
+        int currentWave = _sessionState != null ? _sessionState.CurrentWave : 0;
+        int totalWaves = _sessionState != null ? _sessionState.TotalWaves : 0;
+        string commanderLine = integrityPercent >= 80
+            ? "做得不错，这一波我们守住了。"
+            : "守得很好，虽然代价不小，但防线仍在我们手里。";
+
+        return new VictoryResultPageContent(
+            signalTitle: "指挥链路接通",
+            signalStatus: "战区信号稳定",
+            signalChannel: "HOLO-LINK / FRONT 02",
+            title: "防线稳定",
+            subtitle: "战术全息简报已生成",
+            reportHeader: "战区汇报",
+            integrityRow: $"基地完整度：{Mathf.Clamp(integrityPercent, 0, 999)}%",
+            scrapRow: $"当前废料：{currentScrap}",
+            eventRow: $"关键记录：第 {Mathf.Max(1, currentWave)} 波已完成，当前进度 {currentWave}/{Mathf.Max(1, totalWaves)}。",
+            footerHint: "等待接收后续指令",
+            commanderName: "指挥官",
+            commanderCodename: "前线总控 / C-07",
+            dialogueText: commanderLine + "\n前线已经稳定，准备接收下一阶段指令。",
+            continueButtonText: "继续汇报",
+            continueHintText: "同步完成后可继续推进剧情");
     }
 
     /// <summary>
