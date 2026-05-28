@@ -103,6 +103,19 @@ public class DefenseTower : MonoBehaviour
     [Header("Type")]
     [SerializeField] private TowerType buildType = TowerType.SingleTarget;
 
+    private void OnDrawGizmosSelected()
+    {
+        PlacementGrid placementGrid = FindFirstObjectByType<PlacementGrid>();
+        if (placementGrid != null)
+        {
+            TowerDefenseGame game = TowerDefenseGame.Instance != null
+                ? TowerDefenseGame.Instance
+                : FindFirstObjectByType<TowerDefenseGame>();
+            float noBuildSquareSize = game != null ? game.GetPlacementNoBuildSquareSize(buildType) : 0f;
+            placementGrid.DrawStructureGizmo(transform.position, buildType, noBuildSquareSize);
+        }
+    }
+
     [Header("Tunings")]
     [SerializeField] private CombatTuning singleTargetTuning = new CombatTuning
     {

@@ -164,6 +164,16 @@ public partial class RelayTower
         Gizmos.DrawWireCube(
             transform.position,
             new Vector3(SupplyRange * 2f, SupplyRange * 2f, 0.01f));
+
+        PlacementGrid placementGrid = FindFirstObjectByType<PlacementGrid>();
+        if (placementGrid != null)
+        {
+            TowerDefenseGame game = TowerDefenseGame.Instance != null
+                ? TowerDefenseGame.Instance
+                : FindFirstObjectByType<TowerDefenseGame>();
+            float noBuildSquareSize = game != null ? game.GetPlacementNoBuildSquareSize(TowerType.Relay) : 0f;
+            placementGrid.DrawStructureGizmo(transform.position, TowerType.Relay, noBuildSquareSize);
+        }
     }
 
     private void OnDestroy()

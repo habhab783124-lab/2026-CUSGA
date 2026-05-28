@@ -1,6 +1,6 @@
 # Tower Defense AI Memory - Architecture
-Version: 1.9.0
-Updated: 2026-05-20
+Version: 2.3.0
+Updated: 2026-05-27
 Depends on: `docs/ai-memory/td-memory-main.md`
 
 ## 当前架构判断
@@ -51,6 +51,10 @@ Depends on: `docs/ai-memory/td-memory-main.md`
 ## Placement 层职责
 - `BuildZone`
 - `PlacementBlocker`
+- `PlacementGrid`
+  - 统一格子语义
+  - 挂载场景内静态遮罩 Bake 数据
+- `PlacementStaticMask`
 - `TowerPlacementRules`
 - `TowerPlacementInteractionController`
 - `TowerPlacementBuildExecutor`
@@ -107,6 +111,8 @@ Depends on: `docs/ai-memory/td-memory-main.md`
 - `LevelSelectCard`
 - `TowerShopCard`
 - `TowerDefenseHudPresenter`
+- `VictoryResultPageView`
+- `VictoryResultPreviewController`
 - `TowerDefenseHudThemeAsset`
 - `TowerDefenseHudCopyAsset`
 - `LevelSelectCatalogAsset`
@@ -137,6 +143,7 @@ Depends on: `docs/ai-memory/td-memory-main.md`
 - `TowerDefenseGame`
 - `BattlefieldMapDefinition`
 - `BuildZone`
+- `PlacementGrid`（正式关卡应显式作者化；旧场景可由运行时兜底创建）
 - 至少一个 `EnemySpawnGate`
 - 至少一个 `EnemyPath`
 - 至少一个 `DefensePointFlag`
@@ -145,6 +152,7 @@ Depends on: `docs/ai-memory/td-memory-main.md`
 - `PlacementPreviewRoot`
 - `EnemiesRoot`
 - HUD Canvas
+- `EnemySpawnGate` 和 `DefensePointFlag` 的作者可读标记只用于 Scene 编辑期，Play 期间必须隐藏
 
 ### 当前塔防关卡目标约定
 - `SampleScene`
@@ -181,6 +189,9 @@ Depends on: `docs/ai-memory/td-memory-main.md`
   - `Path Check`
   - `Road Build`
   - `Zone Brush`
+- `PlacementGridAuthoringTool`
+  - 给正式塔防关卡补 `PlacementGrid` 场景对象与 `TowerDefenseGame` 接线
+  - 对当前场景或所有正式关卡执行静态遮罩 Bake
 
 ### 波次、平衡、报告
 - `LevelBalanceTuningWindow`
@@ -195,7 +206,39 @@ Depends on: `docs/ai-memory/td-memory-main.md`
 - 波次以 `WaveCatalogAsset` 为主
 - 道路功能层和道路美术层分离
 - 多入口 / 多防御点关系由拓扑编辑器和场景引用共同维护
+- 放置判定中的格子大小、原点、占地格数优先由场景里的 `PlacementGrid` 作者化
+- 建筑周边正方形禁建范围继续复用现有 `ExpansionSquareSize` 字段，避免同一语义出现两套作者化入口
 - 文档必须明确“项目里存在”与“当前主链启用”不是一回事
+
+## 2026-05-26 Placement Grid Checkpoint
+- 放置系统当前采用“`PlacementGrid` 统一格子语义 + `TowerPlacementRules` 执行格子合法性判断”的结构。
+- `TowerPlacementSupportCoordinator` 的覆盖层采样已经和正式规则同源，避免出现“覆盖层说能放，落塔时却失败”的分叉。
+- `TowerPlacementBuildExecutor` 在最终落塔前也会再次走格子吸附，避免旧入口绕开格子中心。
+- `DefenseTower` 与 `RelayTower` 的选中 Gizmo 会读取同一份 `PlacementGrid` 与禁建方形大小，方便直接在 Scene 里调参。
+
+## 2026-05-27 Placement Static Mask Checkpoint
+- 放置链路第一阶段新增 `PlacementStaticMask`，用于把 `BuildZone + PlacementBlocker` 在运行时栅格化成静态缓存。
+- 当前缓存挂点在 `TowerPlacementSupportCoordinator`：
+  - 场景引用就绪后优先读取 `PlacementGrid` 上已经 Bake 好的数据
+  - 缺少 Bake 数据时再退回运行时现算
+  - 同时把缓存喂给 `TowerPlacementRules`
+  - 合法区覆盖层 validator 也优先查同一份缓存
+- 当前编辑器侧挂点在 `PlacementGridAuthoringTool`：
+  - `Bake 当前场景静态遮罩`
+  - `Bake 并保存所有正式关卡静态遮罩`
+- 当前仍保留旧的逐格物理查询作为兜底路径，因此这是“Bake 数据优先 + 运行时现算兜底 + 旧物理查询更底层兜底”的稳妥过渡方案，而不是一次性大改整条放置链。
+
+## 2026-05-26 Result Page Checkpoint
+- 结算页当前采用“一套 `VictoryResultPage` prefab + 一套 `VictoryResultPageView` 视图脚本”承载胜利与失败两种结果展示。
+- 胜利与失败的差异主要通过：
+  - `VictoryResultPageContent` 文案内容
+  - `VictoryResultPageView.ResultPageTone` 运行时主题
+  来驱动，而不是维护两套平行 prefab。
+- 失败链路仍保留旧 `GameOverPanel` 作为兜底，但正式展示主路径已经切到结果页 prefab。
+- 结果页预览当前也拆成两份专用场景：
+  - `VictoryResultPreview.unity` 用于胜利页调整
+  - `FailureResultPreview.unity` 用于失败页调整
+- `VictoryResultPageView` 现在还带有失败态专属的布局调节参数，主要用于扫描线、投影区、对话框和继续按钮的失败气质强化，同时不影响胜利态基础布局。
 
 ## 2026-05-20 Chapter-Level Wiring
 - 当前正式主线的 `chapter` 与 `level` 桥接先走 scene-local wiring，而不是完全依赖 `CampaignFlowAsset`。

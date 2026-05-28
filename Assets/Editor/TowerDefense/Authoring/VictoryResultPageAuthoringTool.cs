@@ -10,15 +10,16 @@ using UnityEngine.SceneManagement;
 namespace TowerDefense.Editor
 {
     /// <summary>
-    /// Shared constants for the victory-result authoring workflow.
+    /// Shared paths for the result-page authoring workflow.
     ///
-    /// We keep these paths in one place because the preview scene, the shared prefab, and the
-    /// validation pass all need to agree on the exact same assets. This keeps the tool readable
-    /// and makes future path changes much less error-prone.
+    /// Victory and failure currently share the same runtime prefab, but use different preview scenes.
+    /// Keeping the path table in one place lets the menu tools, the editor window, and the scene
+    /// inspector shortcuts all agree on the same assets.
     /// </summary>
-    internal static class VictoryResultPageAuthoringPaths
+    internal static class ResultPageAuthoringPaths
     {
-        public const string PreviewScenePath = "Assets/Scenes/VictoryResultPreview.unity";
+        public const string VictoryPreviewScenePath = "Assets/Scenes/VictoryResultPreview.unity";
+        public const string FailurePreviewScenePath = "Assets/Scenes/FailureResultPreview.unity";
         public const string SharedPrefabPath = "Assets/Resources/TowerDefense/UI/VictoryResultPage.prefab";
 
         public static readonly string[] FormalLevelScenePaths =
@@ -31,68 +32,126 @@ namespace TowerDefense.Editor
     }
 
     /// <summary>
+    /// A tiny profile that says "which preview scene are we authoring right now?"
+    ///
+    /// We intentionally keep this lightweight:
+    /// - victory and failure share the same real prefab
+    /// - their authoring difference is mainly which preview scene the user wants to open
+    /// - the shared integration validation stays exactly the same
+    /// </summary>
+    internal readonly struct ResultPageAuthoringProfile
+    {
+        public ResultPageAuthoringProfile(
+            string previewScenePath,
+            string previewSceneName,
+            string pageDisplayName,
+            string windowTitle)
+        {
+            PreviewScenePath = previewScenePath ?? string.Empty;
+            PreviewSceneName = previewSceneName ?? string.Empty;
+            PageDisplayName = pageDisplayName ?? string.Empty;
+            WindowTitle = windowTitle ?? string.Empty;
+        }
+
+        public string PreviewScenePath { get; }
+        public string PreviewSceneName { get; }
+        public string PageDisplayName { get; }
+        public string WindowTitle { get; }
+    }
+
+    internal static class ResultPageAuthoringProfiles
+    {
+        public static readonly ResultPageAuthoringProfile Victory = new ResultPageAuthoringProfile(
+            ResultPageAuthoringPaths.VictoryPreviewScenePath,
+            "VictoryResultPreview",
+            "胜利页",
+            "胜利页同步");
+
+        public static readonly ResultPageAuthoringProfile Failure = new ResultPageAuthoringProfile(
+            ResultPageAuthoringPaths.FailurePreviewScenePath,
+            "FailureResultPreview",
+            "失败页",
+            "失败页同步");
+
+        public static ResultPageAuthoringProfile ResolveFromScenePath(string scenePath)
+        {
+            if (string.Equals(scenePath, ResultPageAuthoringPaths.FailurePreviewScenePath, StringComparison.OrdinalIgnoreCase))
+            {
+                return Failure;
+            }
+
+            return Victory;
+        }
+    }
+
+    /// <summary>
     /// Utility methods behind the preview-to-prefab authoring workflow.
     ///
-    /// The user's day-to-day need is simple:
+    /// The authoring loop is intentionally kept the same for victory and failure:
     /// 1. Open the dedicated preview scene
-    /// 2. Adjust the real victory page there
-    /// 3. Click one button to push the result back to the shared prefab
-    /// 4. Trust that every formal level now shows that updated shared page
+    /// 2. Adjust the real result page there
+    /// 3. Push the scene copy back into the shared prefab
+    /// 4. Verify that formal levels still consume the shared runtime page
     ///
-    /// This helper centralizes those steps so both the editor window and the inspector button can
-    /// share exactly the same implementation.
+    /// Using one shared implementation here avoids the common "two tools slowly drift apart" trap.
     /// </summary>
-    internal static class VictoryResultPageAuthoringUtility
+    internal static class ResultPageAuthoringUtility
     {
-        public static bool OpenPreviewScene()
+        public static bool OpenPreviewScene(ResultPageAuthoringProfile profile)
         {
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
             {
                 return false;
             }
 
-            EditorSceneManager.OpenScene(VictoryResultPageAuthoringPaths.PreviewScenePath, OpenSceneMode.Single);
+            if (!System.IO.File.Exists(profile.PreviewScenePath))
+            {
+                Debug.LogWarning($"找不到 {profile.PageDisplayName} 预览场景：{profile.PreviewScenePath}");
+                return false;
+            }
+
+            EditorSceneManager.OpenScene(profile.PreviewScenePath, OpenSceneMode.Single);
             return true;
         }
 
-        public static bool ApplyPreviewToSharedPrefab(out string summary)
+        public static bool ApplyPreviewToSharedPrefab(ResultPageAuthoringProfile profile, out string summary)
         {
             summary = string.Empty;
 
             if (EditorApplication.isPlaying)
             {
-                summary = "当前处于 Play Mode，不能在运行时回写胜利页 prefab。";
+                summary = $"当前处于 Play Mode，不能在运行时回写{profile.PageDisplayName}共享页面。";
                 return false;
             }
 
             Scene activeScene = SceneManager.GetActiveScene();
-            if (!string.Equals(activeScene.path, VictoryResultPageAuthoringPaths.PreviewScenePath, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(activeScene.path, profile.PreviewScenePath, StringComparison.OrdinalIgnoreCase))
             {
-                summary = "请先打开 VictoryResultPreview 场景，再执行一键应用。";
+                summary = $"请先打开 {profile.PreviewSceneName} 场景，再执行一键应用。";
                 return false;
             }
 
             VictoryResultPageView previewView = UnityEngine.Object.FindFirstObjectByType<VictoryResultPageView>(FindObjectsInactive.Include);
             if (previewView == null)
             {
-                summary = "当前预览场景里没有找到 VictoryResultPageView，无法回写共享 prefab。";
+                summary = $"当前 {profile.PageDisplayName} 预览场景里没有找到 VictoryResultPageView，无法回写共享 prefab。";
                 return false;
             }
 
             GameObject previewRoot = previewView.gameObject;
             string currentSourcePath = GetConnectedPrefabAssetPath(previewRoot);
 
-            if (string.Equals(currentSourcePath, VictoryResultPageAuthoringPaths.SharedPrefabPath, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(currentSourcePath, ResultPageAuthoringPaths.SharedPrefabPath, StringComparison.OrdinalIgnoreCase))
             {
                 PrefabUtility.ApplyPrefabInstance(previewRoot, InteractionMode.UserAction);
             }
             else
             {
-                // If the scene root somehow lost its prefab connection, we still want one click to
-                // recover the workflow by rebuilding the shared prefab from the current preview root.
+                // If the preview root somehow lost its prefab connection, we still keep the tool
+                // one-click friendly by rebuilding the shared prefab from the current preview state.
                 PrefabUtility.SaveAsPrefabAssetAndConnect(
                     previewRoot,
-                    VictoryResultPageAuthoringPaths.SharedPrefabPath,
+                    ResultPageAuthoringPaths.SharedPrefabPath,
                     InteractionMode.UserAction);
             }
 
@@ -102,15 +161,18 @@ namespace TowerDefense.Editor
             EditorSceneManager.SaveScene(activeScene);
 
             summary =
-                "已把当前 VictoryResultPreview 里的 VictoryResultPage 回写到共享 prefab。\n" +
-                $"Prefab: {VictoryResultPageAuthoringPaths.SharedPrefabPath}";
+                $"已把当前 {profile.PreviewSceneName} 里的 VictoryResultPage 回写到共享 prefab。\n" +
+                $"Prefab: {ResultPageAuthoringPaths.SharedPrefabPath}";
             return true;
         }
 
-        public static bool ApplyPreviewToSharedPrefabWithValidation(out string summary, out ValidationResult validationResult)
+        public static bool ApplyPreviewToSharedPrefabWithValidation(
+            ResultPageAuthoringProfile profile,
+            out string summary,
+            out ValidationResult validationResult)
         {
             validationResult = default;
-            if (!ApplyPreviewToSharedPrefab(out string applySummary))
+            if (!ApplyPreviewToSharedPrefab(profile, out string applySummary))
             {
                 summary = applySummary;
                 return false;
@@ -124,13 +186,13 @@ namespace TowerDefense.Editor
         public static ValidationResult ValidateFormalLevelIntegration()
         {
             SceneSetup[] originalSetup = EditorSceneManager.GetSceneManagerSetup();
-            List<SceneValidationItem> items = new List<SceneValidationItem>(VictoryResultPageAuthoringPaths.FormalLevelScenePaths.Length);
+            List<SceneValidationItem> items = new List<SceneValidationItem>(ResultPageAuthoringPaths.FormalLevelScenePaths.Length);
 
             try
             {
-                for (int index = 0; index < VictoryResultPageAuthoringPaths.FormalLevelScenePaths.Length; index++)
+                for (int index = 0; index < ResultPageAuthoringPaths.FormalLevelScenePaths.Length; index++)
                 {
-                    string scenePath = VictoryResultPageAuthoringPaths.FormalLevelScenePaths[index];
+                    string scenePath = ResultPageAuthoringPaths.FormalLevelScenePaths[index];
                     items.Add(ValidateSingleFormalScene(scenePath));
                 }
             }
@@ -163,14 +225,14 @@ namespace TowerDefense.Editor
 
                 SerializedObject serializedGame = new SerializedObject(game);
                 SerializedProperty pageReferenceProperty = serializedGame.FindProperty("victoryResultPageViewReference");
-                bool hasSceneLocalVictoryPageReference = pageReferenceProperty != null &&
+                bool hasSceneLocalResultPageReference = pageReferenceProperty != null &&
                                                         pageReferenceProperty.objectReferenceValue != null;
 
                 VictoryResultPageView[] scenePages = scene.GetRootGameObjects()
                     .SelectMany(root => root.GetComponentsInChildren<VictoryResultPageView>(true))
                     .ToArray();
 
-                if (hasSceneLocalVictoryPageReference)
+                if (hasSceneLocalResultPageReference)
                 {
                     return new SceneValidationItem(
                         scenePath,
@@ -189,7 +251,7 @@ namespace TowerDefense.Editor
                 return new SceneValidationItem(
                     scenePath,
                     true,
-                    $"通过：当前关卡会在运行时走共享 prefab {VictoryResultPageAuthoringPaths.SharedPrefabPath}。");
+                    $"通过：当前关卡会在运行时走共享 prefab {ResultPageAuthoringPaths.SharedPrefabPath}。");
             }
             finally
             {
@@ -242,59 +304,92 @@ namespace TowerDefense.Editor
     }
 
     /// <summary>
-    /// Simple editor window for the victory-result authoring workflow.
+    /// Editor window shared by both victory and failure result-page authoring flows.
     ///
-    /// This window intentionally stays small and task-focused:
-    /// - open preview scene
-    /// - apply preview page back to shared prefab
-    /// - verify the formal level scenes still use the shared runtime page
+    /// The surface area intentionally stays small:
+    /// - open the chosen preview scene
+    /// - apply current preview back to the shared prefab
+    /// - check whether formal levels still consume the shared runtime page
     ///
-    /// That keeps it fast to use while still giving the user confidence that one click really does
-    /// reach every level through the shared prefab path.
+    /// We keep the workflow identical between victory and failure so the user does not need to
+    /// learn two different tools for two moods of the same result-page system.
     /// </summary>
-    public sealed class VictoryResultPageAuthoringWindow : EditorWindow
+    public sealed class ResultPageAuthoringWindow : EditorWindow
     {
         private Vector2 _validationScroll;
-        private string _latestSummary = "还没有执行过胜利页同步或检查。";
+        private string _latestSummary = "还没有执行过结果页同步或检查。";
         private MessageType _latestSummaryType = MessageType.Info;
         private string _latestValidationReport = string.Empty;
+        private ResultPageAuthoringProfile _profile = ResultPageAuthoringProfiles.Victory;
 
         [MenuItem("Tools/Tower Defense/Authoring/胜利页同步工具")]
-        public static void OpenWindow()
+        public static void OpenVictoryWindow()
         {
-            VictoryResultPageAuthoringWindow window = GetWindow<VictoryResultPageAuthoringWindow>("胜利页同步");
+            OpenWindow(ResultPageAuthoringProfiles.Victory);
+        }
+
+        [MenuItem("Tools/Tower Defense/Authoring/失败页同步工具")]
+        public static void OpenFailureWindow()
+        {
+            OpenWindow(ResultPageAuthoringProfiles.Failure);
+        }
+
+        [MenuItem("Tools/Tower Defense/Authoring/胜利页/打开预览场景")]
+        public static void OpenVictoryPreviewSceneFromMenu()
+        {
+            ResultPageAuthoringUtility.OpenPreviewScene(ResultPageAuthoringProfiles.Victory);
+        }
+
+        [MenuItem("Tools/Tower Defense/Authoring/失败页/打开预览场景")]
+        public static void OpenFailurePreviewSceneFromMenu()
+        {
+            ResultPageAuthoringUtility.OpenPreviewScene(ResultPageAuthoringProfiles.Failure);
+        }
+
+        [MenuItem("Tools/Tower Defense/Authoring/胜利页/应用预览到共享页面")]
+        public static void ApplyVictoryPreviewToSharedPrefabFromMenu()
+        {
+            ApplyFromMenu(ResultPageAuthoringProfiles.Victory);
+        }
+
+        [MenuItem("Tools/Tower Defense/Authoring/失败页/应用预览到共享页面")]
+        public static void ApplyFailurePreviewToSharedPrefabFromMenu()
+        {
+            ApplyFromMenu(ResultPageAuthoringProfiles.Failure);
+        }
+
+        private static void OpenWindow(ResultPageAuthoringProfile profile)
+        {
+            ResultPageAuthoringWindow window = GetWindow<ResultPageAuthoringWindow>(profile.WindowTitle);
+            window._profile = profile;
             window.minSize = new Vector2(560f, 360f);
             window.Show();
         }
 
-        [MenuItem("Tools/Tower Defense/Authoring/胜利页/打开预览场景")]
-        public static void OpenPreviewSceneFromMenu()
+        private static void ApplyFromMenu(ResultPageAuthoringProfile profile)
         {
-            VictoryResultPageAuthoringUtility.OpenPreviewScene();
-        }
-
-        [MenuItem("Tools/Tower Defense/Authoring/胜利页/应用预览到共享页面")]
-        public static void ApplyPreviewToSharedPrefabFromMenu()
-        {
-            if (VictoryResultPageAuthoringUtility.ApplyPreviewToSharedPrefabWithValidation(
+            if (ResultPageAuthoringUtility.ApplyPreviewToSharedPrefabWithValidation(
+                    profile,
                     out string summary,
                     out ValidationResult validationResult))
             {
-                EditorUtility.DisplayDialog("胜利页同步完成", summary, "确定");
+                EditorUtility.DisplayDialog($"{profile.PageDisplayName}同步完成", summary, "确定");
             }
             else
             {
-                string title = validationResult.Items.Count > 0 ? "胜利页同步完成，但检查发现问题" : "胜利页同步失败";
+                string title = validationResult.Items.Count > 0
+                    ? $"{profile.PageDisplayName}同步完成，但检查发现问题"
+                    : $"{profile.PageDisplayName}同步失败";
                 EditorUtility.DisplayDialog(title, summary, "确定");
             }
         }
 
         private void OnGUI()
         {
-            EditorGUILayout.LabelField("胜利页同步工具", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"{_profile.PageDisplayName}同步工具", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
                 "推荐工作流：\n" +
-                "1. 打开 VictoryResultPreview\n" +
+                $"1. 打开 {_profile.PreviewSceneName}\n" +
                 "2. 直接在场景里调整正式 VictoryResultPage\n" +
                 "3. 点击“一键应用到所有关卡”\n" +
                 "4. 如有需要，再点击“检查正式关卡共享接入”确认所有关卡仍然走共享页面",
@@ -304,12 +399,13 @@ namespace TowerDefense.Editor
             {
                 if (GUILayout.Button("打开预览场景", GUILayout.Height(28f)))
                 {
-                    VictoryResultPageAuthoringUtility.OpenPreviewScene();
+                    ResultPageAuthoringUtility.OpenPreviewScene(_profile);
                 }
 
                 if (GUILayout.Button("一键应用到所有关卡", GUILayout.Height(28f)))
                 {
-                    if (VictoryResultPageAuthoringUtility.ApplyPreviewToSharedPrefabWithValidation(
+                    if (ResultPageAuthoringUtility.ApplyPreviewToSharedPrefabWithValidation(
+                            _profile,
                             out string summary,
                             out ValidationResult validationResult))
                     {
@@ -328,7 +424,7 @@ namespace TowerDefense.Editor
 
             if (GUILayout.Button("检查正式关卡共享接入", GUILayout.Height(24f)))
             {
-                ValidationResult validationResult = VictoryResultPageAuthoringUtility.ValidateFormalLevelIntegration();
+                ValidationResult validationResult = ResultPageAuthoringUtility.ValidateFormalLevelIntegration();
                 _latestSummary = validationResult.OverallSummary;
                 _latestSummaryType = validationResult.HasFailures ? MessageType.Warning : MessageType.Info;
                 _latestValidationReport = validationResult.BuildDetailedReport();
@@ -351,10 +447,11 @@ namespace TowerDefense.Editor
     }
 
     /// <summary>
-    /// Convenience inspector so the user can stay inside the preview scene and click one button.
+    /// Inspector shortcut so the user can stay inside either preview scene and still get a one-click
+    /// "apply current preview" experience.
     ///
-    /// The window remains the richer workflow surface, but this inspector shortcut removes the
-    /// mental overhead of having to re-open another tool while adjusting the page.
+    /// The same preview controller component is reused in both scenes, so the inspector resolves
+    /// which workflow the user wants based on the active scene path.
     /// </summary>
     [CustomEditor(typeof(VictoryResultPreviewController))]
     public sealed class VictoryResultPreviewControllerEditor : UnityEditor.Editor
@@ -363,31 +460,48 @@ namespace TowerDefense.Editor
         {
             DrawDefaultInspector();
 
+            ResultPageAuthoringProfile profile = ResultPageAuthoringProfiles.ResolveFromScenePath(SceneManager.GetActiveScene().path);
+
             EditorGUILayout.Space(10f);
             EditorGUILayout.HelpBox(
-                "这个预览场景现在直接复用正式 VictoryResultPage.prefab。\n" +
-                "你在这里调完后，点击下面这个按钮就会把当前页面一键应用回共享 prefab。",
+                $"这个预览场景现在直接复用正式 {ResultPageAuthoringPaths.SharedPrefabPath}。\n" +
+                $"你在这里调完 {_profileLabel(profile)} 后，点击下面这个按钮就会把当前页面一键应用回共享 prefab。",
                 MessageType.Info);
 
             if (GUILayout.Button("应用当前预览到所有关卡", GUILayout.Height(28f)))
             {
-                if (VictoryResultPageAuthoringUtility.ApplyPreviewToSharedPrefabWithValidation(
+                if (ResultPageAuthoringUtility.ApplyPreviewToSharedPrefabWithValidation(
+                        profile,
                         out string summary,
                         out ValidationResult validationResult))
                 {
-                    EditorUtility.DisplayDialog("胜利页同步完成", summary, "确定");
+                    EditorUtility.DisplayDialog($"{profile.PageDisplayName}同步完成", summary, "确定");
                 }
                 else
                 {
-                    string title = validationResult.Items.Count > 0 ? "胜利页同步完成，但检查发现问题" : "胜利页同步失败";
+                    string title = validationResult.Items.Count > 0
+                        ? $"{profile.PageDisplayName}同步完成，但检查发现问题"
+                        : $"{profile.PageDisplayName}同步失败";
                     EditorUtility.DisplayDialog(title, summary, "确定");
                 }
             }
 
-            if (GUILayout.Button("打开胜利页同步工具", GUILayout.Height(22f)))
+            if (GUILayout.Button($"打开{profile.PageDisplayName}同步工具", GUILayout.Height(22f)))
             {
-                VictoryResultPageAuthoringWindow.OpenWindow();
+                if (profile.PageDisplayName == ResultPageAuthoringProfiles.Failure.PageDisplayName)
+                {
+                    ResultPageAuthoringWindow.OpenFailureWindow();
+                }
+                else
+                {
+                    ResultPageAuthoringWindow.OpenVictoryWindow();
+                }
             }
+        }
+
+        private static string _profileLabel(ResultPageAuthoringProfile profile)
+        {
+            return string.IsNullOrWhiteSpace(profile.PageDisplayName) ? "结果页" : profile.PageDisplayName;
         }
     }
 

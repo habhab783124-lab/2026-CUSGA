@@ -159,6 +159,13 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private Vector2 initialPlacementSquareCenter = new Vector2(-6.5f, -2.25f);
     [SerializeField] private float initialPlacementSquareSize = 3f;
 
+    [Header("Placement Grid")]
+    [SerializeField] private float placementGridCellSize = 0.5f;
+    [SerializeField] private Vector2 placementGridOrigin;
+    [SerializeField] private bool snapPlacementToCellCenter = true;
+    [SerializeField] private Vector2Int relayFootprintCells = new Vector2Int(2, 2);
+    [SerializeField] private Vector2Int defenseFootprintCells = new Vector2Int(2, 2);
+
     [Header("Placement Preview")]
     [SerializeField] private Color validPreviewColor = new Color(0.26f, 0.95f, 0.78f, 0.72f);
     [SerializeField] private Color invalidPreviewColor = new Color(1f, 0.32f, 0.38f, 0.72f);
@@ -259,12 +266,14 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private Transform placedTowerRootReference;
     [SerializeField] private Transform placementPreviewRootReference;
     [SerializeField] private BuildZone buildZoneReference;
+    [SerializeField] private PlacementGrid placementGridReference;
     [SerializeField] private BattlefieldMapDefinition battlefieldMapReference;
 
     [Header("Scene Object Names")]
     [SerializeField] private string placedTowerRootName = "PlacedTowers";
     [SerializeField] private string placementPreviewRootName = "PlacementPreviewRoot";
     [SerializeField] private string buildZoneName = "BuildZone";
+    [SerializeField] private string placementGridName = "PlacementGrid";
 
     [Header("HUD References (Preferred)")]
 
@@ -304,6 +313,7 @@ public class TowerDefenseGame : MonoBehaviour
     private GameObject _bombardTowerPrototype;
     private Camera _mainCamera;
     private BuildZone _buildZone;
+    private PlacementGrid _placementGrid;
     private BattlefieldMapDefinition _battlefieldMapDefinition;
     private Transform _placedTowerRoot;
     private Transform _placementPreviewRoot;
@@ -589,6 +599,16 @@ public class TowerDefenseGame : MonoBehaviour
         }
 
         HandleLevelClearContinueInputFromUi();
+    }
+
+    public void RetryAfterFailurePresentation()
+    {
+        if (!IsGameOver || _gameOverRestartTriggered)
+        {
+            return;
+        }
+
+        RestartCurrentScene();
     }
 
     public void ShowTransientHudNotice(string message, float duration = 2.5f, HudNoticeTone tone = HudNoticeTone.Auto)
@@ -892,6 +912,7 @@ public class TowerDefenseGame : MonoBehaviour
             placementVisualControllerQuery: () => _placementVisualController,
             placedTowerRootQuery: () => _placedTowerRoot != null ? _placedTowerRoot : placedTowerRootReference,
             buildZoneQuery: () => _buildZone != null ? _buildZone : buildZoneReference,
+            placementGridQuery: () => _placementGrid != null ? _placementGrid : placementGridReference,
             relayTowerPrototypeQuery: () => _relayTowerPrototype,
             singleTargetTowerPrototypeQuery: () => _singleTargetTowerPrototype,
             slowFieldTowerPrototypeQuery: () => _slowFieldTowerPrototype,
@@ -923,7 +944,7 @@ public class TowerDefenseGame : MonoBehaviour
             getPrototype: GetPrototype,
             getTowerDisplayName: GetTowerDisplayName,
             screenToWorldPosition: screenPosition => _inputCoordinator != null
-                ? _inputCoordinator.ScreenToWorldPosition(screenPosition)
+                ? SnapPlacementWorldPosition(_inputCoordinator.ScreenToWorldPosition(screenPosition))
                 : Vector3.zero,
             validatePlacementPosition: ValidatePlacementPosition,
             getPlacementOverlayWorldBounds: GetPlacementOverlayWorldBounds,
@@ -943,6 +964,7 @@ public class TowerDefenseGame : MonoBehaviour
             getPrototype: GetPrototype,
             getPlacedTowerRoot: () => _placedTowerRoot,
             getPlacementRadius: GetPlacementRadius,
+            snapPlacementWorldPosition: SnapPlacementWorldPosition,
             validatePlacementPosition: ValidatePlacementPosition,
             registerPlacedStructure: (structureObject, towerType) => _powerGridCoordinator?.RegisterPlacedStructure(structureObject, towerType),
             invalidatePlacementAreaOverlayCache: InvalidatePlacementAreaOverlayCache,
@@ -1332,7 +1354,7 @@ public class TowerDefenseGame : MonoBehaviour
         _gameOverRestartTriggered = false;
         _gameOverRestartAllowedAtUnscaledTime = Time.unscaledTime + Mathf.Max(0f, gameOverRestartClickDelaySeconds);
         Time.timeScale = 0f;
-        _presentationCoordinator?.ShowGameOver();
+        ShowFormalGameOverPresentation();
     }
 
     /// <summary>
@@ -1517,7 +1539,19 @@ public class TowerDefenseGame : MonoBehaviour
     private bool TryPlaceTowerAt(Vector3 worldPosition, TowerType towerType, BuildPad ownerPad = null)
     {
         return _placementBuildExecutor != null &&
-               _placementBuildExecutor.TryPlaceTowerAt(worldPosition, towerType, ownerPad);
+               _placementBuildExecutor.TryPlaceTowerAt(SnapPlacementWorldPosition(worldPosition), towerType, ownerPad);
+    }
+
+    /// <summary>
+    /// 所有“玩家想在这里建”的世界坐标都先经过这一层。
+    ///
+    /// 这样拖拽、快速点击和旧 BuildPad 兼容入口都会使用同一套格子锚点，
+    /// 避免出现“预览看起来在格子上，真正落塔却落在鼠标原点”的错位。
+    /// </summary>
+    private Vector3 SnapPlacementWorldPosition(Vector3 worldPosition)
+    {
+        PlacementGrid placementGrid = _placementGrid != null ? _placementGrid : placementGridReference;
+        return placementGrid != null ? placementGrid.SnapWorldPosition(worldPosition) : worldPosition;
     }
 
     /// <summary>
@@ -1642,6 +1676,18 @@ public class TowerDefenseGame : MonoBehaviour
     private float GetExpansionSquareSize(TowerType towerType)
     {
         return _placementSupportCoordinator != null ? _placementSupportCoordinator.GetExpansionSquareSize(towerType) : 4.5f;
+    }
+
+    /// <summary>
+    /// 给 Scene Gizmo 和后续编辑器工具读取当前建筑周边禁建方形大小。
+    ///
+    /// 它本质上复用现有的 `ExpansionSquareSize` 配置：
+    /// - 旧名字暂时保留，避免破坏现有场景序列化数据
+    /// - 新语义是“已放置建筑周围生成多大的方形禁建格”
+    /// </summary>
+    public float GetPlacementNoBuildSquareSize(TowerType towerType)
+    {
+        return GetExpansionSquareSize(towerType);
     }
 
     /// <summary>
@@ -1778,6 +1824,13 @@ public class TowerDefenseGame : MonoBehaviour
             placementPreviewRootName,
             buildZoneReference,
             buildZoneName,
+            placementGridReference,
+            placementGridName,
+            placementGridCellSize,
+            placementGridOrigin,
+            snapPlacementToCellCenter,
+            relayFootprintCells,
+            defenseFootprintCells,
             new TowerDefenseHudSceneReferences(
                 scrapTextReference,
                 baseHealthTextReference,
@@ -1803,6 +1856,7 @@ public class TowerDefenseGame : MonoBehaviour
         _slowFieldTowerPrototype = bootstrapResult.SlowFieldTowerPrototype;
         _bombardTowerPrototype = bootstrapResult.BombardTowerPrototype;
         _buildZone = bootstrapResult.BuildZone;
+        _placementGrid = bootstrapResult.PlacementGrid;
         _placedTowerRoot = bootstrapResult.PlacedTowerRoot;
         _placementPreviewRoot = bootstrapResult.PlacementPreviewRoot;
         _battlefieldMapDefinition = battlefieldMapReference != null ? battlefieldMapReference : FindFirstObjectByType<BattlefieldMapDefinition>();
@@ -1811,6 +1865,7 @@ public class TowerDefenseGame : MonoBehaviour
 
         mainCameraReference = _mainCamera;
         buildZoneReference = _buildZone;
+        placementGridReference = _placementGrid;
         singleTargetTowerPrototypeReference = _singleTargetTowerPrototype;
         slowFieldTowerPrototypeReference = _slowFieldTowerPrototype;
         bombardTowerPrototypeReference = _bombardTowerPrototype;
@@ -1835,7 +1890,6 @@ public class TowerDefenseGame : MonoBehaviour
     {
         if (victoryResultPageViewReference != null)
         {
-            victoryResultPageViewReference.BindContinueAction(ContinueAfterVictoryPresentation);
             return;
         }
 
@@ -1843,7 +1897,6 @@ public class TowerDefenseGame : MonoBehaviour
         if (existingView != null)
         {
             victoryResultPageViewReference = existingView;
-            victoryResultPageViewReference.BindContinueAction(ContinueAfterVictoryPresentation);
             victoryResultPageViewReference.Hide();
             return;
         }
@@ -1868,7 +1921,6 @@ public class TowerDefenseGame : MonoBehaviour
             instantiatedView = instantiatedRoot.AddComponent<VictoryResultPageView>();
         }
 
-        instantiatedView.BindContinueAction(ContinueAfterVictoryPresentation);
         instantiatedView.Hide();
         victoryResultPageViewReference = instantiatedView;
     }
@@ -1878,6 +1930,7 @@ public class TowerDefenseGame : MonoBehaviour
         EnsureVictoryResultPageView();
         if (victoryResultPageViewReference != null)
         {
+            victoryResultPageViewReference.BindContinueAction(ContinueAfterVictoryPresentation);
             VictoryResultPageContent content = BuildVictoryResultPageContent();
             victoryResultPageViewReference.Show(content);
             _presentationCoordinator?.ShowVictorySummaryOnly();
@@ -1885,6 +1938,21 @@ public class TowerDefenseGame : MonoBehaviour
         }
 
         _presentationCoordinator?.ShowVictory();
+    }
+
+    private void ShowFormalGameOverPresentation()
+    {
+        EnsureVictoryResultPageView();
+        if (victoryResultPageViewReference != null)
+        {
+            victoryResultPageViewReference.BindContinueAction(RetryAfterFailurePresentation);
+            VictoryResultPageContent content = BuildFailureResultPageContent();
+            victoryResultPageViewReference.Show(content);
+            _presentationCoordinator?.ShowGameOverSummaryOnly();
+            return;
+        }
+
+        _presentationCoordinator?.ShowGameOver();
     }
 
     private VictoryResultPageContent BuildVictoryResultPageContent()
@@ -1900,6 +1968,7 @@ public class TowerDefenseGame : MonoBehaviour
             : "守得很好，虽然代价不小，但防线仍在我们手里。";
 
         return new VictoryResultPageContent(
+            tone: VictoryResultPageView.ResultPageTone.Victory,
             signalTitle: "指挥链路接通",
             signalStatus: "战区信号稳定",
             signalChannel: "HOLO-LINK / FRONT 02",
@@ -1915,6 +1984,37 @@ public class TowerDefenseGame : MonoBehaviour
             dialogueText: commanderLine + "\n前线已经稳定，准备接收下一阶段指令。",
             continueButtonText: "继续汇报",
             continueHintText: "同步完成后可继续推进剧情");
+    }
+
+    private VictoryResultPageContent BuildFailureResultPageContent()
+    {
+        int currentBaseHealth = _sessionState != null ? _sessionState.CurrentBaseHealth : 0;
+        int startingBase = Mathf.Max(1, startingBaseHealth);
+        int integrityPercent = Mathf.RoundToInt((currentBaseHealth / (float)startingBase) * 100f);
+        int currentScrap = _sessionState != null ? _sessionState.CurrentScrap : 0;
+        int currentWave = _sessionState != null ? _sessionState.CurrentWave : 0;
+        int totalWaves = _sessionState != null ? _sessionState.TotalWaves : 0;
+        string commanderLine = integrityPercent <= 0
+            ? "核心防区已经失守，我们丢掉了整条前线。"
+            : "敌军已经撕开防线，当前部署没能把战区稳住。";
+
+        return new VictoryResultPageContent(
+            tone: VictoryResultPageView.ResultPageTone.Failure,
+            signalTitle: "指挥链路震荡",
+            signalStatus: "战区失稳 / 核心告警",
+            signalChannel: "DISTRESS // CORE BREACH",
+            title: "防线崩溃",
+            subtitle: "失利全息警报已锁定",
+            reportHeader: "战损断面",
+            integrityRow: $"基地完整度：{Mathf.Clamp(integrityPercent, 0, 999)}%",
+            scrapRow: $"残余废料：{currentScrap}",
+            eventRow: $"战损焦点：第 {Mathf.Max(1, currentWave)} 波撕开防线，核心节点失守，当前进度 {currentWave}/{Mathf.Max(1, totalWaves)}。",
+            footerHint: "立即重组部署序列",
+            commanderName: "指挥官",
+            commanderCodename: "前线总控 / C-07",
+            dialogueText: commanderLine + "\n放弃旧部署思路，立刻重算塔位、供电和火力覆盖，马上回到战区。",
+            continueButtonText: "紧急重部署",
+            continueHintText: "点击按钮或任意位置，立即回到当前关卡");
     }
 
     /// <summary>

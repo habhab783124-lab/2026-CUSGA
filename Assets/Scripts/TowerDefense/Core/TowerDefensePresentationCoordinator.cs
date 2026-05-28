@@ -157,6 +157,17 @@ public sealed class TowerDefensePresentationCoordinator
     }
 
     /// <summary>
+    /// 当正式失败页 prefab 接管展示时，
+    /// 表现协调层只负责隐藏旧 HUD / 旧结果面板并保留失败状态消息。
+    /// </summary>
+    public void ShowGameOverSummaryOnly()
+    {
+        _hudPresenter?.HideAllGameplayPresentationForSceneTransition();
+        SetStatusMessage("Base integrity depleted. Redeploy and stabilize the front.");
+        RefreshHud();
+    }
+
+    /// <summary>
     /// 关卡胜利后先停在结果界面，
     /// 等玩家确认后再切到下一段剧情。
     ///

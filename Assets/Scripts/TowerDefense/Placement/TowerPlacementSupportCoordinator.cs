@@ -45,6 +45,16 @@ public sealed class TowerPlacementSupportCoordinator
         public Bounds Bounds { get; }
     }
 
+    private readonly struct PlacedStructureNoBuildArea
+    {
+        public PlacedStructureNoBuildArea(Bounds worldBounds)
+        {
+            WorldBounds = worldBounds;
+        }
+
+        public Bounds WorldBounds { get; }
+    }
+
     public delegate bool PlacementValidator(Vector3 worldPosition, TowerType towerType, out string invalidReason);
 
     private readonly Vector2 _initialPlacementSquareCenter;
@@ -56,6 +66,7 @@ public sealed class TowerPlacementSupportCoordinator
     private readonly Func<TowerPlacementVisualController> _placementVisualControllerQuery;
     private readonly Func<Transform> _placedTowerRootQuery;
     private readonly Func<BuildZone> _buildZoneQuery;
+    private readonly Func<PlacementGrid> _placementGridQuery;
     private readonly Func<GameObject> _relayTowerPrototypeQuery;
     private readonly Func<GameObject> _singleTargetTowerPrototypeQuery;
     private readonly Func<GameObject> _slowFieldTowerPrototypeQuery;
@@ -65,6 +76,7 @@ public sealed class TowerPlacementSupportCoordinator
     private readonly Action<string> _logPlacementDiagnostic;
     private readonly Dictionary<TowerType, float> _placementRadiusCache = new Dictionary<TowerType, float>(4);
     private readonly Dictionary<TowerType, Vector2> _placementCenterOffsetCache = new Dictionary<TowerType, Vector2>(4);
+    private PlacementStaticMask _staticPlacementMask;
 
     public TowerPlacementSupportCoordinator(
         Vector2 initialPlacementSquareCenter,
@@ -76,6 +88,7 @@ public sealed class TowerPlacementSupportCoordinator
         Func<TowerPlacementVisualController> placementVisualControllerQuery,
         Func<Transform> placedTowerRootQuery,
         Func<BuildZone> buildZoneQuery,
+        Func<PlacementGrid> placementGridQuery,
         Func<GameObject> relayTowerPrototypeQuery,
         Func<GameObject> singleTargetTowerPrototypeQuery,
         Func<GameObject> slowFieldTowerPrototypeQuery,
@@ -93,6 +106,7 @@ public sealed class TowerPlacementSupportCoordinator
         _placementVisualControllerQuery = placementVisualControllerQuery;
         _placedTowerRootQuery = placedTowerRootQuery;
         _buildZoneQuery = buildZoneQuery;
+        _placementGridQuery = placementGridQuery;
         _relayTowerPrototypeQuery = relayTowerPrototypeQuery;
         _singleTargetTowerPrototypeQuery = singleTargetTowerPrototypeQuery;
         _slowFieldTowerPrototypeQuery = slowFieldTowerPrototypeQuery;
@@ -116,7 +130,17 @@ public sealed class TowerPlacementSupportCoordinator
 
         _placementRadiusCache.Clear();
         _placementCenterOffsetCache.Clear();
-        placementRules.BindSceneReferences(_buildZoneQuery != null ? _buildZoneQuery() : null, _placedTowerRootQuery != null ? _placedTowerRootQuery() : null);
+        BuildZone buildZone = _buildZoneQuery != null ? _buildZoneQuery() : null;
+        PlacementGrid placementGrid = _placementGridQuery != null ? _placementGridQuery() : null;
+
+        // 第二阶段开始，这里会优先读取场景里已经 Bake 好的静态遮罩；
+        // 只有缺少 Bake 数据时，才退回第一阶段的运行时现算。
+        _staticPlacementMask = PlacementStaticMask.Build(buildZone, placementGrid, _logPlacementDiagnostic);
+        placementRules.BindSceneReferences(
+            buildZone,
+            placementGrid,
+            _staticPlacementMask,
+            _placedTowerRootQuery != null ? _placedTowerRootQuery() : null);
     }
 
     /// <summary>
@@ -413,14 +437,26 @@ public sealed class TowerPlacementSupportCoordinator
     public Func<Vector3, bool> BuildPlacementOverlayValidator(TowerType towerType)
     {
         BuildZone buildZone = _buildZoneQuery != null ? _buildZoneQuery() : null;
+        PlacementGrid placementGrid = _placementGridQuery != null ? _placementGridQuery() : null;
         List<PlacementBlockerShape> blockerShapes = CollectPlacementBlockerShapes();
         List<PlacedStructureFootprint> placedStructureFootprints = CollectPlacedStructureFootprints();
+        List<PlacedStructureNoBuildArea> placedStructureNoBuildAreas = CollectPlacedStructureNoBuildAreas(placementGrid);
         List<RelayTower> relays = CollectPlacedRelays();
         float placementRadius = GetPlacementRadius(towerType);
 
         return worldPosition =>
         {
-            if (buildZone == null || !buildZone.ContainsPoint(worldPosition))
+            if (buildZone == null)
+            {
+                return false;
+            }
+
+            if (placementGrid != null)
+            {
+                return ValidateGridOverlayPoint(worldPosition, towerType, buildZone, blockerShapes, placedStructureNoBuildAreas, relays);
+            }
+
+            if (!buildZone.ContainsPoint(worldPosition))
             {
                 return false;
             }
@@ -464,9 +500,47 @@ public sealed class TowerPlacementSupportCoordinator
         };
     }
 
+    private bool ValidateGridOverlayPoint(
+        Vector3 worldPosition,
+        TowerType towerType,
+        BuildZone buildZone,
+        List<PlacementBlockerShape> blockerShapes,
+        List<PlacedStructureNoBuildArea> placedStructureNoBuildAreas,
+        List<RelayTower> relays)
+    {
+        // 覆盖层要和 Scene 作者化禁建区完全对齐，所以这里直接读作者画的碰撞体。
+        // 最终落塔判定仍然走 PlacementStaticMask + footprint，保证玩法规则不被显示层改掉。
+        if (!buildZone.ContainsPoint(worldPosition))
+        {
+            return false;
+        }
+
+        if (IsBlockedByAnyPlacementBlocker(worldPosition, blockerShapes))
+        {
+            return false;
+        }
+
+        if (TowerTypeUtility.IsCombatTower(towerType) && !IsInsideAnyRelayCoverageSquare(worldPosition, relays))
+        {
+            return false;
+        }
+
+        for (int i = 0; i < placedStructureNoBuildAreas.Count; i++)
+        {
+            if (IsInsideBounds2D(placedStructureNoBuildAreas[i].WorldBounds, worldPosition))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     private List<PlacementBlockerShape> CollectPlacementBlockerShapes()
     {
         List<PlacementBlockerShape> shapes = new List<PlacementBlockerShape>(16);
+        HashSet<Collider2D> uniqueColliders = new HashSet<Collider2D>();
+
         PlacementBlocker[] blockers = UnityEngine.Object.FindObjectsByType<PlacementBlocker>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         for (int i = 0; i < blockers.Length; i++)
         {
@@ -482,10 +556,37 @@ public sealed class TowerPlacementSupportCoordinator
                 continue;
             }
 
-            shapes.Add(new PlacementBlockerShape(blockerCollider));
+            if (uniqueColliders.Add(blockerCollider))
+            {
+                shapes.Add(new PlacementBlockerShape(blockerCollider));
+            }
+        }
+
+        Collider2D[] sceneColliders = UnityEngine.Object.FindObjectsByType<Collider2D>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        for (int i = 0; i < sceneColliders.Length; i++)
+        {
+            Collider2D collider = sceneColliders[i];
+            if (!IsPathSurfaceCollider(collider))
+            {
+                continue;
+            }
+
+            if (uniqueColliders.Add(collider))
+            {
+                shapes.Add(new PlacementBlockerShape(collider));
+            }
         }
 
         return shapes;
+    }
+
+    private static bool IsPathSurfaceCollider(Collider2D collider)
+    {
+        return collider != null
+            && collider.enabled
+            && collider.gameObject != null
+            && collider.gameObject.activeInHierarchy
+            && collider.gameObject.name.StartsWith("PathSegment_", StringComparison.Ordinal);
     }
 
     private List<PlacedStructureFootprint> CollectPlacedStructureFootprints()
@@ -531,6 +632,64 @@ public sealed class TowerPlacementSupportCoordinator
         return footprints;
     }
 
+    private List<PlacedStructureNoBuildArea> CollectPlacedStructureNoBuildAreas(PlacementGrid placementGrid)
+    {
+        List<PlacedStructureNoBuildArea> blockedCellRanges = new List<PlacedStructureNoBuildArea>(16);
+        if (placementGrid == null)
+        {
+            return blockedCellRanges;
+        }
+
+        Transform placedTowerRoot = _placedTowerRootQuery != null ? _placedTowerRootQuery() : null;
+        if (placedTowerRoot == null)
+        {
+            return blockedCellRanges;
+        }
+
+        for (int childIndex = 0; childIndex < placedTowerRoot.childCount; childIndex++)
+        {
+            Transform child = placedTowerRoot.GetChild(childIndex);
+            if (child == null || !child.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (!TryResolvePlacedStructureType(child, out TowerType towerType))
+            {
+                continue;
+            }
+
+            BoundsInt noBuildCells = placementGrid.GetNoBuildCells(child.position, towerType, GetExpansionSquareSize(towerType));
+            blockedCellRanges.Add(new PlacedStructureNoBuildArea(placementGrid.GetWorldBounds(noBuildCells)));
+        }
+
+        return blockedCellRanges;
+    }
+
+    private static bool TryResolvePlacedStructureType(Transform placedStructure, out TowerType towerType)
+    {
+        towerType = TowerType.None;
+        if (placedStructure == null)
+        {
+            return false;
+        }
+
+        if (placedStructure.GetComponent<RelayTower>() != null)
+        {
+            towerType = TowerType.Relay;
+            return true;
+        }
+
+        DefenseTower defenseTower = placedStructure.GetComponent<DefenseTower>();
+        if (defenseTower != null)
+        {
+            towerType = defenseTower.BuildType;
+            return true;
+        }
+
+        return false;
+    }
+
     private List<RelayTower> CollectPlacedRelays()
     {
         List<RelayTower> relays = new List<RelayTower>(8);
@@ -564,6 +723,30 @@ public sealed class TowerPlacementSupportCoordinator
             && point.x <= bounds.max.x
             && point.y >= bounds.min.y
             && point.y <= bounds.max.y;
+    }
+
+    private static bool IsBlockedByAnyPlacementBlocker(Vector3 worldPosition, List<PlacementBlockerShape> blockerShapes)
+    {
+        for (int blockerIndex = 0; blockerIndex < blockerShapes.Count; blockerIndex++)
+        {
+            PlacementBlockerShape blockerShape = blockerShapes[blockerIndex];
+            if (blockerShape.Collider == null)
+            {
+                continue;
+            }
+
+            if (!IsInsideBounds2D(blockerShape.Bounds, worldPosition))
+            {
+                continue;
+            }
+
+            if (blockerShape.Collider.OverlapPoint(worldPosition))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool IsInsideAnyRelayCoverageSquare(Vector3 worldPosition, List<RelayTower> relays)

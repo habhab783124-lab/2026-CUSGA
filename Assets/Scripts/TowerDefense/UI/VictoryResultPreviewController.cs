@@ -26,6 +26,7 @@ public sealed class VictoryResultPreviewController : MonoBehaviour
     private const string PreviewPrefabResourcePath = "TowerDefense/UI/VictoryResultPage";
 
     [Header("Preview Copy")]
+    [SerializeField] private VictoryResultPageView.ResultPageTone previewTone = VictoryResultPageView.ResultPageTone.Victory;
     [SerializeField] private string signalTitle = "指挥链路接通";
     [SerializeField] private string signalStatus = "战区信号稳定";
     [SerializeField] private string signalChannel = "HOLO-LINK / FRONT 02";
@@ -221,6 +222,7 @@ public sealed class VictoryResultPreviewController : MonoBehaviour
     private VictoryResultPageContent BuildPreviewContent()
     {
         return new VictoryResultPageContent(
+            tone: previewTone,
             signalTitle: signalTitle,
             signalStatus: signalStatus,
             signalChannel: signalChannel,
