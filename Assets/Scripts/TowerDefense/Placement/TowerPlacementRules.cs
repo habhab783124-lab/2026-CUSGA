@@ -27,6 +27,8 @@ public sealed class TowerPlacementRules
     private readonly Collider2D[] _placementValidationOverlapBuffer = new Collider2D[64];
 
     private BuildZone _buildZone;
+    private PlacementGrid _placementGrid;
+    private PlacementStaticMask _staticPlacementMask;
     private Transform _placedTowerRoot;
 
     public TowerPlacementRules(
@@ -44,9 +46,11 @@ public sealed class TowerPlacementRules
     ///
     /// 这里不做任何场景查找，就是为了避免规则组件再次滑回到“名字查找 + 隐式依赖”的旧路。
     /// </summary>
-    public void BindSceneReferences(BuildZone buildZone, Transform placedTowerRoot)
+    public void BindSceneReferences(BuildZone buildZone, PlacementGrid placementGrid, PlacementStaticMask staticPlacementMask, Transform placedTowerRoot)
     {
         _buildZone = buildZone;
+        _placementGrid = placementGrid;
+        _staticPlacementMask = staticPlacementMask;
         _placedTowerRoot = placedTowerRoot;
     }
 
@@ -85,6 +89,16 @@ public sealed class TowerPlacementRules
         {
             invalidReason = "No BuildZone is configured in this level.";
             return false;
+        }
+
+        if (_placementGrid != null && _placementGrid.SnapPlacementToCellCenter)
+        {
+            worldPosition = _placementGrid.SnapWorldPosition(worldPosition);
+        }
+
+        if (_placementGrid != null)
+        {
+            return ValidateGridPlacementPosition(worldPosition, towerType, shouldIgnoreTransform, out invalidReason);
         }
 
         if (!_buildZone.ContainsPoint(worldPosition))
@@ -129,6 +143,164 @@ public sealed class TowerPlacementRules
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// 新版格子放置判定入口。
+    ///
+    /// 规则参考《魔兽争霸 3》这类 RTS 建筑放置方式：
+    /// - 建筑不再只看一个点或一个圆形碰撞体
+    /// - 建筑会占用一组小格子
+    /// - 建筑周围还会生成一圈可配置的正方形禁建格
+    /// - 新建筑的占用格不能碰到已有建筑的占用格或禁建格
+    ///
+    /// 这套规则仍然复用当前场景里的 BuildZone / PlacementBlocker，
+    /// 因为它们已经是项目里“哪里是空地、哪里是路径/障碍”的作者化来源。
+    /// </summary>
+    private bool ValidateGridPlacementPosition(
+        Vector3 worldPosition,
+        TowerType towerType,
+        Func<Transform, bool> shouldIgnoreTransform,
+        out string invalidReason)
+    {
+        invalidReason = string.Empty;
+
+        BoundsInt footprintCells = _placementGrid.GetFootprintCells(worldPosition, towerType);
+        if (!AreFootprintCellsBuildable(footprintCells, out invalidReason))
+        {
+            return false;
+        }
+
+        if (OverlapsExistingStructureGrid(footprintCells, shouldIgnoreTransform, out invalidReason))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool AreFootprintCellsBuildable(BoundsInt footprintCells, out string invalidReason)
+    {
+        invalidReason = string.Empty;
+
+        if (_staticPlacementMask != null)
+        {
+            Bounds footprintWorldBounds = _placementGrid.GetWorldBounds(footprintCells);
+            if (_staticPlacementMask.TryGetFirstBlockingSample(
+                    footprintWorldBounds,
+                    out Vector3 blockingSample,
+                    out PlacementStaticMaskBlockReason blockingReason))
+            {
+                if (blockingReason == PlacementStaticMaskBlockReason.PlacementBlocker &&
+                    TryGetBlockerAtPoint(blockingSample, out PlacementBlocker blocker))
+                {
+                    invalidReason = blocker != null ? blocker.BlockerReason : "This grid cell is blocked.";
+                }
+                else
+                {
+                    invalidReason = "Building footprint must stay inside buildable ground.";
+                }
+
+                return false;
+            }
+
+            return true;
+        }
+
+        for (int x = footprintCells.xMin; x < footprintCells.xMax; x++)
+        {
+            for (int y = footprintCells.yMin; y < footprintCells.yMax; y++)
+            {
+                Vector2 cellCenter = _placementGrid.CellToWorldCenter(new Vector2Int(x, y));
+                Vector3 samplePosition = new Vector3(cellCenter.x, cellCenter.y, 0f);
+
+                if (!_buildZone.ContainsPoint(samplePosition))
+                {
+                    invalidReason = "Building footprint must stay inside buildable ground.";
+                    return false;
+                }
+
+                if (TryGetBlockerAtPoint(samplePosition, out PlacementBlocker blocker))
+                {
+                    invalidReason = blocker != null ? blocker.BlockerReason : "This grid cell is blocked.";
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private bool OverlapsExistingStructureGrid(
+        BoundsInt candidateFootprintCells,
+        Func<Transform, bool> shouldIgnoreTransform,
+        out string invalidReason)
+    {
+        invalidReason = string.Empty;
+
+        if (_placedTowerRoot == null)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < _placedTowerRoot.childCount; i++)
+        {
+            Transform placedTower = _placedTowerRoot.GetChild(i);
+            if (placedTower == null || !placedTower.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            if (shouldIgnoreTransform != null && shouldIgnoreTransform(placedTower))
+            {
+                continue;
+            }
+
+            if (!TryGetPlacedTowerType(placedTower, out TowerType placedTowerType))
+            {
+                continue;
+            }
+
+            BoundsInt placedNoBuildCells = _placementGrid.GetNoBuildCells(
+                placedTower.position,
+                placedTowerType,
+                ResolveNoBuildSquareSize(placedTowerType));
+            if (PlacementGrid.Overlaps(candidateFootprintCells, placedNoBuildCells))
+            {
+                invalidReason = "Too close to another structure. Move it outside the blocked grid.";
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private float ResolveNoBuildSquareSize(TowerType towerType)
+    {
+        float configuredSize = _getExpansionSquareSize != null ? _getExpansionSquareSize(towerType) : 0f;
+        return Mathf.Max(_placementGrid != null ? _placementGrid.CellSize : 0.05f, configuredSize);
+    }
+
+    private bool TryGetBlockerAtPoint(Vector3 worldPosition, out PlacementBlocker blocker)
+    {
+        int overlapCount = Physics2D.OverlapPointNonAlloc(worldPosition, _placementValidationOverlapBuffer);
+        for (int i = 0; i < overlapCount; i++)
+        {
+            Collider2D overlap = _placementValidationOverlapBuffer[i];
+            if (overlap == null)
+            {
+                continue;
+            }
+
+            blocker = overlap.GetComponentInParent<PlacementBlocker>();
+            if (blocker != null)
+            {
+                return true;
+            }
+        }
+
+        blocker = null;
+        return false;
     }
 
     /// <summary>

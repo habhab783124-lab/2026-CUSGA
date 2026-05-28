@@ -364,7 +364,15 @@ public class StoryNpcWalkIntro2D : MonoBehaviour
         }
 
         transitionQueued = true;
-        ScreenFadeTransition.Play(nextSceneName, fadeOutToBlackDuration, fadeInFromBlackDuration, startOpaque: false);
+        if (!CampaignFlowController.AdvanceToNextStepOrLoadFallback(
+                nextSceneName,
+                fadeOutToBlackDuration,
+                fadeInFromBlackDuration,
+                startOpaque: false))
+        {
+            Debug.LogWarning("StoryNpcWalkIntro2D 无法推进到下一场景：既没有活动战役流程，也没有有效的 nextSceneName。", this);
+            transitionQueued = false;
+        }
     }
 
     private void ApplyFacing(float deltaXWorld)

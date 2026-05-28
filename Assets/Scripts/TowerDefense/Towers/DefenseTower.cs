@@ -103,6 +103,19 @@ public class DefenseTower : MonoBehaviour
     [Header("Type")]
     [SerializeField] private TowerType buildType = TowerType.SingleTarget;
 
+    private void OnDrawGizmosSelected()
+    {
+        PlacementGrid placementGrid = FindFirstObjectByType<PlacementGrid>();
+        if (placementGrid != null)
+        {
+            TowerDefenseGame game = TowerDefenseGame.Instance != null
+                ? TowerDefenseGame.Instance
+                : FindFirstObjectByType<TowerDefenseGame>();
+            float noBuildSquareSize = game != null ? game.GetPlacementNoBuildSquareSize(buildType) : 0f;
+            placementGrid.DrawStructureGizmo(transform.position, buildType, noBuildSquareSize);
+        }
+    }
+
     [Header("Tunings")]
     [SerializeField] private CombatTuning singleTargetTuning = new CombatTuning
     {
@@ -410,6 +423,22 @@ public class DefenseTower : MonoBehaviour
     public int GetUpgradeCost()
     {
         return ActiveTuning.upgradeCostBase + (CurrentLevel - 1) * ActiveTuning.upgradeCostPerLevel;
+    }
+
+    /// <summary>
+    /// 给删除返还逻辑提供一个“这座塔到当前为止一共花过多少升级费”的可靠入口。
+    ///
+    /// 这样总控只需要关心返还比例，不需要再复制一份和塔内部升级规则耦合的成本计算。
+    /// </summary>
+    public int CalculateAccumulatedUpgradeCost()
+    {
+        int totalUpgradeCost = 0;
+        for (int level = 1; level < CurrentLevel; level++)
+        {
+            totalUpgradeCost += ActiveTuning.upgradeCostBase + (level - 1) * ActiveTuning.upgradeCostPerLevel;
+        }
+
+        return Mathf.Max(0, totalUpgradeCost);
     }
 
     public int PreviewUpgradedPowerRequired()

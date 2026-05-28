@@ -113,7 +113,7 @@ public sealed class EnemySpawnGate : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (ShouldSkipAuthoringReadabilityRefresh())
+        if (Application.isPlaying || ShouldSkipAuthoringReadabilityRefresh())
         {
             return;
         }
@@ -130,6 +130,19 @@ public sealed class EnemySpawnGate : MonoBehaviour
     /// </summary>
     private void RefreshReadabilityVisuals(bool force)
     {
+        if (Application.isPlaying)
+        {
+            // Play 期间只保留语义，不保留这层作者可读标记。
+            Transform readabilityRoot = ResolveReadabilityRoot(allowCreate: false);
+            if (readabilityRoot != null && readabilityRoot.gameObject.activeSelf)
+            {
+                readabilityRoot.gameObject.SetActive(false);
+            }
+
+            _lastReadabilityHash = 0;
+            return;
+        }
+
         if (ShouldSkipAuthoringReadabilityRefresh())
         {
             _lastReadabilityHash = 0;

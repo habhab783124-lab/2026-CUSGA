@@ -166,6 +166,7 @@ public class Enemy : MonoBehaviour
     private float _pulseScaleMultiplier = 1f;
     private bool _hasLoggedRuntimeVisualSnapshot;
     private bool _hasInitializedAnimatorPhase;
+    private Vector2 _visualFootOffsetFromRoot = Vector2.zero;
 
     public static int ActiveEnemyCount => ActiveEnemies.Count;
     public bool IsAlive => _currentHealth > 0 && !_hasReachedBase;
@@ -270,10 +271,11 @@ public class Enemy : MonoBehaviour
         _pulseScaleMultiplier = 1f;
         _hasLoggedRuntimeVisualSnapshot = false;
         _hasInitializedAnimatorPhase = false;
+        RefreshVisualBottomOffset();
 
         if (_path != null)
         {
-            transform.position = _path.GetSpawnPosition();
+            SetRootPositionFromPathAnchor(_path.GetSpawnPosition());
         }
 
         ApplyAnimatorRuntimeSettings();
@@ -445,7 +447,7 @@ public class Enemy : MonoBehaviour
             return;
         }
 
-        Vector3 targetPosition = _path.GetWaypointPosition(_targetWaypointIndex);
+        Vector3 targetPosition = GetRootPositionFromPathAnchor(_path.GetWaypointPosition(_targetWaypointIndex));
         transform.position = Vector3.MoveTowards(transform.position, targetPosition, _moveSpeed * _slowMultiplier * Time.deltaTime);
 
         if (Vector3.Distance(transform.position, targetPosition) <= reachWaypointDistance)
@@ -687,6 +689,8 @@ public class Enemy : MonoBehaviour
         {
             _healthBarBackgroundRenderer = healthBarBackgroundRendererReference;
         }
+
+        RefreshVisualBottomOffset();
     }
 
     private void ApplyVisualTheme()
@@ -809,6 +813,57 @@ public class Enemy : MonoBehaviour
 
         Transform scaleTarget = visualScaleRootReference != null ? visualScaleRootReference : transform;
         scaleTarget.localScale = _baseScale * pulseScale;
+        RefreshVisualBottomOffset();
+    }
+
+    /// <summary>
+    /// 当前路径点代表的是“怪物脚底中心应该踩在路面上的位置”，
+    /// 而不是怪物 root / pivot 自己应该去到的位置。
+    ///
+    /// 所以这里单独维护一份“从 root 到当前视觉脚底中心”的世界空间偏移：
+    /// - 运行时 root 真正移动到的是 `路径点 - 这份偏移`
+    /// - 玩家视觉上看到的，就是怪物形象最低点沿着路径贴地前进
+    ///
+    /// 这比直接要求所有怪物美术 pivot 都完全统一更稳，
+    /// 也更符合当前项目“后续美术仍会继续替换”的工作流。
+    /// </summary>
+    private void RefreshVisualBottomOffset()
+    {
+        SpriteRenderer visualRenderer = _spriteRenderer != null ? _spriteRenderer : bodyRendererReference;
+        if (visualRenderer == null || visualRenderer.sprite == null)
+        {
+            _visualFootOffsetFromRoot = Vector2.zero;
+            return;
+        }
+
+        Vector2 rootPosition = transform.position;
+        Vector2 visualFootPoint = new Vector2(visualRenderer.bounds.center.x, visualRenderer.bounds.min.y);
+        _visualFootOffsetFromRoot = visualFootPoint - rootPosition;
+    }
+
+    /// <summary>
+     /// 把“路径锚点”转换成敌人 root 真正应该放到的位置。
+     ///
+    /// 当前路径锚点语义已经改成：怪物脚底中心应到达的世界坐标。
+    /// 因此 root 位置需要减去当前脚底中心相对 root 的偏移。
+    /// </summary>
+    private Vector3 GetRootPositionFromPathAnchor(Vector3 pathAnchorPosition)
+    {
+        return new Vector3(
+            pathAnchorPosition.x - _visualFootOffsetFromRoot.x,
+            pathAnchorPosition.y - _visualFootOffsetFromRoot.y,
+            pathAnchorPosition.z);
+    }
+
+    /// <summary>
+    /// 给出生点单独保留一个语义明确的入口。
+    ///
+    /// 这样后面如果路径锚点或怪物对齐规则继续演化，
+    /// 初始化阶段和逐帧移动阶段仍然都走同一套对齐语义，不会一头贴底一头贴 pivot。
+    /// </summary>
+    private void SetRootPositionFromPathAnchor(Vector3 pathAnchorPosition)
+    {
+        transform.position = GetRootPositionFromPathAnchor(pathAnchorPosition);
     }
 
     private void ApplyAnimatorRuntimeSettings()

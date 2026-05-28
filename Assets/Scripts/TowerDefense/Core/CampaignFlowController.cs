@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
@@ -71,7 +71,10 @@ public sealed class CampaignFlowController : MonoBehaviour
         CampaignFlowController controller = EnsureInstance();
         controller.activeCampaignAsset = campaignAsset;
         controller.currentStepIndex = 0;
-        controller.LoadCurrentStep();
+        controller.LoadCurrentStep(
+            campaignAsset.DefaultFadeOutToBlackDuration,
+            campaignAsset.DefaultFadeInFromBlackDuration,
+            campaignAsset.DefaultStartOpaqueOnLoad);
         return true;
     }
 
@@ -82,14 +85,69 @@ public sealed class CampaignFlowController : MonoBehaviour
             return false;
         }
 
+        float fadeOutSeconds = s_instance.activeCampaignAsset != null
+            ? s_instance.activeCampaignAsset.DefaultFadeOutToBlackDuration
+            : 0.75f;
+        float fadeInSeconds = s_instance.activeCampaignAsset != null
+            ? s_instance.activeCampaignAsset.DefaultFadeInFromBlackDuration
+            : 0.75f;
+        bool startOpaque = s_instance.activeCampaignAsset != null && s_instance.activeCampaignAsset.DefaultStartOpaqueOnLoad;
+        return AdvanceToNextStep(fadeOutSeconds, fadeInSeconds, startOpaque);
+    }
+
+    /// <summary>
+    /// 允许调用方显式指定这一次推进的淡出/淡入参数。
+    ///
+    /// 这一步的意义是把塔防关卡、剧情桥接器和占位剧情段统一到同一套切场体验上：
+    /// - 场景推进仍然由 `CampaignFlowController` 负责
+    /// - 但视觉过渡手感可以像 2D 横板剧情一样，统一走 `ScreenFadeTransition`
+    /// </summary>
+    public static bool AdvanceToNextStep(float fadeOutSeconds, float fadeInSeconds, bool startOpaque = false)
+    {
+        if (!HasActiveCampaign)
+        {
+            return false;
+        }
+
         s_instance.currentStepIndex++;
         if (s_instance.activeCampaignAsset == null || s_instance.currentStepIndex >= s_instance.activeCampaignAsset.StepCount)
         {
-            s_instance.CompleteCampaign();
+            s_instance.CompleteCampaign(fadeOutSeconds, fadeInSeconds, startOpaque);
             return true;
         }
 
-        s_instance.LoadCurrentStep();
+        s_instance.LoadCurrentStep(fadeOutSeconds, fadeInSeconds, startOpaque);
+        return true;
+    }
+
+    /// <summary>
+    /// 统一处理“推进下一段流程，或者退回到显式场景名”这条桥接逻辑。
+    ///
+    /// 这是这次收口场景切换主链的关键入口：
+    /// - 如果当前已经有激活的 `CampaignFlowAsset`，就推进到下一步
+    /// - 如果没有活动流程，就回退到调用方显式给出的下一个场景名
+    ///
+    /// 这样塔防关卡和 2D 横板剧情都能走同一条判断逻辑，
+    /// 而不是各自再手写一份“有流程/没流程怎么办”的分支。
+    /// </summary>
+    public static bool AdvanceToNextStepOrLoadFallback(
+        string fallbackSceneName,
+        float fadeOutSeconds,
+        float fadeInSeconds,
+        bool startOpaque = false)
+    {
+        if (HasActiveCampaign)
+        {
+            return AdvanceToNextStep(fadeOutSeconds, fadeInSeconds, startOpaque);
+        }
+
+        if (string.IsNullOrWhiteSpace(fallbackSceneName))
+        {
+            return false;
+        }
+
+        Time.timeScale = 1f;
+        PlaySceneTransition(fallbackSceneName, fadeOutSeconds, fadeInSeconds, startOpaque);
         return true;
     }
 
@@ -128,7 +186,7 @@ public sealed class CampaignFlowController : MonoBehaviour
         return s_instance;
     }
 
-    private void LoadCurrentStep()
+    private void LoadCurrentStep(float fadeOutSeconds, float fadeInSeconds, bool startOpaque)
     {
         if (activeCampaignAsset == null || !activeCampaignAsset.TryGetStep(currentStepIndex, out CampaignFlowAsset.CampaignStep step))
         {
@@ -143,10 +201,10 @@ public sealed class CampaignFlowController : MonoBehaviour
         }
 
         Time.timeScale = 1f;
-        SceneManager.LoadScene(step.SceneName, LoadSceneMode.Single);
+        PlaySceneTransition(step.SceneName, fadeOutSeconds, fadeInSeconds, startOpaque);
     }
 
-    private void CompleteCampaign()
+    private void CompleteCampaign(float fadeOutSeconds, float fadeInSeconds, bool startOpaque)
     {
         string completionSceneName = activeCampaignAsset != null ? activeCampaignAsset.CompletionSceneName : string.Empty;
         activeCampaignAsset = null;
@@ -155,7 +213,16 @@ public sealed class CampaignFlowController : MonoBehaviour
         Time.timeScale = 1f;
         if (!string.IsNullOrWhiteSpace(completionSceneName))
         {
-            SceneManager.LoadScene(completionSceneName, LoadSceneMode.Single);
+            PlaySceneTransition(completionSceneName, fadeOutSeconds, fadeInSeconds, startOpaque);
         }
+    }
+
+    private static void PlaySceneTransition(string sceneName, float fadeOutSeconds, float fadeInSeconds, bool startOpaque)
+    {
+        ScreenFadeTransition.Play(
+            sceneName,
+            Mathf.Max(0f, fadeOutSeconds),
+            Mathf.Max(0f, fadeInSeconds),
+            startOpaque);
     }
 }

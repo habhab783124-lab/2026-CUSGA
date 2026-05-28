@@ -34,6 +34,8 @@ public sealed class StorySceneStepController : MonoBehaviour
     [Header("Fallback Next Scene")]
     [Tooltip("如果当前场景不是通过 CampaignFlowController 进入的，就回退到这个场景名。")]
     [SerializeField] private string fallbackNextSceneName = "SampleScene";
+    [SerializeField] private float fadeOutToBlackDuration = 0.75f;
+    [SerializeField] private float fadeInFromBlackDuration = 0.75f;
 
     [Header("Overlay")]
     [SerializeField] private bool showOverlayPrompt = true;
@@ -125,22 +127,13 @@ public sealed class StorySceneStepController : MonoBehaviour
 
     private void AdvanceToNextStep()
     {
-        if (CampaignFlowController.HasActiveCampaign)
+        if (!CampaignFlowController.AdvanceToNextStepOrLoadFallback(
+                fallbackNextSceneName,
+                fadeOutToBlackDuration,
+                fadeInFromBlackDuration,
+                startOpaque: false))
         {
-            if (!CampaignFlowController.AdvanceToNextStep())
-            {
-                Debug.LogWarning("StorySceneStepController 无法推进战役流程，当前 CampaignFlowController 没有成功切到下一步。", this);
-            }
-
-            return;
+            Debug.LogWarning("StorySceneStepController 无法推进场景流程：既没有活动战役流程，也没有有效的 fallbackNextSceneName。", this);
         }
-
-        if (string.IsNullOrWhiteSpace(fallbackNextSceneName))
-        {
-            Debug.LogWarning("StorySceneStepController 没有活动战役流程，且 fallbackNextSceneName 为空，无法继续。", this);
-            return;
-        }
-
-        SceneManager.LoadScene(fallbackNextSceneName, LoadSceneMode.Single);
     }
 }

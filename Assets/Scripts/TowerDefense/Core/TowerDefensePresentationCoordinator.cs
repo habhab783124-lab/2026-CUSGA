@@ -157,6 +157,64 @@ public sealed class TowerDefensePresentationCoordinator
     }
 
     /// <summary>
+    /// 当正式失败页 prefab 接管展示时，
+    /// 表现协调层只负责隐藏旧 HUD / 旧结果面板并保留失败状态消息。
+    /// </summary>
+    public void ShowGameOverSummaryOnly()
+    {
+        _hudPresenter?.HideAllGameplayPresentationForSceneTransition();
+        SetStatusMessage("Base integrity depleted. Redeploy and stabilize the front.");
+        RefreshHud();
+    }
+
+    /// <summary>
+    /// 关卡胜利后先停在结果界面，
+    /// 等玩家确认后再切到下一段剧情。
+    ///
+    /// 这里和 `ShowGameOver()` 一样，只负责表现层收尾：
+    /// - 显示胜利界面
+    /// - 广播“等待继续”的状态消息
+    /// - 刷新 HUD
+    ///
+    /// 真正什么时候继续切场，仍然由总控在点击后决定。
+    /// </summary>
+    public void ShowVictory()
+    {
+        _hudPresenter?.ShowVictory(
+            title: "VICTORY",
+            hint: "Click anywhere to continue.");
+
+        SetStatusMessage("Operation clear. Click anywhere to continue.");
+        RefreshHud();
+    }
+
+    /// <summary>
+    /// 当正式胜利页 prefab 接管展示时，
+    /// 表现协调层只需要继续维护 HUD 状态消息和局部刷新，
+    /// 不再强制把旧结果面板拉出来。
+    /// </summary>
+    public void ShowVictorySummaryOnly()
+    {
+        // The formal hologram victory page owns the player's attention at this point.
+        // Leaving the combat HUD visible underneath makes the result page look broken and
+        // visually conflicts with the preview-scene design, so we proactively hide the
+        // gameplay HUD before keeping only the continuation status alive.
+        _hudPresenter?.HideAllGameplayPresentationForSceneTransition();
+        SetStatusMessage("Operation clear. Click anywhere to continue.");
+        RefreshHud();
+    }
+
+    /// <summary>
+    /// 在真正开始跨场景过渡前，把塔防 HUD 和结果面板先整体收掉。
+    ///
+    /// 这样黑场一旦压上来，玩家不会再看见旧场景 UI 还留在屏幕上闪一帧。
+    /// </summary>
+    public void HideGameplayPresentationForSceneTransition()
+    {
+        _hudPresenter?.HideAllGameplayPresentationForSceneTransition();
+    }
+
+    /// <summary>
     /// 把当前会话状态与交互状态组装成 HUD 快照。
     /// HUD 只消费这份结果，不反向耦合总控或别的组件的内部字段。
     /// </summary>

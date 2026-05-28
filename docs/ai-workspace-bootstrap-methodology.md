@@ -125,6 +125,16 @@ Updated: 2026-05-12
   - `docs/ai-memory/td-agent-development-playbook.md`
   - `docs/ai-memory/td-memory-main.md`
   - 本文档
+- 只要项目新增了“作者工作流优先级”规则，也必须同步写进这些常驻文档。
+
+## 视觉一致性方法
+- 对 Unity 项目中的视觉字段，默认把 `Scene` 视图中的作者化结果当作权威来源。
+- 后续实现应优先让用户直接在 `Scene` / Inspector 中改视觉，并保证进入 `Play` 后仍然保留这些结果。
+- 除非用户明确要求某个效果必须在运行时和编辑态不同，否则不要让脚本在 `Awake`、`Start`、`OnValidate` 或别的运行时流程里把视觉字段写回旧默认值。
+- 如果某个运行时脚本确实需要控制视觉，优先做法应是：
+  1. 先读取当前 Scene 中已有的组件状态
+  2. 把这些值当作默认基线
+  3. 只叠加临时运行时状态，而不是重建或重置整套视觉
 
 ## 本地私有文件约定
 - `docs/project-tech-learning-handbook.local.md`

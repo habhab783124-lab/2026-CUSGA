@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 1719944050}
   - component: {fileID: 1719944052}
   - component: {fileID: 3972716608942752203}
+  - component: {fileID: 990000000000000002}
   m_Layer: 0
   m_Name: SingleTargetTowerPrototype
   m_TagString: Untagged
@@ -44,7 +45,7 @@ SpriteRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1719944049}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 0
   m_ReceiveShadows: 0
   m_DynamicOccludee: 1
@@ -77,7 +78,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 324
   m_Sprite: {fileID: 21300000, guid: 26c7981aedd7cef42bd2be437ad1b450, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -318,6 +319,26 @@ CircleCollider2D:
   m_Offset: {x: 0, y: -1.4374198}
   serializedVersion: 2
   m_Radius: 0.52025586
+--- !u!114 &990000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1719944049}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8d82ec2a4a4f3cb1f95fbe0c4a1e63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sourceRendererReference: {fileID: 1719944050}
+  sortingBaseOrder: 300
+  sortingOrdersPerUnit: 20
+  topLayerSortingOffset: 24
+  healthBarSortingOffset: 40
+  splitIntoBaseAndTop: 1
+  topLayerStartNormalized: 0.38
+  autoSortHealthBarRenderers: 0
 --- !u!1 &2119000000
 GameObject:
   m_ObjectHideFlags: 0

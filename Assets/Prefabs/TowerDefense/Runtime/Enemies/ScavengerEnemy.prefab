@@ -234,6 +234,7 @@ GameObject:
   - component: {fileID: 12472910763174817}
   - component: {fileID: 8745601186219457358}
   - component: {fileID: 3537248986107967254}
+  - component: {fileID: 990000000000000010}
   m_Layer: 0
   m_Name: ScavengerEnemy
   m_TagString: Untagged
@@ -429,3 +430,23 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &990000000000000010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5863667738006183233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8d82ec2a4a4f3cb1f95fbe0c4a1e63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sourceRendererReference: {fileID: 4703230808979152243}
+  sortingBaseOrder: 300
+  sortingOrdersPerUnit: 20
+  topLayerSortingOffset: 24
+  healthBarSortingOffset: 40
+  splitIntoBaseAndTop: 0
+  topLayerStartNormalized: 0.38
+  autoSortHealthBarRenderers: 1

@@ -22,6 +22,7 @@ public readonly struct TowerDefenseHudSceneReferences
         Button slowFieldTowerButton,
         Button bombardTowerButton,
         Button clearSelectionButton,
+        Button demolishSelectedStructureButton,
         GameObject gameOverPanel,
         TMP_Text gameOverTitle,
         TMP_Text gameOverHint,
@@ -38,6 +39,7 @@ public readonly struct TowerDefenseHudSceneReferences
         SlowFieldTowerButton = slowFieldTowerButton;
         BombardTowerButton = bombardTowerButton;
         ClearSelectionButton = clearSelectionButton;
+        DemolishSelectedStructureButton = demolishSelectedStructureButton;
         GameOverPanel = gameOverPanel;
         GameOverTitle = gameOverTitle;
         GameOverHint = gameOverHint;
@@ -55,6 +57,7 @@ public readonly struct TowerDefenseHudSceneReferences
     public Button SlowFieldTowerButton { get; }
     public Button BombardTowerButton { get; }
     public Button ClearSelectionButton { get; }
+    public Button DemolishSelectedStructureButton { get; }
     public GameObject GameOverPanel { get; }
     public TMP_Text GameOverTitle { get; }
     public TMP_Text GameOverHint { get; }
@@ -77,6 +80,7 @@ public readonly struct TowerDefenseSceneBootstrapResult
         GameObject slowFieldTowerPrototype,
         GameObject bombardTowerPrototype,
         BuildZone buildZone,
+        PlacementGrid placementGrid,
         Transform placedTowerRoot,
         Transform placementPreviewRoot)
     {
@@ -86,6 +90,7 @@ public readonly struct TowerDefenseSceneBootstrapResult
         SlowFieldTowerPrototype = slowFieldTowerPrototype;
         BombardTowerPrototype = bombardTowerPrototype;
         BuildZone = buildZone;
+        PlacementGrid = placementGrid;
         PlacedTowerRoot = placedTowerRoot;
         PlacementPreviewRoot = placementPreviewRoot;
     }
@@ -96,6 +101,7 @@ public readonly struct TowerDefenseSceneBootstrapResult
     public GameObject SlowFieldTowerPrototype { get; }
     public GameObject BombardTowerPrototype { get; }
     public BuildZone BuildZone { get; }
+    public PlacementGrid PlacementGrid { get; }
     public Transform PlacedTowerRoot { get; }
     public Transform PlacementPreviewRoot { get; }
 }
@@ -128,6 +134,13 @@ public sealed class TowerDefenseSceneBootstrapper
         string placementPreviewRootName,
         BuildZone buildZoneReference,
         string buildZoneName,
+        PlacementGrid placementGridReference,
+        string placementGridName,
+        float placementGridCellSize,
+        Vector2 placementGridOrigin,
+        bool snapPlacementToCellCenter,
+        Vector2Int relayFootprintCells,
+        Vector2Int defenseFootprintCells,
         TowerDefenseHudSceneReferences hudSceneReferences,
         TowerDefenseHudPresenter hudPresenter)
     {
@@ -142,6 +155,7 @@ public sealed class TowerDefenseSceneBootstrapper
             slowFieldTowerButton: hudSceneReferences.SlowFieldTowerButton,
             bombardTowerButton: hudSceneReferences.BombardTowerButton,
             clearSelectionButton: hudSceneReferences.ClearSelectionButton,
+            demolishSelectedStructureButton: hudSceneReferences.DemolishSelectedStructureButton,
             gameOverPanel: hudSceneReferences.GameOverPanel,
             gameOverTitle: hudSceneReferences.GameOverTitle,
             gameOverHint: hudSceneReferences.GameOverHint,
@@ -151,6 +165,14 @@ public sealed class TowerDefenseSceneBootstrapper
 
         Camera resolvedMainCamera = mainCameraReference != null ? mainCameraReference : Camera.main;
         BuildZone resolvedBuildZone = EnsureBuildZoneExists(buildZoneReference, buildZoneName);
+        PlacementGrid resolvedPlacementGrid = EnsurePlacementGridExists(
+            placementGridReference,
+            placementGridName,
+            placementGridCellSize,
+            placementGridOrigin,
+            snapPlacementToCellCenter,
+            relayFootprintCells,
+            defenseFootprintCells);
         Transform resolvedPlacedTowerRoot = EnsureRuntimeRoot(placedTowerRootReference, placedTowerRootName);
         Transform resolvedPlacementPreviewRoot = EnsureRuntimeRoot(placementPreviewRootReference, placementPreviewRootName);
 
@@ -161,6 +183,7 @@ public sealed class TowerDefenseSceneBootstrapper
             slowFieldTowerPrototype: slowFieldTowerPrototypeReference,
             bombardTowerPrototype: bombardTowerPrototypeReference,
             buildZone: resolvedBuildZone,
+            placementGrid: resolvedPlacementGrid,
             placedTowerRoot: resolvedPlacedTowerRoot,
             placementPreviewRoot: resolvedPlacementPreviewRoot);
     }
@@ -201,5 +224,43 @@ public sealed class TowerDefenseSceneBootstrapper
         boxCollider.size = new Vector2(18f, 10.5f);
 
         return buildZoneObject.AddComponent<BuildZone>();
+    }
+
+    /// <summary>
+    /// 确保当前关卡一定有一个放置网格。
+    ///
+    /// 网格是新放置规则的“尺子”，但它本身不携带关卡语义；
+    /// 如果旧场景还没有作者化放置这个组件，运行时兜底也能让规则先跑起来。
+    /// 后续真正调关卡时，推荐把兜底对象固定到场景里并在 Inspector 中调整格子大小。
+    /// </summary>
+    private static PlacementGrid EnsurePlacementGridExists(
+        PlacementGrid placementGridReference,
+        string placementGridName,
+        float placementGridCellSize,
+        Vector2 placementGridOrigin,
+        bool snapPlacementToCellCenter,
+        Vector2Int relayFootprintCells,
+        Vector2Int defenseFootprintCells)
+    {
+        if (placementGridReference != null)
+        {
+            return placementGridReference;
+        }
+
+        PlacementGrid existingGrid = Object.FindFirstObjectByType<PlacementGrid>();
+        if (existingGrid != null)
+        {
+            return existingGrid;
+        }
+
+        GameObject placementGridObject = new GameObject(placementGridName);
+        PlacementGrid placementGrid = placementGridObject.AddComponent<PlacementGrid>();
+        placementGrid.ApplyRuntimeFallbackSettings(
+            placementGridCellSize,
+            placementGridOrigin,
+            snapPlacementToCellCenter,
+            relayFootprintCells,
+            defenseFootprintCells);
+        return placementGrid;
     }
 }
