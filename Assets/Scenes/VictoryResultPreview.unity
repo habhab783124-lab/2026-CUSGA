@@ -166,6 +166,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57f23ba5bb0ef014183a24225fff1fd9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  previewTone: 0
   signalTitle: "\u6307\u6325\u94FE\u8DEF\u63A5\u901A"
   signalStatus: "\u6218\u533A\u4FE1\u53F7\u7A33\u5B9A"
   signalChannel: HOLO-LINK / FRONT 02
@@ -224,18 +225,6 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1843485466788902794, guid: 2d9cb3d494418fd4b9c8493abeb69bdc, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1843485466788902794, guid: 2d9cb3d494418fd4b9c8493abeb69bdc, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1843485466788902794, guid: 2d9cb3d494418fd4b9c8493abeb69bdc, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1843485466788902794, guid: 2d9cb3d494418fd4b9c8493abeb69bdc, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
@@ -285,33 +274,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5983927651432411786, guid: 2d9cb3d494418fd4b9c8493abeb69bdc, type: 3}
       propertyPath: m_Name
-      value: VictoryPreviewCanvas
+      value: VictoryResultPage
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 5983927651432411786, guid: 2d9cb3d494418fd4b9c8493abeb69bdc, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 3176056190170534133}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2d9cb3d494418fd4b9c8493abeb69bdc, type: 3}
---- !u!1 &3176056190170534132 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5983927651432411786, guid: 2d9cb3d494418fd4b9c8493abeb69bdc, type: 3}
-  m_PrefabInstance: {fileID: 3176056190170534131}
-  m_PrefabAsset: {fileID: 0}
---- !u!225 &3176056190170534133
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3176056190170534132}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

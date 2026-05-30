@@ -189,6 +189,9 @@ public sealed class VictoryResultPageView : MonoBehaviour
     [Header("Failure Damage FX")]
     [SerializeField] private FailureDamageEffectTuning failureDamageEffects = new FailureDamageEffectTuning();
 
+    [Header("Scene Authoring")]
+    [SerializeField] private bool preserveSceneVisuals = false;
+
     [Header("Reveal")]
     [SerializeField] private bool autoReveal = true;
     [SerializeField] private float topBarRevealDelay = 0.05f;
@@ -264,11 +267,14 @@ public sealed class VictoryResultPageView : MonoBehaviour
         ApplyGroupAlpha(commanderProjectionGroup, EaseReveal(elapsed - projectionRevealDelay, 0.42f));
         ApplyGroupAlpha(continueButtonGroup, EaseReveal(elapsed - continueRevealDelay, 0.24f));
 
-        ApplyVisibleCharacters(titleText, _cachedTitle, elapsed - mainPanelRevealDelay + 0.02f);
-        ApplyVisibleCharacters(subtitleText, _cachedSubtitle, elapsed - mainPanelRevealDelay + 0.14f);
-        ApplyVisibleCharacters(eventRowText, _cachedEvent, elapsed - mainPanelRevealDelay + 0.26f);
-        ApplyVisibleCharacters(dialogueText, _cachedDialogue, elapsed - projectionRevealDelay + 0.12f);
-        ApplyVisibleCharacters(continueHintText, _cachedContinueHint, elapsed - continueHintRevealDelay);
+        if (!preserveSceneVisuals)
+        {
+            ApplyVisibleCharacters(titleText, _cachedTitle, elapsed - mainPanelRevealDelay + 0.02f);
+            ApplyVisibleCharacters(subtitleText, _cachedSubtitle, elapsed - mainPanelRevealDelay + 0.14f);
+            ApplyVisibleCharacters(eventRowText, _cachedEvent, elapsed - mainPanelRevealDelay + 0.26f);
+            ApplyVisibleCharacters(dialogueText, _cachedDialogue, elapsed - projectionRevealDelay + 0.12f);
+            ApplyVisibleCharacters(continueHintText, _cachedContinueHint, elapsed - continueHintRevealDelay);
+        }
 
         if (_currentTone == ResultPageTone.Failure)
         {
@@ -300,29 +306,36 @@ public sealed class VictoryResultPageView : MonoBehaviour
 
         _currentTone = content.Tone;
         ResolveReferences();
-        ApplyTheme(content.Tone);
 
-        SetText(signalTitleText, content.SignalTitle);
-        SetText(signalStatusText, content.SignalStatus);
-        SetText(signalChannelText, content.SignalChannel);
-        SetText(titleText, content.Title);
-        SetText(subtitleText, content.Subtitle);
-        SetText(reportHeaderText, content.ReportHeader);
-        SetText(integrityRowText, content.IntegrityRow);
-        SetText(scrapRowText, content.ScrapRow);
-        SetText(eventRowText, content.EventRow);
-        SetText(footerHintText, content.FooterHint);
-        SetText(commanderNameText, content.CommanderName);
-        SetText(commanderCodenameText, content.CommanderCodename);
-        SetText(dialogueText, content.DialogueText);
-        SetText(continueButtonText, content.ContinueButtonText);
-        SetText(continueHintText, content.ContinueHintText);
+        if (!preserveSceneVisuals)
+        {
+            ApplyTheme(content.Tone);
+        }
 
-        _cachedTitle = content.Title ?? string.Empty;
-        _cachedSubtitle = content.Subtitle ?? string.Empty;
-        _cachedEvent = content.EventRow ?? string.Empty;
-        _cachedDialogue = content.DialogueText ?? string.Empty;
-        _cachedContinueHint = content.ContinueHintText ?? string.Empty;
+        if (!preserveSceneVisuals)
+        {
+            SetText(signalTitleText, content.SignalTitle);
+            SetText(signalStatusText, content.SignalStatus);
+            SetText(signalChannelText, content.SignalChannel);
+            SetText(titleText, content.Title);
+            SetText(subtitleText, content.Subtitle);
+            SetText(reportHeaderText, content.ReportHeader);
+            SetText(integrityRowText, content.IntegrityRow);
+            SetText(scrapRowText, content.ScrapRow);
+            SetText(eventRowText, content.EventRow);
+            SetText(footerHintText, content.FooterHint);
+            SetText(commanderNameText, content.CommanderName);
+            SetText(commanderCodenameText, content.CommanderCodename);
+            SetText(dialogueText, content.DialogueText);
+            SetText(continueButtonText, content.ContinueButtonText);
+            SetText(continueHintText, content.ContinueHintText);
+
+            _cachedTitle = content.Title ?? string.Empty;
+            _cachedSubtitle = content.Subtitle ?? string.Empty;
+            _cachedEvent = content.EventRow ?? string.Empty;
+            _cachedDialogue = content.DialogueText ?? string.Empty;
+            _cachedContinueHint = content.ContinueHintText ?? string.Empty;
+        }
 
         if (rootCanvasGroup != null)
         {
@@ -334,7 +347,7 @@ public sealed class VictoryResultPageView : MonoBehaviour
         // The formal tower-defense clear flow intentionally pauses gameplay with `Time.timeScale = 0`
         // before showing the result page. In that paused state we do not want the page to stay stuck
         // at alpha 0 waiting for an animation tick; the player should immediately see the full page.
-        bool useImmediateReveal = !autoReveal || !Application.isPlaying || Time.timeScale <= 0f;
+        bool useImmediateReveal = preserveSceneVisuals || !autoReveal || !Application.isPlaying || Time.timeScale <= 0f;
 
         if (!useImmediateReveal)
         {
@@ -344,11 +357,14 @@ public sealed class VictoryResultPageView : MonoBehaviour
             ApplyGroupAlpha(commanderProjectionGroup, 0f);
             ApplyGroupAlpha(continueButtonGroup, 0f);
 
-            ResetVisibleCharacters(titleText);
-            ResetVisibleCharacters(subtitleText);
-            ResetVisibleCharacters(eventRowText);
-            ResetVisibleCharacters(dialogueText);
-            ResetVisibleCharacters(continueHintText);
+            if (!preserveSceneVisuals)
+            {
+                ResetVisibleCharacters(titleText);
+                ResetVisibleCharacters(subtitleText);
+                ResetVisibleCharacters(eventRowText);
+                ResetVisibleCharacters(dialogueText);
+                ResetVisibleCharacters(continueHintText);
+            }
         }
 
         ApplyGroupAlpha(topSignalBarGroup, useImmediateReveal ? 1f : 0f);
@@ -356,7 +372,7 @@ public sealed class VictoryResultPageView : MonoBehaviour
         ApplyGroupAlpha(commanderProjectionGroup, useImmediateReveal ? 1f : 0f);
         ApplyGroupAlpha(continueButtonGroup, useImmediateReveal ? 1f : 0f);
 
-        if (useImmediateReveal)
+        if (useImmediateReveal && !preserveSceneVisuals)
         {
             ShowAllCharacters(titleText);
             ShowAllCharacters(subtitleText);
@@ -368,6 +384,11 @@ public sealed class VictoryResultPageView : MonoBehaviour
         _isShowing = true;
     }
 
+    public void SetPreserveSceneVisuals(bool preserve)
+    {
+        preserveSceneVisuals = preserve;
+    }
+
     public void Hide()
     {
         _isShowing = false;
@@ -376,7 +397,17 @@ public sealed class VictoryResultPageView : MonoBehaviour
 
     private void ApplyTheme(ResultPageTone tone)
     {
-        ResultPageThemePalette palette = tone == ResultPageTone.Failure ? failureTheme : victoryTheme;
+        bool isFailure = tone == ResultPageTone.Failure;
+
+        // Victory: the prefab's own child-component values ARE the victory look.
+        // Never overwrite them with C# defaults.
+        if (!isFailure)
+        {
+            ApplyToneLayout(tone);
+            return;
+        }
+
+        ResultPageThemePalette palette = failureTheme;
         if (palette == null)
         {
             return;
@@ -677,6 +708,18 @@ public sealed class VictoryResultPageView : MonoBehaviour
 
     private void ApplyFailureDamageEffects(float elapsed)
     {
+        if (preserveSceneVisuals)
+        {
+            ApplyFailureDamageEffectsPreserved(elapsed);
+        }
+        else
+        {
+            ApplyFailureDamageEffectsThemed(elapsed);
+        }
+    }
+
+    private void ApplyFailureDamageEffectsThemed(float elapsed)
+    {
         float noisePulse = 1f + Mathf.Sin(elapsed * failureDamageEffects.noiseAlphaPulseSpeed) * failureDamageEffects.noiseAlphaPulseAmplitude;
         SetGraphicColorAlpha(_holoNoiseGraphic, failureTheme.holoNoiseOverlayColor, noisePulse);
 
@@ -734,6 +777,84 @@ public sealed class VictoryResultPageView : MonoBehaviour
                 + (Mathf.PingPong(elapsed * failureDamageEffects.continueHintBlinkSpeed, failureDamageEffects.continueHintBlinkAmplitude) * 2f);
             Color hintColor = failureTheme.secondaryTextColor;
             hintColor.a *= Mathf.Clamp01(hintPulse);
+            continueHintText.color = hintColor;
+        }
+    }
+
+    private void ApplyFailureDamageEffectsPreserved(float elapsed)
+    {
+        if (_holoNoiseGraphic != null)
+        {
+            float noisePulse = 1f + Mathf.Sin(elapsed * failureDamageEffects.noiseAlphaPulseSpeed) * failureDamageEffects.noiseAlphaPulseAmplitude;
+            Color baseColor = _holoNoiseGraphic.color;
+            baseColor.a = Mathf.Clamp01(baseColor.a * noisePulse);
+            _holoNoiseGraphic.color = baseColor;
+        }
+
+        if (_scanBandRect != null)
+        {
+            _scanBandRect.anchoredPosition = new Vector2(
+                _defaultScanBandLayout.AnchoredPosition.x,
+                _defaultScanBandLayout.AnchoredPosition.y + Mathf.Sin(elapsed * failureDamageEffects.scanBandDriftSpeed) * failureDamageEffects.scanBandDriftAmplitude);
+        }
+
+        if (_scanBandGraphic != null)
+        {
+            float scanPulse = 0.88f + Mathf.Sin(elapsed * failureDamageEffects.scanBandAlphaPulseSpeed) * failureDamageEffects.scanBandAlphaPulseAmplitude;
+            Color baseColor = _scanBandGraphic.color;
+            baseColor.a = Mathf.Clamp01(baseColor.a * scanPulse);
+            _scanBandGraphic.color = baseColor;
+        }
+
+        if (_projectionRect != null)
+        {
+            _projectionRect.anchoredPosition = _defaultProjectionLayout.AnchoredPosition + new Vector2(
+                Mathf.Sin(elapsed * failureDamageEffects.projectionJitterSpeed) * failureDamageEffects.projectionJitterXAmplitude,
+                Mathf.Cos(elapsed * (failureDamageEffects.projectionJitterSpeed * 1.27f)) * failureDamageEffects.projectionJitterYAmplitude);
+        }
+
+        if (_dialogueBubbleRect != null)
+        {
+            _dialogueBubbleRect.anchoredPosition = _defaultDialogueBubbleLayout.AnchoredPosition + new Vector2(
+                Mathf.Sin(elapsed * failureDamageEffects.dialogueJitterSpeed) * failureDamageEffects.dialogueJitterXAmplitude,
+                Mathf.Cos(elapsed * (failureDamageEffects.dialogueJitterSpeed * 1.19f)) * failureDamageEffects.dialogueJitterYAmplitude);
+        }
+
+        float glowScale = 1f + Mathf.Sin(elapsed * failureDamageEffects.portraitGlowScalePulseSpeed) * failureDamageEffects.portraitGlowScalePulseAmplitude;
+        if (_portraitGlowRect != null)
+        {
+            _portraitGlowRect.localScale = new Vector3(glowScale, glowScale, 1f);
+        }
+
+        if (_portraitGlowGraphic != null)
+        {
+            float glowPulse = 0.82f + Mathf.Sin(elapsed * failureDamageEffects.portraitGlowAlphaPulseSpeed) * failureDamageEffects.portraitGlowAlphaPulseAmplitude;
+            Color baseColor = _portraitGlowGraphic.color;
+            baseColor.a = Mathf.Clamp01(baseColor.a * glowPulse);
+            _portraitGlowGraphic.color = baseColor;
+        }
+
+        float buttonPulse = 0.5f + (Mathf.Sin(elapsed * failureDamageEffects.continueButtonPulseSpeed) * 0.5f);
+        if (_continueButtonRect != null)
+        {
+            float scale = 1f + (buttonPulse * failureDamageEffects.continueButtonPulseAmplitude);
+            _continueButtonRect.localScale = new Vector3(scale, scale, 1f);
+        }
+
+        if (_continueButtonGraphic != null)
+        {
+            Color baseColor = _continueButtonGraphic.color;
+            Color buttonColor = baseColor;
+            buttonColor.a = Mathf.Lerp(baseColor.a * 0.85f, baseColor.a, buttonPulse);
+            _continueButtonGraphic.color = buttonColor;
+        }
+
+        if (continueHintText != null)
+        {
+            float hintPulse = 1f - failureDamageEffects.continueHintBlinkAmplitude
+                + (Mathf.PingPong(elapsed * failureDamageEffects.continueHintBlinkSpeed, failureDamageEffects.continueHintBlinkAmplitude) * 2f);
+            Color hintColor = continueHintText.color;
+            hintColor.a = Mathf.Clamp01(hintColor.a * hintPulse);
             continueHintText.color = hintColor;
         }
     }

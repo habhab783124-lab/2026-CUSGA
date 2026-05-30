@@ -78,8 +78,6 @@ public sealed class VictoryResultPreviewController : MonoBehaviour
         _previewPageView.BindContinueAction(null);
         _previewPageView.Show(BuildPreviewContent());
 
-        // The preview scene is used for layout review, so the page should stay visible after the
-        // fake content is applied instead of relying on gameplay flow to re-open it.
         if (!_previewPageView.gameObject.activeSelf)
         {
             _previewPageView.gameObject.SetActive(true);
@@ -153,6 +151,7 @@ public sealed class VictoryResultPreviewController : MonoBehaviour
             primaryView.gameObject.name = FormalPreviewRootName;
             primaryView.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             primaryView.transform.localScale = Vector3.one;
+            primaryView.SetPreserveSceneVisuals(true);
             return primaryView;
         }
 
@@ -181,6 +180,7 @@ public sealed class VictoryResultPreviewController : MonoBehaviour
             previewView = previewInstance.AddComponent<VictoryResultPageView>();
         }
 
+        previewView.SetPreserveSceneVisuals(true);
         return previewView;
     }
 
