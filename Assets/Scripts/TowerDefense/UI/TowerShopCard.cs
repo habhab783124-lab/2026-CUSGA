@@ -2,6 +2,14 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
+public enum TowerShopCardInteractionState
+{
+    Default,
+    Locked,
+    Available,
+    Recommended
+}
+
 /// <summary>
 /// `TowerShopCard` 负责把右侧商店中的一张部署卡，变成真正可点击、可拖拽的建造入口。
 ///
@@ -116,6 +124,17 @@ public class TowerShopCard : MonoBehaviour,
     /// </summary>
     [SerializeField] private float hoverPulseAmplitude = 0.02f;
 
+    [Header("Tutorial Guidance")]
+    [SerializeField] private float recommendedPulseSpeed = 2.4f;
+    [SerializeField] private float recommendedPulseAmplitude = 0.028f;
+    [SerializeField] private float recommendedBaseScaleMultiplier = 1.02f;
+
+    [Header("Locked Visuals")]
+    [SerializeField] private Color lockedBackgroundTint = new Color(0.31f, 0.34f, 0.38f, 0.96f);
+    [SerializeField] private Color lockedIconTint = new Color(0.7f, 0.73f, 0.77f, 1f);
+    [SerializeField] private Color lockedAccentTint = new Color(0.56f, 0.6f, 0.64f, 1f);
+    [SerializeField] private float lockedAlphaMultiplier = 0.92f;
+
     /// <summary>
     /// 控制卡片透明度和射线拦截状态的 `CanvasGroup` 缓存。
     /// </summary>
@@ -149,6 +168,13 @@ public class TowerShopCard : MonoBehaviour,
     /// `Update()` 会根据这个状态驱动轻量缩放和呼吸动画。
     /// </summary>
     private bool _isPointerOver;
+    private TowerShopCardInteractionState _interactionVisualState;
+    private ColorBlock _definitionColorBlock;
+    private bool _hasDefinitionColorBlock;
+    private float _presentationAlphaMultiplier = 1f;
+    private Color _baseBackgroundTint = Color.white;
+    private Color _baseIconTint = Color.white;
+    private Color[] _baseAccentTints = new Color[0];
 
     /// <summary>
     /// 缓存并补齐运行时需要的 UI 组件引用。
@@ -163,6 +189,7 @@ public class TowerShopCard : MonoBehaviour,
 
         _originalScale = transform.localScale;
         CacheVisualReferences();
+        CacheCurrentVisualPalette();
     }
 
     /// <summary>
@@ -171,6 +198,7 @@ public class TowerShopCard : MonoBehaviour,
     private void OnValidate()
     {
         CacheVisualReferences();
+        CacheCurrentVisualPalette();
     }
 
     /// <summary>
@@ -186,14 +214,37 @@ public class TowerShopCard : MonoBehaviour,
             return;
         }
 
-        if (!_isPointerOver)
+        if (_interactionVisualState == TowerShopCardInteractionState.Locked)
         {
             transform.localScale = Vector3.Lerp(transform.localScale, _originalScale, Time.unscaledDeltaTime * 14f);
             return;
         }
 
-        float pulse = 1f + Mathf.Sin(Time.unscaledTime * hoverPulseSpeed) * hoverPulseAmplitude;
-        Vector3 targetScale = _originalScale * hoverScaleMultiplier * pulse;
+        bool isRecommended = _interactionVisualState == TowerShopCardInteractionState.Recommended;
+        bool isAvailable = _interactionVisualState == TowerShopCardInteractionState.Available;
+        if (!_isPointerOver && !isRecommended && !isAvailable)
+        {
+            transform.localScale = Vector3.Lerp(transform.localScale, _originalScale, Time.unscaledDeltaTime * 14f);
+            return;
+        }
+
+        float targetScaleMultiplier;
+        if (_isPointerOver)
+        {
+            float pulse = 1f + Mathf.Sin(Time.unscaledTime * hoverPulseSpeed) * hoverPulseAmplitude;
+            targetScaleMultiplier = hoverScaleMultiplier * pulse;
+        }
+        else if (isRecommended)
+        {
+            float pulse = 1f + Mathf.Sin(Time.unscaledTime * recommendedPulseSpeed) * recommendedPulseAmplitude;
+            targetScaleMultiplier = recommendedBaseScaleMultiplier * pulse;
+        }
+        else
+        {
+            targetScaleMultiplier = 1f;
+        }
+
+        Vector3 targetScale = _originalScale * targetScaleMultiplier;
         transform.localScale = Vector3.Lerp(transform.localScale, targetScale, Time.unscaledDeltaTime * 12f);
     }
 
@@ -262,6 +313,11 @@ public class TowerShopCard : MonoBehaviour,
             return;
         }
 
+        if (!TowerDefenseGame.Instance.CanPreviewTowerCard(towerType))
+        {
+            return;
+        }
+
         TowerDefenseGame.Instance.PrewarmPlacementAreaOverlay(towerType);
     }
 
@@ -273,6 +329,11 @@ public class TowerShopCard : MonoBehaviour,
         _isPointerOver = true;
 
         if (_isDragging || TowerDefenseGame.Instance == null || !HasConfiguredTowerType())
+        {
+            return;
+        }
+
+        if (!TowerDefenseGame.Instance.CanPreviewTowerCard(towerType))
         {
             return;
         }
@@ -510,6 +571,8 @@ public class TowerShopCard : MonoBehaviour,
             }
         }
 
+        CacheCurrentVisualPalette();
+
         Button button = GetComponent<Button>();
         if (button != null)
         {
@@ -522,11 +585,73 @@ public class TowerShopCard : MonoBehaviour,
             colors.selectedColor = colors.highlightedColor;
             colors.disabledColor = new Color(baseColor.r * 0.45f, baseColor.g * 0.45f, baseColor.b * 0.45f, 0.82f);
             button.colors = colors;
+            _definitionColorBlock = colors;
+            _hasDefinitionColorBlock = true;
 
             if (backgroundImageReference != null)
             {
                 button.targetGraphic = backgroundImageReference;
             }
+        }
+
+        ApplyInteractionVisualState(_interactionVisualState);
+    }
+
+    public void ApplyInteractionVisualState(TowerShopCardInteractionState state)
+    {
+        _interactionVisualState = state;
+        Button button = GetComponent<Button>();
+        if (button == null)
+        {
+            return;
+        }
+
+        ColorBlock baseColors = _hasDefinitionColorBlock ? _definitionColorBlock : button.colors;
+        ColorBlock colors = baseColors;
+
+        switch (state)
+        {
+            case TowerShopCardInteractionState.Locked:
+                colors.normalColor = lockedBackgroundTint;
+                colors.highlightedColor = lockedBackgroundTint;
+                colors.selectedColor = lockedBackgroundTint;
+                colors.pressedColor = lockedBackgroundTint;
+                colors.disabledColor = lockedBackgroundTint;
+                _presentationAlphaMultiplier = lockedAlphaMultiplier;
+                ApplyLockedVisualPalette();
+                break;
+
+            case TowerShopCardInteractionState.Available:
+                colors.normalColor = Color.Lerp(baseColors.normalColor, baseColors.highlightedColor, 0.42f);
+                colors.highlightedColor = Color.Lerp(baseColors.highlightedColor, Color.white, 0.18f);
+                colors.selectedColor = colors.highlightedColor;
+                colors.pressedColor = baseColors.pressedColor;
+                colors.disabledColor = baseColors.disabledColor;
+                _presentationAlphaMultiplier = 1f;
+                RestoreDefinitionVisualPalette();
+                break;
+
+            case TowerShopCardInteractionState.Recommended:
+                colors.normalColor = Color.Lerp(baseColors.normalColor, baseColors.highlightedColor, 0.72f);
+                colors.highlightedColor = Color.Lerp(baseColors.highlightedColor, Color.white, 0.32f);
+                colors.selectedColor = colors.highlightedColor;
+                colors.pressedColor = baseColors.pressedColor;
+                colors.disabledColor = baseColors.disabledColor;
+                _presentationAlphaMultiplier = 1f;
+                RestoreDefinitionVisualPalette();
+                break;
+
+            default:
+                colors = baseColors;
+                _presentationAlphaMultiplier = 1f;
+                RestoreDefinitionVisualPalette();
+                break;
+        }
+
+        button.colors = colors;
+        if (!_isDragging && _canvasGroup != null)
+        {
+            _canvasGroup.alpha = _presentationAlphaMultiplier;
         }
     }
 
@@ -537,11 +662,95 @@ public class TowerShopCard : MonoBehaviour,
     {
         if (_canvasGroup != null)
         {
-            _canvasGroup.alpha = 1f;
+            _canvasGroup.alpha = _presentationAlphaMultiplier;
             _canvasGroup.blocksRaycasts = true;
         }
 
         transform.localScale = _originalScale;
+    }
+
+    private void CacheCurrentVisualPalette()
+    {
+        if (backgroundImageReference != null)
+        {
+            _baseBackgroundTint = backgroundImageReference.color;
+        }
+
+        if (iconImageReference != null)
+        {
+            _baseIconTint = iconImageReference.color;
+        }
+
+        if (accentGraphicReferences == null || accentGraphicReferences.Length == 0)
+        {
+            _baseAccentTints = new Color[0];
+            return;
+        }
+
+        if (_baseAccentTints == null || _baseAccentTints.Length != accentGraphicReferences.Length)
+        {
+            _baseAccentTints = new Color[accentGraphicReferences.Length];
+        }
+
+        for (int i = 0; i < accentGraphicReferences.Length; i++)
+        {
+            _baseAccentTints[i] = accentGraphicReferences[i] != null
+                ? accentGraphicReferences[i].color
+                : Color.white;
+        }
+    }
+
+    private void RestoreDefinitionVisualPalette()
+    {
+        if (backgroundImageReference != null)
+        {
+            backgroundImageReference.color = _baseBackgroundTint;
+        }
+
+        if (iconImageReference != null)
+        {
+            iconImageReference.color = _baseIconTint;
+        }
+
+        if (accentGraphicReferences == null || _baseAccentTints == null)
+        {
+            return;
+        }
+
+        int count = Mathf.Min(accentGraphicReferences.Length, _baseAccentTints.Length);
+        for (int i = 0; i < count; i++)
+        {
+            if (accentGraphicReferences[i] != null)
+            {
+                accentGraphicReferences[i].color = _baseAccentTints[i];
+            }
+        }
+    }
+
+    private void ApplyLockedVisualPalette()
+    {
+        if (backgroundImageReference != null)
+        {
+            backgroundImageReference.color = lockedBackgroundTint;
+        }
+
+        if (iconImageReference != null)
+        {
+            iconImageReference.color = lockedIconTint;
+        }
+
+        if (accentGraphicReferences == null)
+        {
+            return;
+        }
+
+        for (int i = 0; i < accentGraphicReferences.Length; i++)
+        {
+            if (accentGraphicReferences[i] != null)
+            {
+                accentGraphicReferences[i].color = lockedAccentTint;
+            }
+        }
     }
 
     /// <summary>

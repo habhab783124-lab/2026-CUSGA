@@ -51,7 +51,7 @@ public sealed class Chapter1 : MonoBehaviour
 
     [Header("场景切换")]
     [SerializeField] private bool autoLoadNextSceneOnDialogueEnd = true;
-    [SerializeField] private string nextSceneName = "level 1";
+    [SerializeField] private string nextSceneName = "Tutorial Level";
     [SerializeField] private float fadeOutToBlackDuration = 0.75f;
     [SerializeField] private float fadeInFromBlackDuration = 0.75f;
 

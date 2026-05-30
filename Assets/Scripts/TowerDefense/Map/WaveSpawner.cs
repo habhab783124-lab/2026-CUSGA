@@ -163,6 +163,8 @@ public sealed class WaveSpawner : MonoBehaviour
     public WaveCatalogAsset WaveCatalogAsset => waveCatalogAsset;
     public EnemyCatalogAsset EnemyCatalogAsset => enemyCatalogAsset;
     public bool UsesWaveCatalog => waveCatalogAsset != null && enemyCatalogAsset != null && waveCatalogAsset.Waves.Length > 0;
+    public bool IsRoutePreviewVisible => _routePreviewVisible;
+    public int UpcomingWaveNumber => _currentWaveIndex < _runtimeWaves.Count ? _currentWaveIndex + 1 : 0;
 
     private void Start()
     {
