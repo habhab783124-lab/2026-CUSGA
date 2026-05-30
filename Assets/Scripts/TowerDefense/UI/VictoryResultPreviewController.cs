@@ -22,8 +22,10 @@ using UnityEditor;
 [ExecuteAlways]
 public sealed class VictoryResultPreviewController : MonoBehaviour
 {
-    private const string PreviewPrefabAssetPath = "Assets/Resources/TowerDefense/UI/VictoryResultPage.prefab";
-    private const string PreviewPrefabResourcePath = "TowerDefense/UI/VictoryResultPage";
+    private const string VictoryPrefabAssetPath = "Assets/Resources/TowerDefense/UI/VictoryResultPage.prefab";
+    private const string VictoryPrefabResourcePath = "TowerDefense/UI/VictoryResultPage";
+    private const string FailurePrefabAssetPath = "Assets/Resources/TowerDefense/UI/FailureResultPage.prefab";
+    private const string FailurePrefabResourcePath = "TowerDefense/UI/FailureResultPage";
 
     [Header("Preview Copy")]
     [SerializeField] private VictoryResultPageView.ResultPageTone previewTone = VictoryResultPageView.ResultPageTone.Victory;
@@ -56,7 +58,28 @@ public sealed class VictoryResultPreviewController : MonoBehaviour
     private void OnEnable()
     {
         RebuildPreviewIfNeeded();
+
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
+        }
+#endif
     }
+
+    private void OnDisable()
+    {
+#if UNITY_EDITOR
+        Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+#endif
+    }
+
+#if UNITY_EDITOR
+    private void OnUndoRedoPerformed()
+    {
+        RebuildPreviewIfNeeded();
+    }
+#endif
 
     private void OnValidate()
     {
@@ -115,10 +138,17 @@ public sealed class VictoryResultPreviewController : MonoBehaviour
 
     private VictoryResultPageView EnsurePreviewPageView()
     {
+        bool isFailure = previewTone == VictoryResultPageView.ResultPageTone.Failure;
+
         VictoryResultPageView[] existingViews = FindObjectsByType<VictoryResultPageView>(
             FindObjectsInactive.Include,
             FindObjectsSortMode.None);
 
+        // Unified path for both tones: keep the first existing instance (which preserves
+        // any Scene-authored overrides), destroy the rest. Only create from scratch when
+        // no instance exists yet. The scene file itself determines which prefab variant
+        // lives there, so cross-contamination is impossible as long as each preview scene
+        // only ever instantiates its own prefab.
         VictoryResultPageView primaryView = null;
         for (int index = 0; index < existingViews.Length; index++)
         {
@@ -155,12 +185,57 @@ public sealed class VictoryResultPreviewController : MonoBehaviour
             return primaryView;
         }
 
-        GameObject prefabRoot = LoadPreviewPrefabRoot();
+        return isFailure ? CreateFromFailurePrefab() : CreateFromVictoryPrefab();
+    }
+
+    private VictoryResultPageView CreateFromFailurePrefab()
+    {
+        GameObject prefabRoot = LoadFailurePrefabRoot();
         if (prefabRoot == null)
         {
-            Debug.LogWarning(
-                $"VictoryResultPreviewController could not load preview prefab at '{PreviewPrefabAssetPath}'.",
-                this);
+            return null;
+        }
+
+        return InstantiateAndSetup(prefabRoot);
+    }
+
+    private VictoryResultPageView CreateFromVictoryPrefab()
+    {
+        GameObject prefabRoot = LoadVictoryPrefabRoot();
+        if (prefabRoot == null)
+        {
+            return null;
+        }
+
+        return InstantiateAndSetup(prefabRoot);
+    }
+
+    private static GameObject LoadFailurePrefabRoot()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            return AssetDatabase.LoadAssetAtPath<GameObject>(FailurePrefabAssetPath);
+        }
+#endif
+        return Resources.Load<GameObject>(FailurePrefabResourcePath);
+    }
+
+    private static GameObject LoadVictoryPrefabRoot()
+    {
+#if UNITY_EDITOR
+        if (!Application.isPlaying)
+        {
+            return AssetDatabase.LoadAssetAtPath<GameObject>(VictoryPrefabAssetPath);
+        }
+#endif
+        return Resources.Load<GameObject>(VictoryPrefabResourcePath);
+    }
+
+    private VictoryResultPageView InstantiateAndSetup(GameObject prefabRoot)
+    {
+        if (prefabRoot == null)
+        {
             return null;
         }
 
@@ -182,18 +257,6 @@ public sealed class VictoryResultPreviewController : MonoBehaviour
 
         previewView.SetPreserveSceneVisuals(true);
         return previewView;
-    }
-
-    private static GameObject LoadPreviewPrefabRoot()
-    {
-#if UNITY_EDITOR
-        if (!Application.isPlaying)
-        {
-            return AssetDatabase.LoadAssetAtPath<GameObject>(PreviewPrefabAssetPath);
-        }
-#endif
-
-        return Resources.Load<GameObject>(PreviewPrefabResourcePath);
     }
 
     private static GameObject InstantiatePreviewPrefab(GameObject prefabRoot)

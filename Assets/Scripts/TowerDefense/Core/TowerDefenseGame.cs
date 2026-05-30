@@ -396,6 +396,7 @@ public class TowerDefenseGame : MonoBehaviour
     private bool _levelClearStartOpaqueOnContinue;
     private const float DemolishRefundRatio = 0.5f;
     private const string VictoryResultPagePrefabResourcePath = "TowerDefense/UI/VictoryResultPage";
+    private const string FailureResultPagePrefabResourcePath = "TowerDefense/UI/FailureResultPage";
 
     /// <summary>
     /// 对外暴露只读的结算状态，方便 HUD、敌人和其他运行时对象判断当前是否已经 Game Over。
@@ -1861,7 +1862,6 @@ public class TowerDefenseGame : MonoBehaviour
         _placementPreviewRoot = bootstrapResult.PlacementPreviewRoot;
         _battlefieldMapDefinition = battlefieldMapReference != null ? battlefieldMapReference : FindFirstObjectByType<BattlefieldMapDefinition>();
         _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());
-        EnsureVictoryResultPageView();
 
         mainCameraReference = _mainCamera;
         buildZoneReference = _buildZone;
@@ -1886,25 +1886,23 @@ public class TowerDefenseGame : MonoBehaviour
         }
     }
 
-    private void EnsureVictoryResultPageView()
+    private void EnsureVictoryResultPageView(VictoryResultPageView.ResultPageTone tone)
     {
+        // Destroy any existing page view with the wrong prefab origin.
         if (victoryResultPageViewReference != null)
         {
-            return;
+            Destroy(victoryResultPageViewReference.gameObject);
+            victoryResultPageViewReference = null;
         }
 
-        VictoryResultPageView existingView = FindFirstObjectByType<VictoryResultPageView>(FindObjectsInactive.Include);
-        if (existingView != null)
-        {
-            victoryResultPageViewReference = existingView;
-            victoryResultPageViewReference.Hide();
-            return;
-        }
+        string resourcePath = tone == VictoryResultPageView.ResultPageTone.Failure
+            ? FailureResultPagePrefabResourcePath
+            : VictoryResultPagePrefabResourcePath;
 
-        GameObject prefabRoot = Resources.Load<GameObject>(VictoryResultPagePrefabResourcePath);
+        GameObject prefabRoot = Resources.Load<GameObject>(resourcePath);
         if (prefabRoot == null)
         {
-            Debug.LogWarning($"TowerDefenseGame could not load VictoryResultPage prefab from Resources path '{VictoryResultPagePrefabResourcePath}'.", this);
+            Debug.LogWarning($"TowerDefenseGame could not load result page prefab from Resources path '{resourcePath}'.", this);
             return;
         }
 
@@ -1915,9 +1913,6 @@ public class TowerDefenseGame : MonoBehaviour
         VictoryResultPageView instantiatedView = instantiatedRoot.GetComponent<VictoryResultPageView>();
         if (instantiatedView == null)
         {
-            // The runtime page should stay recoverable even if the prefab was authored before the
-            // formal page view script existed. Adding the component here keeps old prefab copies
-            // usable while we continue refining the visual asset.
             instantiatedView = instantiatedRoot.AddComponent<VictoryResultPageView>();
         }
 
@@ -1927,7 +1922,7 @@ public class TowerDefenseGame : MonoBehaviour
 
     private void ShowFormalVictoryPresentation()
     {
-        EnsureVictoryResultPageView();
+        EnsureVictoryResultPageView(VictoryResultPageView.ResultPageTone.Victory);
         if (victoryResultPageViewReference != null)
         {
             victoryResultPageViewReference.BindContinueAction(ContinueAfterVictoryPresentation);
@@ -1942,7 +1937,7 @@ public class TowerDefenseGame : MonoBehaviour
 
     private void ShowFormalGameOverPresentation()
     {
-        EnsureVictoryResultPageView();
+        EnsureVictoryResultPageView(VictoryResultPageView.ResultPageTone.Failure);
         if (victoryResultPageViewReference != null)
         {
             victoryResultPageViewReference.BindContinueAction(RetryAfterFailurePresentation);

@@ -307,35 +307,35 @@ public sealed class VictoryResultPageView : MonoBehaviour
         _currentTone = content.Tone;
         ResolveReferences();
 
+        // When preserveSceneVisuals is on, the Scene-authored prefab instance already holds the
+        // correct look (colors, sizes, positions). Skip ApplyTheme so C# palette values don't
+        // overwrite the author's manual adjustments.
         if (!preserveSceneVisuals)
         {
             ApplyTheme(content.Tone);
         }
 
-        if (!preserveSceneVisuals)
-        {
-            SetText(signalTitleText, content.SignalTitle);
-            SetText(signalStatusText, content.SignalStatus);
-            SetText(signalChannelText, content.SignalChannel);
-            SetText(titleText, content.Title);
-            SetText(subtitleText, content.Subtitle);
-            SetText(reportHeaderText, content.ReportHeader);
-            SetText(integrityRowText, content.IntegrityRow);
-            SetText(scrapRowText, content.ScrapRow);
-            SetText(eventRowText, content.EventRow);
-            SetText(footerHintText, content.FooterHint);
-            SetText(commanderNameText, content.CommanderName);
-            SetText(commanderCodenameText, content.CommanderCodename);
-            SetText(dialogueText, content.DialogueText);
-            SetText(continueButtonText, content.ContinueButtonText);
-            SetText(continueHintText, content.ContinueHintText);
+        SetText(signalTitleText, content.SignalTitle);
+        SetText(signalStatusText, content.SignalStatus);
+        SetText(signalChannelText, content.SignalChannel);
+        SetText(titleText, content.Title);
+        SetText(subtitleText, content.Subtitle);
+        SetText(reportHeaderText, content.ReportHeader);
+        SetText(integrityRowText, content.IntegrityRow);
+        SetText(scrapRowText, content.ScrapRow);
+        SetText(eventRowText, content.EventRow);
+        SetText(footerHintText, content.FooterHint);
+        SetText(commanderNameText, content.CommanderName);
+        SetText(commanderCodenameText, content.CommanderCodename);
+        SetText(dialogueText, content.DialogueText);
+        SetText(continueButtonText, content.ContinueButtonText);
+        SetText(continueHintText, content.ContinueHintText);
 
-            _cachedTitle = content.Title ?? string.Empty;
-            _cachedSubtitle = content.Subtitle ?? string.Empty;
-            _cachedEvent = content.EventRow ?? string.Empty;
-            _cachedDialogue = content.DialogueText ?? string.Empty;
-            _cachedContinueHint = content.ContinueHintText ?? string.Empty;
-        }
+        _cachedTitle = content.Title ?? string.Empty;
+        _cachedSubtitle = content.Subtitle ?? string.Empty;
+        _cachedEvent = content.EventRow ?? string.Empty;
+        _cachedDialogue = content.DialogueText ?? string.Empty;
+        _cachedContinueHint = content.ContinueHintText ?? string.Empty;
 
         if (rootCanvasGroup != null)
         {
