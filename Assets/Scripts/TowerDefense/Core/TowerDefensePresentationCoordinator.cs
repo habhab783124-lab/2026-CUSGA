@@ -23,11 +23,16 @@ public sealed class TowerDefensePresentationCoordinator
     private readonly Func<PlacedStructureHudState> _placedStructureHudStateQuery;
     private readonly Func<PowerGridHudSnapshot> _powerGridHudSnapshotQuery;
     private readonly Func<TowerType, bool> _canAffordTower;
+    private readonly Func<TowerType, TowerTutorialAvailability> _tutorialTowerAvailabilityQuery;
     private readonly Action _refreshStarterZoneMarker;
     private readonly List<HudNoticeEntry> _recentHudNotices = new List<HudNoticeEntry>();
     private HudNoticeEntry _transientHudNotice = new HudNoticeEntry(string.Empty, HudNoticeTone.Neutral);
     private float _transientHudNoticeHideAt = -1f;
     private string _currentStatusMessage = string.Empty;
+    private string _pinnedStatusMessage = string.Empty;
+    private bool _hasPinnedStatusMessage;
+    private HudNoticeEntry _pinnedTransientNotice = new HudNoticeEntry(string.Empty, HudNoticeTone.Neutral);
+    private bool _hasPinnedTransientNotice;
 
     private TowerDefenseHudPresenter _hudPresenter;
     private TowerCatalog _towerCatalog;
@@ -40,6 +45,7 @@ public sealed class TowerDefensePresentationCoordinator
         Func<PlacedStructureHudState> placedStructureHudStateQuery,
         Func<PowerGridHudSnapshot> powerGridHudSnapshotQuery,
         Func<TowerType, bool> canAffordTower,
+        Func<TowerType, TowerTutorialAvailability> tutorialTowerAvailabilityQuery,
         Action refreshStarterZoneMarker)
     {
         _sessionStateQuery = sessionStateQuery;
@@ -47,6 +53,7 @@ public sealed class TowerDefensePresentationCoordinator
         _placedStructureHudStateQuery = placedStructureHudStateQuery;
         _powerGridHudSnapshotQuery = powerGridHudSnapshotQuery;
         _canAffordTower = canAffordTower;
+        _tutorialTowerAvailabilityQuery = tutorialTowerAvailabilityQuery;
         _refreshStarterZoneMarker = refreshStarterZoneMarker;
     }
 
@@ -93,6 +100,25 @@ public sealed class TowerDefensePresentationCoordinator
         RefreshHud();
     }
 
+    public void SetPinnedStatusMessage(string message)
+    {
+        _pinnedStatusMessage = message ?? string.Empty;
+        _hasPinnedStatusMessage = true;
+        RefreshHud();
+    }
+
+    public void ClearPinnedStatusMessage()
+    {
+        if (!_hasPinnedStatusMessage && string.IsNullOrEmpty(_pinnedStatusMessage))
+        {
+            return;
+        }
+
+        _pinnedStatusMessage = string.Empty;
+        _hasPinnedStatusMessage = false;
+        RefreshHud();
+    }
+
     /// <summary>
     /// `ShowTransientHudNotice()` 负责短时高亮反馈，
     /// 同时也会把消息写入最近事件流。
@@ -115,6 +141,32 @@ public sealed class TowerDefensePresentationCoordinator
         RefreshHud();
     }
 
+    public void SetPinnedTransientNotice(string message, HudNoticeTone tone = HudNoticeTone.Auto)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return;
+        }
+
+        HudNoticeEntry notice = new HudNoticeEntry(message, tone);
+        _pinnedTransientNotice = notice;
+        _hasPinnedTransientNotice = true;
+        PushNoticeToHistory(notice);
+        RefreshHud();
+    }
+
+    public void ClearPinnedTransientNotice()
+    {
+        if (!_hasPinnedTransientNotice && !_pinnedTransientNotice.HasMessage)
+        {
+            return;
+        }
+
+        _pinnedTransientNotice = new HudNoticeEntry(string.Empty, HudNoticeTone.Neutral);
+        _hasPinnedTransientNotice = false;
+        RefreshHud();
+    }
+
     /// <summary>
     /// 刷新当前 HUD。
     ///
@@ -130,7 +182,7 @@ public sealed class TowerDefensePresentationCoordinator
             return;
         }
 
-        _hudPresenter.Refresh(CreateHudState(), _towerCatalog, _canAffordTower);
+        _hudPresenter.Refresh(CreateHudState(), _towerCatalog, _canAffordTower, _tutorialTowerAvailabilityQuery);
     }
 
     /// <summary>
@@ -248,9 +300,19 @@ public sealed class TowerDefensePresentationCoordinator
             powerGridSnapshot: _powerGridHudSnapshotQuery != null
                 ? _powerGridHudSnapshotQuery()
                 : new PowerGridHudSnapshot(0, 0, 0, 0, 0, 0, 0, string.Empty),
-            currentStatusMessage: _currentStatusMessage,
-            transientNotice: GetTransientHudNoticeEntry(),
+            currentStatusMessage: ResolveDisplayedStatusMessage(),
+            transientNotice: ResolveDisplayedTransientNotice(),
             recentHudNotices: _recentHudNotices.ToArray());
+    }
+
+    private string ResolveDisplayedStatusMessage()
+    {
+        return _hasPinnedStatusMessage ? _pinnedStatusMessage : _currentStatusMessage;
+    }
+
+    private HudNoticeEntry ResolveDisplayedTransientNotice()
+    {
+        return _hasPinnedTransientNotice ? _pinnedTransientNotice : GetTransientHudNoticeEntry();
     }
 
     private HudNoticeEntry GetTransientHudNoticeEntry()

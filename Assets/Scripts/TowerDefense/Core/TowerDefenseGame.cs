@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -18,6 +19,14 @@ public enum TowerType
     SingleTarget,
     SlowField,
     Bombard
+}
+
+public enum TowerTutorialAvailability
+{
+    Default,
+    Locked,
+    Available,
+    Recommended
 }
 
 /// <summary>
@@ -396,11 +405,111 @@ public class TowerDefenseGame : MonoBehaviour
     private bool _levelClearStartOpaqueOnContinue;
     private const float DemolishRefundRatio = 0.5f;
     private const string VictoryResultPagePrefabResourcePath = "TowerDefense/UI/VictoryResultPage";
+    private const string DefaultTutorialLockedTowerStatusMessage = "指挥中心：当前阶段尚未批准部署该塔型，先完成当前指引。";
+    private readonly Dictionary<TowerType, TowerTutorialAvailability> _tutorialTowerAvailability = new Dictionary<TowerType, TowerTutorialAvailability>(4);
+    private bool _hasTutorialTowerAvailabilityOverrides;
+    private string _tutorialLockedTowerStatusMessage = DefaultTutorialLockedTowerStatusMessage;
+    private string _tutorialFailureCommanderLineOverride = string.Empty;
+    private string _tutorialFailureFollowUpLineOverride = string.Empty;
 
     /// <summary>
     /// 对外暴露只读的结算状态，方便 HUD、敌人和其他运行时对象判断当前是否已经 Game Over。
     /// </summary>
     public bool IsGameOver => _sessionState != null && _sessionState.IsGameOver;
+    public int CurrentScrap => _sessionState != null ? _sessionState.CurrentScrap : 0;
+    public int CurrentBaseHealth => _sessionState != null ? _sessionState.CurrentBaseHealth : 0;
+    public int CurrentWave => _sessionState != null ? _sessionState.CurrentWave : 0;
+    public int TotalWaves => _sessionState != null ? _sessionState.TotalWaves : 0;
+    public Transform PlacedTowerRoot => _placedTowerRoot;
+
+    public TowerTutorialAvailability GetTutorialTowerAvailability(TowerType towerType)
+    {
+        if (!_hasTutorialTowerAvailabilityOverrides || towerType == TowerType.None)
+        {
+            return TowerTutorialAvailability.Default;
+        }
+
+        return _tutorialTowerAvailability.TryGetValue(towerType, out TowerTutorialAvailability availability)
+            ? availability
+            : TowerTutorialAvailability.Default;
+    }
+
+    public bool CanPreviewTowerCard(TowerType towerType)
+    {
+        return towerType != TowerType.None && !IsGameOver && !IsTowerLockedByTutorial(towerType);
+    }
+
+    public void ApplyTutorialTowerAvailability(
+        TowerTutorialAvailability relayAvailability,
+        TowerTutorialAvailability singleTargetAvailability,
+        TowerTutorialAvailability slowFieldAvailability,
+        TowerTutorialAvailability bombardAvailability)
+    {
+        _tutorialTowerAvailability.Clear();
+        _tutorialTowerAvailability[TowerType.Relay] = relayAvailability;
+        _tutorialTowerAvailability[TowerType.SingleTarget] = singleTargetAvailability;
+        _tutorialTowerAvailability[TowerType.SlowField] = slowFieldAvailability;
+        _tutorialTowerAvailability[TowerType.Bombard] = bombardAvailability;
+        _hasTutorialTowerAvailabilityOverrides = true;
+        RefreshHud();
+    }
+
+    public void ClearTutorialTowerAvailability()
+    {
+        if (!_hasTutorialTowerAvailabilityOverrides && _tutorialTowerAvailability.Count == 0)
+        {
+            return;
+        }
+
+        _tutorialTowerAvailability.Clear();
+        _hasTutorialTowerAvailabilityOverrides = false;
+        RefreshHud();
+    }
+
+    public void SetTutorialLockedTowerStatusMessage(string message)
+    {
+        _tutorialLockedTowerStatusMessage = string.IsNullOrWhiteSpace(message)
+            ? DefaultTutorialLockedTowerStatusMessage
+            : message;
+    }
+
+    public void SetTutorialFailureDialogueOverride(string commanderLine, string followUpLine)
+    {
+        _tutorialFailureCommanderLineOverride = commanderLine ?? string.Empty;
+        _tutorialFailureFollowUpLineOverride = followUpLine ?? string.Empty;
+    }
+
+    public void ClearTutorialFailureDialogueOverride()
+    {
+        _tutorialFailureCommanderLineOverride = string.Empty;
+        _tutorialFailureFollowUpLineOverride = string.Empty;
+    }
+
+    public void SetTutorialStatusMessage(string message)
+    {
+        _presentationCoordinator?.SetPinnedStatusMessage(message);
+    }
+
+    public void ClearTutorialStatusMessage()
+    {
+        _presentationCoordinator?.ClearPinnedStatusMessage();
+    }
+
+    public void ShowTutorialHudNotice(string message, HudNoticeTone tone = HudNoticeTone.Auto)
+    {
+        _presentationCoordinator?.SetPinnedTransientNotice(message, tone);
+    }
+
+    public void ClearTutorialHudNotice()
+    {
+        _presentationCoordinator?.ClearPinnedTransientNotice();
+    }
+
+    public void ConfigureTutorialSelectionHudSections(bool showPrimaryOperationSection, bool showPowerGridSection)
+    {
+        _hudPresenter?.ConfigureSelectionSections(showPrimaryOperationSection, showPowerGridSection);
+        RefreshHud();
+    }
 
     /// <summary>
     /// `Awake()` 负责建立单例、锁定基础运行参数，并把场景引用与协作模块先装配起来。
@@ -433,6 +542,10 @@ public class TowerDefenseGame : MonoBehaviour
 
         _placementVisualController?.Dispose();
         _placementVisualController = null;
+        _tutorialTowerAvailability.Clear();
+        _hasTutorialTowerAvailabilityOverrides = false;
+        _tutorialFailureCommanderLineOverride = string.Empty;
+        _tutorialFailureFollowUpLineOverride = string.Empty;
 
         if (Instance == this)
         {
@@ -496,6 +609,11 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     public bool BeginPlacementDrag(TowerType towerType, Vector2 screenPosition)
     {
+        if (!CanInteractWithTutorialTower(towerType))
+        {
+            return false;
+        }
+
         return _placementInteractionController != null &&
                _placementInteractionController.BeginPlacementDrag(towerType, screenPosition);
     }
@@ -641,6 +759,11 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     public void SelectRelayTower()
     {
+        if (!CanInteractWithTutorialTower(TowerType.Relay))
+        {
+            return;
+        }
+
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectRelayTower();
         RefreshHud();
@@ -651,6 +774,11 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     public void SelectDefenseTower()
     {
+        if (!CanInteractWithTutorialTower(TowerType.SingleTarget))
+        {
+            return;
+        }
+
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectSingleTargetTower();
         RefreshHud();
@@ -658,6 +786,11 @@ public class TowerDefenseGame : MonoBehaviour
 
     public void SelectSlowFieldTower()
     {
+        if (!CanInteractWithTutorialTower(TowerType.SlowField))
+        {
+            return;
+        }
+
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectSlowFieldTower();
         RefreshHud();
@@ -665,6 +798,11 @@ public class TowerDefenseGame : MonoBehaviour
 
     public void SelectBombardTower()
     {
+        if (!CanInteractWithTutorialTower(TowerType.Bombard))
+        {
+            return;
+        }
+
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectBombardTower();
         RefreshHud();
@@ -685,6 +823,27 @@ public class TowerDefenseGame : MonoBehaviour
     /// 判断当前废料是否足够支付指定塔型的造价。
     /// `None` 永远视为不可购买，这样可以避免“未选中状态”误走通过分支。
     /// </summary>
+    private bool CanInteractWithTutorialTower(TowerType towerType)
+    {
+        if (towerType == TowerType.None)
+        {
+            return true;
+        }
+
+        if (!IsTowerLockedByTutorial(towerType))
+        {
+            return true;
+        }
+
+        SetTutorialStatusMessage(_tutorialLockedTowerStatusMessage);
+        return false;
+    }
+
+    private bool IsTowerLockedByTutorial(TowerType towerType)
+    {
+        return GetTutorialTowerAvailability(towerType) == TowerTutorialAvailability.Locked;
+    }
+
     public bool CanAffordTower(TowerType towerType)
     {
         if (towerType == TowerType.None)
@@ -979,6 +1138,7 @@ public class TowerDefenseGame : MonoBehaviour
                 ? _powerGridCoordinator.GetHudSnapshot()
                 : new PowerGridHudSnapshot(0, 0, 0, 0, 0, 0, 0, string.Empty),
             canAffordTower: CanAffordTower,
+            tutorialTowerAvailabilityQuery: GetTutorialTowerAvailability,
             refreshStarterZoneMarker: () => _placementSupportCoordinator?.RefreshStarterZoneMarker());
         _hudPresenter.SetTheme(hudTheme.ToRuntimeTheme());
         _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());
@@ -1709,6 +1869,11 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     public void PrewarmPlacementAreaOverlay(TowerType towerType)
     {
+        if (!CanPreviewTowerCard(towerType))
+        {
+            return;
+        }
+
         _placementSupportCoordinator?.PrewarmPlacementAreaOverlay(towerType);
     }
 
@@ -1994,9 +2159,14 @@ public class TowerDefenseGame : MonoBehaviour
         int currentScrap = _sessionState != null ? _sessionState.CurrentScrap : 0;
         int currentWave = _sessionState != null ? _sessionState.CurrentWave : 0;
         int totalWaves = _sessionState != null ? _sessionState.TotalWaves : 0;
-        string commanderLine = integrityPercent <= 0
-            ? "核心防区已经失守，我们丢掉了整条前线。"
-            : "敌军已经撕开防线，当前部署没能把战区稳住。";
+        string commanderLine = !string.IsNullOrWhiteSpace(_tutorialFailureCommanderLineOverride)
+            ? _tutorialFailureCommanderLineOverride
+            : integrityPercent <= 0
+                ? "核心防区已经失守，我们丢掉了整条前线。"
+                : "敌军已经撕开防线，当前部署没能把战区稳住。";
+        string followUpLine = !string.IsNullOrWhiteSpace(_tutorialFailureFollowUpLineOverride)
+            ? _tutorialFailureFollowUpLineOverride
+            : "放弃旧部署思路，立刻重算塔位、供电和火力覆盖，马上回到战区。";
 
         return new VictoryResultPageContent(
             tone: VictoryResultPageView.ResultPageTone.Failure,
@@ -2012,7 +2182,7 @@ public class TowerDefenseGame : MonoBehaviour
             footerHint: "立即重组部署序列",
             commanderName: "指挥官",
             commanderCodename: "前线总控 / C-07",
-            dialogueText: commanderLine + "\n放弃旧部署思路，立刻重算塔位、供电和火力覆盖，马上回到战区。",
+            dialogueText: commanderLine + "\n" + followUpLine,
             continueButtonText: "紧急重部署",
             continueHintText: "点击按钮或任意位置，立即回到当前关卡");
     }
