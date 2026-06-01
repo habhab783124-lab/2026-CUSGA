@@ -35,6 +35,7 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
 
     [Header("玩家")]
     [SerializeField] private PlayerInteractor2D playerInteractor;
+    [SerializeField] private Animator playerAnimator;
     [SerializeField] private float playerExitMoveSpeed = 3.5f;
     [SerializeField] private float playerOffscreenMarginWorld = 2.5f;
 
@@ -46,6 +47,7 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
 
     private const string Chapter35SceneName = "chapter3.5";
     private Coroutine chenSpriteAnimationRoutine;
+    private string currentPlayerAnimationState;
 
     private void Reset()
     {
@@ -113,7 +115,7 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
 
         if (chen == null)
         {
-            GameObject go = GameObject.Find("Chen");
+            GameObject go = GameObject.Find("Chen_left");
             if (go != null)
             {
                 chen = go.transform;
@@ -123,6 +125,11 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
         if (playerInteractor == null)
         {
             playerInteractor = FindObjectOfType<PlayerInteractor2D>();
+        }
+
+        if (playerInteractor != null && playerAnimator == null)
+        {
+            playerAnimator = playerInteractor.GetComponentInChildren<Animator>(true);
         }
 
         if (chen != null && chenStopConfig == null)
@@ -140,6 +147,7 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
             chenAnimator = chen.GetComponentInChildren<Animator>(true);
         }
 
+#if UNITY_EDITOR
         if ((chenWalkLeftFrames == null || chenWalkLeftFrames.Length == 0) && !Application.isPlaying)
         {
             chenWalkLeftFrames = LoadSpritesAtPath("Assets/_Project/Story/Sprites/Character/chen_left.png");
@@ -154,6 +162,7 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
         {
             chenIdleSprite = LoadSpriteAtPath("Assets/_Project/Story/Sprites/Character/Chen.png");
         }
+#endif
     }
 
     private IEnumerator EnterThenDialogueRoutine()
@@ -344,6 +353,7 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
         }
 
         Camera cam = Camera.main;
+        PlayPlayerAnimation("LingWalkRight");
         while (playerTransform != null)
         {
             playerTransform.position += Vector3.right * (playerExitMoveSpeed * Time.deltaTime);
@@ -363,6 +373,8 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
 
             yield return null;
         }
+
+        PlayPlayerAnimation("LingIdle");
     }
 
     private void LoadNext()
@@ -375,9 +387,20 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
         ScreenFadeTransition.Play(nextSceneName, fadeOutToBlackDuration, fadeInFromBlackDuration, startOpaque: false);
     }
 
-#if UNITY_EDITOR
+    private void PlayPlayerAnimation(string stateName)
+    {
+        if (playerAnimator == null || string.IsNullOrWhiteSpace(stateName) || currentPlayerAnimationState == stateName)
+        {
+            return;
+        }
+
+        playerAnimator.Play(stateName, 0, 0f);
+        currentPlayerAnimationState = stateName;
+    }
+
     private static Sprite[] LoadSpritesAtPath(string assetPath)
     {
+#if UNITY_EDITOR
         Object[] assets = AssetDatabase.LoadAllAssetsAtPath(assetPath);
         List<Sprite> sprites = new List<Sprite>();
         foreach (Object asset in assets)
@@ -390,11 +413,17 @@ public sealed class Chapter3CutsceneController : MonoBehaviour
 
         sprites.Sort((a, b) => EditorUtility.NaturalCompare(a.name, b.name));
         return sprites.ToArray();
+#else
+        return new Sprite[0];
+#endif
     }
 
     private static Sprite LoadSpriteAtPath(string assetPath)
     {
+#if UNITY_EDITOR
         return AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
-    }
+#else
+        return null;
 #endif
+    }
 }

@@ -9,10 +9,13 @@ using UnityEngine.UI;
 public sealed class ScreenFadeTransition : MonoBehaviour
 {
     private static ScreenFadeTransition _active;
+    private const float DefaultBlackHoldBeforeLoadSeconds = 0.08f;
+    private const float DefaultBlackHoldAfterLoadSeconds = 0.08f;
+    private const int DefaultPostLoadSettleFrames = 3;
 
     private CanvasGroup _canvasGroup;
 
-    /// <summary>淡出 → 加载场景 → 淡入，使用 unscaled 时间。</summary>
+    /// <summary>淡出 -> 加载场景 -> 淡入，使用 unscaled 时间。</summary>
     /// <param name="startOpaque">为 true 时跳过淡出（假定屏幕已为全黑），直接加载后再淡入。</param>
     public static void Play(string sceneName, float fadeOutSeconds, float fadeInSeconds, bool startOpaque = false)
     {
@@ -28,10 +31,10 @@ public sealed class ScreenFadeTransition : MonoBehaviour
         }
 
         var go = new GameObject(nameof(ScreenFadeTransition));
-        var t = go.AddComponent<ScreenFadeTransition>();
-        _active = t;
+        var transition = go.AddComponent<ScreenFadeTransition>();
+        _active = transition;
         DontDestroyOnLoad(go);
-        t.StartCoroutine(t.RunRoutine(sceneName, fadeOutSeconds, fadeInSeconds, startOpaque));
+        transition.StartCoroutine(transition.RunRoutine(sceneName, fadeOutSeconds, fadeInSeconds, startOpaque));
     }
 
     private void Awake()
@@ -58,7 +61,7 @@ public sealed class ScreenFadeTransition : MonoBehaviour
 
         var scaler = canvasGo.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
 
         canvasGo.AddComponent<GraphicRaycaster>();
 
@@ -67,17 +70,17 @@ public sealed class ScreenFadeTransition : MonoBehaviour
         _canvasGroup.blocksRaycasts = true;
         _canvasGroup.interactable = false;
 
-        var imgGo = new GameObject("FadeImage");
-        imgGo.transform.SetParent(canvasGo.transform, false);
-        var img = imgGo.AddComponent<Image>();
-        img.color = Color.black;
-        img.raycastTarget = true;
+        var imageGo = new GameObject("FadeImage");
+        imageGo.transform.SetParent(canvasGo.transform, false);
+        var image = imageGo.AddComponent<Image>();
+        image.color = Color.black;
+        image.raycastTarget = true;
 
-        var rt = img.rectTransform;
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
+        RectTransform rectTransform = image.rectTransform;
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.offsetMin = Vector2.zero;
+        rectTransform.offsetMax = Vector2.zero;
     }
 
     private IEnumerator RunRoutine(string sceneName, float fadeOutSeconds, float fadeInSeconds, bool startOpaque)
@@ -96,23 +99,35 @@ public sealed class ScreenFadeTransition : MonoBehaviour
             yield return FadeRoutine(0f, 1f, fadeOutSeconds);
         }
 
-        AsyncOperation op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
-        if (op == null)
+        if (DefaultBlackHoldBeforeLoadSeconds > 0f)
         {
-            Debug.LogError($"ScreenFadeTransition: 无法加载场景「{sceneName}」。请确认已加入 Build Settings。", this);
+            yield return new WaitForSecondsRealtime(DefaultBlackHoldBeforeLoadSeconds);
+        }
+
+        AsyncOperation loadOperation = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
+        if (loadOperation == null)
+        {
+            Debug.LogError($"ScreenFadeTransition: 无法加载场景“{sceneName}”。请确认已加入 Build Settings。", this);
             Destroy(gameObject);
             yield break;
         }
 
-        op.allowSceneActivation = false;
-        while (op.progress < 0.9f)
+        loadOperation.allowSceneActivation = false;
+        while (loadOperation.progress < 0.9f)
         {
             yield return null;
         }
 
-        op.allowSceneActivation = true;
-        yield return null;
-        yield return null;
+        loadOperation.allowSceneActivation = true;
+        for (int frameIndex = 0; frameIndex < DefaultPostLoadSettleFrames; frameIndex++)
+        {
+            yield return null;
+        }
+
+        if (DefaultBlackHoldAfterLoadSeconds > 0f)
+        {
+            yield return new WaitForSecondsRealtime(DefaultBlackHoldAfterLoadSeconds);
+        }
 
         yield return FadeRoutine(1f, 0f, fadeInSeconds);
 
@@ -132,11 +147,11 @@ public sealed class ScreenFadeTransition : MonoBehaviour
             yield break;
         }
 
-        float t = 0f;
-        while (t < duration)
+        float elapsedSeconds = 0f;
+        while (elapsedSeconds < duration)
         {
-            t += Time.unscaledDeltaTime;
-            _canvasGroup.alpha = Mathf.Lerp(from, to, Mathf.Clamp01(t / duration));
+            elapsedSeconds += Time.unscaledDeltaTime;
+            _canvasGroup.alpha = Mathf.Lerp(from, to, Mathf.Clamp01(elapsedSeconds / duration));
             yield return null;
         }
 

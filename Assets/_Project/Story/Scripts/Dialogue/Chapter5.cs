@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public sealed class Chapter5 : MonoBehaviour
 {
@@ -23,12 +24,26 @@ public sealed class Chapter5 : MonoBehaviour
     [SerializeField] private float secondsPerChar = 0.03f;
     [SerializeField] private int mouseButton = 0;
 
+    [Header("Rain BGM")]
+    [SerializeField] private AudioClip backgroundMusic;
+    [SerializeField] private string musicResourcePath = "StoryAudio/BGM/rain";
+    [SerializeField] [Range(0f, 1f)] private float musicVolume = 1f;
+    [SerializeField] private bool loopMusic = true;
+
     [Header("Shen Entrance")]
     [SerializeField] private Transform shen;
     [SerializeField] private Transform shenStopPoint;
+    [SerializeField] private Animator shenAnimator;
+    [SerializeField] private SpriteRenderer shenSpriteRenderer;
+    [SerializeField] private Sprite[] shenWalkRightFrames = new Sprite[0];
+    [SerializeField] private Sprite shenIdleSprite;
+    [SerializeField] private float shenWalkFramesPerSecond = 8f;
     [SerializeField] private float shenMoveSpeed = 3f;
     [SerializeField] private float shenExtraLeftBeyondCamera = 1.2f;
     [SerializeField] private float shenArriveEpsilon = 0.02f;
+    [SerializeField] [Min(0f)] private float shenSettleDelaySeconds = 0.2f;
+    [SerializeField] private string shenIdleStateName = "ShenIdle";
+    [SerializeField] private string shenWalkRightStateName = "ShenWalkRight";
 
     [Header("Character Dialogue Bubble")]
     [SerializeField] private DialogueBubbleView dialogueBubblePrefab;
@@ -44,7 +59,19 @@ public sealed class Chapter5 : MonoBehaviour
     [SerializeField] private float bubbleMinHeight = 1.2f;
     [SerializeField] private float bubbleFontSize = 36f;
 
+    [Header("Station Interstitial")]
+    [SerializeField] private Sprite stationSprite;
+    [SerializeField] [Min(0f)] private float stationDisplaySeconds = 3f;
+    [SerializeField] [Min(0f)] private float stationFadeInSeconds = 0.35f;
+
+    [Header("Scene Transition")]
+    [SerializeField] private bool autoLoadNextSceneOnDialogueEnd = true;
+    [SerializeField] private string nextSceneName = "Level 3";
+    [SerializeField] [Min(0f)] private float fadeOutToBlackDuration = 0.75f;
+    [SerializeField] [Min(0f)] private float fadeInFromBlackDuration = 0.75f;
+
     private NarrationPresenter narrationPresenter;
+    private AudioSource audioSource;
     private Coroutine shenEntranceRoutine;
     private DialogueBubbleView playerBubble;
     private DialogueBubbleView shenBubble;
@@ -56,18 +83,32 @@ public sealed class Chapter5 : MonoBehaviour
     private Vector3 shenTargetPosition;
     private bool hasCachedShenTargetPosition;
     private int characterDialogueIndex;
+    private string currentShenAnimationState;
+    private Coroutine shenSpriteAnimationRoutine;
+    private bool shenAnimatorDisabledForSpriteAnimation;
+    private CanvasGroup stationInterstitialCanvasGroup;
+    private Image stationInterstitialImage;
+    private bool stationInterstitialActive;
+    private bool transitionQueued;
 
     private void Awake()
     {
         ResolveShenReferences();
+        if (HasAnyShenSpriteAnimationFrames())
+        {
+            SetShenAnimatorEnabled(false);
+        }
+
         ResolvePlayerReference();
         CacheShenTargetPosition(true);
         PlaceShenOffscreenLeft();
+        EnsureAudioSource();
 
         EnsureDialogueBubblePrefab();
         EnsureNarrationPresenter();
         EnsureBubbleAnchors();
         EnsureBubbleInstances();
+        EnsureStationInterstitialUi();
 
         ConfigureNarrationPresenter();
         ApplyBubbleFont();
@@ -86,6 +127,8 @@ public sealed class Chapter5 : MonoBehaviour
             ApplyBubbleFont();
         }
 
+        PlayMusic();
+
         if (playOnStart)
         {
             PlayIntro();
@@ -98,6 +141,11 @@ public sealed class Chapter5 : MonoBehaviour
         UpdateBubbleFollowTargets();
 
         if (!Input.GetMouseButtonDown(mouseButton))
+        {
+            return;
+        }
+
+        if (stationInterstitialActive)
         {
             return;
         }
@@ -152,6 +200,16 @@ public sealed class Chapter5 : MonoBehaviour
             {
                 shen = shenObject.transform;
             }
+        }
+
+        if (shen != null && shenAnimator == null)
+        {
+            shenAnimator = shen.GetComponentInChildren<Animator>(true);
+        }
+
+        if (shen != null && shenSpriteRenderer == null)
+        {
+            shenSpriteRenderer = shen.GetComponentInChildren<SpriteRenderer>(true);
         }
     }
 
@@ -230,6 +288,8 @@ public sealed class Chapter5 : MonoBehaviour
 
     private IEnumerator ShenEntranceRoutine()
     {
+        PlayShenWalkAnimationRight();
+
         while (shen != null && Vector3.Distance(shen.position, shenTargetPosition) > shenArriveEpsilon)
         {
             shen.position = Vector3.MoveTowards(shen.position, shenTargetPosition, shenMoveSpeed * Time.deltaTime);
@@ -241,8 +301,127 @@ public sealed class Chapter5 : MonoBehaviour
             shen.position = shenTargetPosition;
         }
 
+        PlayShenIdleAnimation();
+        if (shenSettleDelaySeconds > 0f)
+        {
+            yield return new WaitForSeconds(shenSettleDelaySeconds);
+        }
+
         shenEntranceRoutine = null;
+        yield return ShowStationInterstitialRoutine();
         StartCharacterDialogue();
+    }
+
+    private void PlayShenAnimation(string stateName)
+    {
+        if (shenAnimator == null || string.IsNullOrWhiteSpace(stateName) || currentShenAnimationState == stateName)
+        {
+            return;
+        }
+
+        SetShenAnimatorEnabled(true);
+        shenAnimator.Play(stateName, 0, 0f);
+        currentShenAnimationState = stateName;
+    }
+
+    private void OnDestroy()
+    {
+        StopShenSpriteAnimation();
+    }
+
+    private void PlayShenWalkAnimationRight()
+    {
+        if (shenWalkRightFrames != null && shenWalkRightFrames.Length > 0)
+        {
+            SetShenAnimatorEnabled(false);
+            PlayShenSpriteAnimation(shenWalkRightFrames);
+            return;
+        }
+
+        PlayShenAnimation(shenWalkRightStateName);
+    }
+
+    private void PlayShenIdleAnimation()
+    {
+        StopShenSpriteAnimation();
+        if (shenSpriteRenderer != null && shenIdleSprite != null)
+        {
+            SetShenAnimatorEnabled(false);
+            shenSpriteRenderer.sprite = shenIdleSprite;
+            return;
+        }
+
+        PlayShenAnimation(shenIdleStateName);
+    }
+
+    private void PlayShenSpriteAnimation(Sprite[] frames)
+    {
+        StopShenSpriteAnimation();
+        if (shenSpriteRenderer == null || frames == null || frames.Length == 0)
+        {
+            return;
+        }
+
+        shenSpriteAnimationRoutine = StartCoroutine(PlayShenSpriteAnimationRoutine(frames));
+    }
+
+    private IEnumerator PlayShenSpriteAnimationRoutine(Sprite[] frames)
+    {
+        float frameDelay = 1f / Mathf.Max(1f, shenWalkFramesPerSecond);
+        int index = 0;
+
+        while (true)
+        {
+            if (shenSpriteRenderer != null)
+            {
+                shenSpriteRenderer.sprite = frames[index];
+            }
+
+            index = (index + 1) % frames.Length;
+            yield return new WaitForSeconds(frameDelay);
+        }
+    }
+
+    private void StopShenSpriteAnimation()
+    {
+        if (shenSpriteAnimationRoutine != null)
+        {
+            StopCoroutine(shenSpriteAnimationRoutine);
+            shenSpriteAnimationRoutine = null;
+        }
+    }
+
+    private bool HasAnyShenSpriteAnimationFrames()
+    {
+        return (shenWalkRightFrames != null && shenWalkRightFrames.Length > 0)
+            || shenIdleSprite != null;
+    }
+
+    private void SetShenAnimatorEnabled(bool enabled)
+    {
+        if (shenAnimator == null)
+        {
+            return;
+        }
+
+        if (enabled)
+        {
+            if (shenAnimatorDisabledForSpriteAnimation)
+            {
+                shenAnimator.enabled = true;
+                shenAnimatorDisabledForSpriteAnimation = false;
+                currentShenAnimationState = null;
+            }
+
+            return;
+        }
+
+        if (shenAnimator.enabled)
+        {
+            shenAnimator.enabled = false;
+            shenAnimatorDisabledForSpriteAnimation = true;
+            currentShenAnimationState = null;
+        }
     }
 
     private void EnsureDialogueBubblePrefab()
@@ -251,6 +430,98 @@ public sealed class Chapter5 : MonoBehaviour
         {
             dialogueBubblePrefab = Resources.Load<DialogueBubbleView>("DialogueBubble");
         }
+    }
+
+    private void EnsureAudioSource()
+    {
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        audioSource.playOnAwake = false;
+        audioSource.loop = loopMusic;
+        audioSource.volume = musicVolume;
+    }
+
+    private void PlayMusic()
+    {
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        AudioClip clip = backgroundMusic;
+        if (clip == null && !string.IsNullOrWhiteSpace(musicResourcePath))
+        {
+            clip = Resources.Load<AudioClip>(musicResourcePath);
+        }
+
+        if (clip == null)
+        {
+            return;
+        }
+
+        audioSource.clip = clip;
+        audioSource.loop = loopMusic;
+        audioSource.volume = musicVolume;
+        audioSource.Play();
+    }
+
+    private void EnsureStationInterstitialUi()
+    {
+        if (stationInterstitialCanvasGroup != null)
+        {
+            return;
+        }
+
+        GameObject canvasObject = new GameObject(
+            "Chapter5StationCanvas",
+            typeof(RectTransform),
+            typeof(Canvas),
+            typeof(CanvasScaler),
+            typeof(GraphicRaycaster),
+            typeof(CanvasGroup));
+        canvasObject.transform.SetParent(transform, false);
+
+        Canvas canvas = canvasObject.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 40000;
+
+        CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+
+        stationInterstitialCanvasGroup = canvasObject.GetComponent<CanvasGroup>();
+        stationInterstitialCanvasGroup.alpha = 0f;
+        stationInterstitialCanvasGroup.blocksRaycasts = false;
+        stationInterstitialCanvasGroup.interactable = false;
+
+        GameObject backgroundObject = new GameObject("Chapter5StationBackdrop", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        backgroundObject.transform.SetParent(canvasObject.transform, false);
+        Image backgroundImage = backgroundObject.GetComponent<Image>();
+        backgroundImage.color = Color.black;
+        backgroundImage.raycastTarget = false;
+
+        RectTransform backgroundRect = backgroundImage.rectTransform;
+        backgroundRect.anchorMin = Vector2.zero;
+        backgroundRect.anchorMax = Vector2.one;
+        backgroundRect.offsetMin = Vector2.zero;
+        backgroundRect.offsetMax = Vector2.zero;
+
+        GameObject imageObject = new GameObject("Chapter5StationImage", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        imageObject.transform.SetParent(canvasObject.transform, false);
+        stationInterstitialImage = imageObject.GetComponent<Image>();
+        stationInterstitialImage.color = Color.white;
+        stationInterstitialImage.preserveAspect = true;
+        stationInterstitialImage.raycastTarget = false;
+
+        RectTransform imageRect = stationInterstitialImage.rectTransform;
+        imageRect.anchorMin = Vector2.zero;
+        imageRect.anchorMax = Vector2.one;
+        imageRect.offsetMin = Vector2.zero;
+        imageRect.offsetMax = Vector2.zero;
     }
 
     private void EnsureNarrationPresenter()
@@ -394,6 +665,7 @@ public sealed class Chapter5 : MonoBehaviour
     {
         if (characterLines.Count == 0)
         {
+            QueueSceneTransition();
             return;
         }
 
@@ -409,6 +681,7 @@ public sealed class Chapter5 : MonoBehaviour
         {
             characterDialogueActive = false;
             HideAllCharacterBubbles();
+            QueueSceneTransition();
             return;
         }
 
@@ -464,6 +737,60 @@ public sealed class Chapter5 : MonoBehaviour
         if (shenBubble != null)
         {
             shenBubble.Show(false);
+        }
+    }
+
+    private IEnumerator ShowStationInterstitialRoutine()
+    {
+        if (stationInterstitialCanvasGroup == null || stationInterstitialImage == null || stationSprite == null || stationDisplaySeconds <= 0f)
+        {
+            yield break;
+        }
+
+        stationInterstitialActive = true;
+        stationInterstitialImage.sprite = stationSprite;
+        stationInterstitialCanvasGroup.alpha = 0f;
+        stationInterstitialCanvasGroup.blocksRaycasts = true;
+
+        if (stationFadeInSeconds > 0f)
+        {
+            float elapsed = 0f;
+            while (elapsed < stationFadeInSeconds)
+            {
+                elapsed += Time.deltaTime;
+                stationInterstitialCanvasGroup.alpha = Mathf.Clamp01(elapsed / stationFadeInSeconds);
+                yield return null;
+            }
+        }
+
+        stationInterstitialCanvasGroup.alpha = 1f;
+        yield return new WaitForSeconds(stationDisplaySeconds);
+
+        stationInterstitialCanvasGroup.alpha = 0f;
+        stationInterstitialCanvasGroup.blocksRaycasts = false;
+        stationInterstitialActive = false;
+    }
+
+    /// <summary>
+    /// Chapter5 的结束条件就是沈与玩家这段对话播完。
+    /// 收尾后直接进入下一关塔防，和用户要求的“剧情结束触发场景切换”保持一致。
+    /// </summary>
+    private void QueueSceneTransition()
+    {
+        if (!autoLoadNextSceneOnDialogueEnd || transitionQueued || string.IsNullOrWhiteSpace(nextSceneName))
+        {
+            return;
+        }
+
+        transitionQueued = true;
+        if (!CampaignFlowController.AdvanceToNextStepOrLoadFallback(
+                nextSceneName,
+                fadeOutToBlackDuration,
+                fadeInFromBlackDuration,
+                startOpaque: false))
+        {
+            Debug.LogWarning("Chapter5 无法推进到下一场景：既没有活动战役流程，也没有有效的 nextSceneName。", this);
+            transitionQueued = false;
         }
     }
 

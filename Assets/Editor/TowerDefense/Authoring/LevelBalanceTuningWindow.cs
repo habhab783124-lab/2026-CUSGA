@@ -310,10 +310,9 @@ namespace TowerDefense.Editor
 
             EditorGUILayout.Space(4f);
             EditorGUILayout.LabelField("部署规则", EditorStyles.miniBoldLabel);
-            DrawPropertyField(serializedGame, "relayPlacementRadius");
-            DrawPropertyField(serializedGame, "defensePlacementRadius");
             DrawPropertyField(serializedGame, "relayExpansionSquareSize");
             DrawPropertyField(serializedGame, "defenseExpansionSquareSize");
+            EditorGUILayout.HelpBox("占地 / 不可放置半径现在改为从各 tower prefab 的 CircleCollider2D 读取。这里不再把 relayPlacementRadius / defensePlacementRadius 作为权威来源。", MessageType.Info);
 
             serializedGame.ApplyModifiedProperties();
             EditorUtility.SetDirty(currentGame);
@@ -384,6 +383,7 @@ namespace TowerDefense.Editor
 
             serializedSpawner.ApplyModifiedProperties();
             EditorUtility.SetDirty(currentWaveSpawner);
+            DrawWavePathReferenceEditor();
         }
 
         private void DrawRelaySection()
@@ -988,6 +988,186 @@ namespace TowerDefense.Editor
 
             float currentValue = property.floatValue;
             property.floatValue = Mathf.Max(minimum, currentValue * multiplier);
+        }
+
+        private void DrawWavePathReferenceEditor()
+        {
+            if (currentWaveSpawner == null)
+            {
+                return;
+            }
+
+            EnemyPath[] availablePaths = CollectSceneEnemyPaths();
+            if (availablePaths.Length == 0)
+            {
+                EditorGUILayout.HelpBox("当前场景里还没有可供波次绑定的 EnemyPath。", MessageType.Warning);
+                return;
+            }
+
+            WaveCatalogAsset resolvedWaveCatalog = ResolveWaveCatalogAsset();
+            if (resolvedWaveCatalog != null)
+            {
+                DrawWavePathReferenceEditorV2();
+                return;
+
+                EditorGUILayout.Space(4f);
+                EditorGUILayout.LabelField("刷怪组路径引用", EditorStyles.boldLabel);
+                WaveCatalogAsset.WaveEntry[] waves = resolvedWaveCatalog.Waves;
+                for (int waveIndex = 0; waveIndex < waves.Length; waveIndex++)
+                {
+                    WaveCatalogAsset.WaveEntry wave = waves[waveIndex];
+                    if (wave == null)
+                    {
+                        continue;
+                    }
+
+                    EditorGUILayout.LabelField(string.IsNullOrWhiteSpace(wave.DisplayName) ? $"Wave {waveIndex + 1:D2}" : wave.DisplayName, EditorStyles.miniBoldLabel);
+                    WaveCatalogAsset.SpawnGroup[] groups = wave.SpawnGroups;
+                    for (int groupIndex = 0; groupIndex < groups.Length; groupIndex++)
+                    {
+                        WaveCatalogAsset.SpawnGroup group = groups[groupIndex];
+                        if (group == null)
+                        {
+                            continue;
+                        }
+
+                        EditorGUILayout.ObjectField($"组 {groupIndex + 1:D2} / {group.EnemyType}", group.EnemyPathReference, typeof(EnemyPath), true);
+                    }
+                }
+
+                EditorGUILayout.HelpBox("如果这里还是不能直接改，说明这一版 `WaveCatalogAsset` 仍然只靠原始序列化块暴露字段。运行时已经支持 `EnemyPath` 直接引用，但更顺手的定制编辑入口还需要再补一层。", MessageType.Info);
+                return;
+            }
+
+            SerializedObject serializedSpawner = new SerializedObject(currentWaveSpawner);
+            serializedSpawner.Update();
+            SerializedProperty wavesProperty = serializedSpawner.FindProperty("waves");
+            if (wavesProperty == null || !wavesProperty.isArray)
+            {
+                return;
+            }
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("fallback 波次路径引用", EditorStyles.boldLabel);
+            for (int waveIndex = 0; waveIndex < wavesProperty.arraySize; waveIndex++)
+            {
+                SerializedProperty waveProperty = wavesProperty.GetArrayElementAtIndex(waveIndex);
+                SerializedProperty pathProperty = waveProperty.FindPropertyRelative("enemyPathReference");
+                if (pathProperty == null)
+                {
+                    continue;
+                }
+
+                pathProperty.objectReferenceValue = (EnemyPath)EditorGUILayout.ObjectField(
+                    $"Wave {waveIndex + 1:D2} 路径",
+                    pathProperty.objectReferenceValue,
+                    typeof(EnemyPath),
+                    true);
+            }
+
+            serializedSpawner.ApplyModifiedProperties();
+            EditorUtility.SetDirty(currentWaveSpawner);
+            DrawWavePathReferenceEditorV2();
+        }
+
+        private EnemyPath[] CollectSceneEnemyPaths()
+        {
+            Scene activeScene = SceneManager.GetActiveScene();
+            return activeScene.GetRootGameObjects()
+                .SelectMany(root => root.GetComponentsInChildren<EnemyPath>(true))
+                .Where(path => path != null)
+                .ToArray();
+        }
+
+        private void DrawWavePathReferenceEditorV2()
+        {
+            if (currentWaveSpawner == null)
+            {
+                return;
+            }
+
+            EnemyPath[] availablePaths = CollectSceneEnemyPaths();
+            if (availablePaths.Length == 0)
+            {
+                return;
+            }
+
+            WaveCatalogAsset resolvedWaveCatalog = ResolveWaveCatalogAsset();
+            if (resolvedWaveCatalog != null)
+            {
+                EditorGUILayout.Space(4f);
+                EditorGUILayout.LabelField("刷怪组路径引用（对象选择版）", EditorStyles.boldLabel);
+                WaveCatalogAsset.WaveEntry[] waves = resolvedWaveCatalog.Waves;
+                for (int waveIndex = 0; waveIndex < waves.Length; waveIndex++)
+                {
+                    WaveCatalogAsset.WaveEntry wave = waves[waveIndex];
+                    if (wave == null)
+                    {
+                        continue;
+                    }
+
+                    EditorGUILayout.LabelField(string.IsNullOrWhiteSpace(wave.DisplayName) ? $"Wave {waveIndex + 1:D2}" : wave.DisplayName, EditorStyles.miniBoldLabel);
+                    WaveCatalogAsset.SpawnGroup[] groups = wave.SpawnGroups;
+                    for (int groupIndex = 0; groupIndex < groups.Length; groupIndex++)
+                    {
+                        WaveCatalogAsset.SpawnGroup group = groups[groupIndex];
+                        if (group == null)
+                        {
+                            continue;
+                        }
+
+                        EnemyPath currentPath = currentWaveSpawner.ResolveCatalogBinding(waveIndex, groupIndex);
+                        EnemyPath selectedPath = (EnemyPath)EditorGUILayout.ObjectField(
+                            $"组 {groupIndex + 1:D2} / {group.EnemyType}",
+                            currentPath,
+                            typeof(EnemyPath),
+                            true);
+                        if (selectedPath != currentPath)
+                        {
+                            Undo.RecordObject(currentWaveSpawner, "修改刷怪组路径引用");
+                            currentWaveSpawner.AssignCatalogBinding(waveIndex, groupIndex, selectedPath);
+                            EditorUtility.SetDirty(currentWaveSpawner);
+                            EditorSceneManager.MarkSceneDirty(currentWaveSpawner.gameObject.scene);
+                            GUI.changed = true;
+                            Repaint();
+                        }
+                    }
+
+                    EditorGUILayout.Space(2f);
+                }
+
+                EditorGUILayout.HelpBox("这里会把每个刷怪组对应的 EnemyPath 绑定保存到当前场景的 WaveSpawner 上，用于多路径关卡。", MessageType.None);
+                return;
+            }
+
+            SerializedObject serializedSpawner = new SerializedObject(currentWaveSpawner);
+            serializedSpawner.Update();
+            SerializedProperty wavesProperty = serializedSpawner.FindProperty("waves");
+            if (wavesProperty == null || !wavesProperty.isArray)
+            {
+                return;
+            }
+
+            EditorGUILayout.Space(4f);
+            EditorGUILayout.LabelField("fallback 波次路径引用（对象选择版）", EditorStyles.boldLabel);
+            for (int waveIndex = 0; waveIndex < wavesProperty.arraySize; waveIndex++)
+            {
+                SerializedProperty waveProperty = wavesProperty.GetArrayElementAtIndex(waveIndex);
+                SerializedProperty pathProperty = waveProperty.FindPropertyRelative("enemyPathReference");
+                if (pathProperty == null)
+                {
+                    continue;
+                }
+
+                pathProperty.objectReferenceValue = (EnemyPath)EditorGUILayout.ObjectField(
+                    $"Wave {waveIndex + 1:D2} 路径",
+                    pathProperty.objectReferenceValue,
+                    typeof(EnemyPath),
+                    true);
+            }
+
+            serializedSpawner.ApplyModifiedProperties();
+            EditorUtility.SetDirty(currentWaveSpawner);
         }
 
         private static void ApplyCatalogWaveMultipliers(

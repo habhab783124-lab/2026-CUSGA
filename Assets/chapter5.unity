@@ -202,7 +202,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 2, y: -2, z: 0}
-  m_LocalScale: {x: 0.6, y: 0.6, z: 1}
+  m_LocalScale: {x: 0.48, y: 0.48, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -306,7 +306,7 @@ Transform:
   m_GameObject: {fileID: 402770892}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -7.99, y: 1.21, z: 0}
+  m_LocalPosition: {x: -20, y: 0.5, z: 0}
   m_LocalScale: {x: 1.4, y: 1.4, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -906,11 +906,32 @@ MonoBehaviour:
   playOnStart: 1
   secondsPerChar: 0.03
   mouseButton: 0
+  backgroundMusic: {fileID: 0}
+  musicResourcePath: StoryAudio/BGM/rain
+  musicVolume: 1
+  loopMusic: 1
   shen: {fileID: 133567164}
   shenStopPoint: {fileID: 0}
+  shenAnimator: {fileID: 133567165}
+  shenSpriteRenderer: {fileID: 133567163}
+  shenWalkRightFrames:
+  - {fileID: -1842705561, guid: ad2891175f609f245886800d8fde45e4, type: 3}
+  - {fileID: 817507, guid: ad2891175f609f245886800d8fde45e4, type: 3}
+  - {fileID: -701829303, guid: ad2891175f609f245886800d8fde45e4, type: 3}
+  - {fileID: -1780322194, guid: ad2891175f609f245886800d8fde45e4, type: 3}
+  - {fileID: 209751072, guid: ad2891175f609f245886800d8fde45e4, type: 3}
+  - {fileID: -17422458, guid: ad2891175f609f245886800d8fde45e4, type: 3}
+  - {fileID: -17422458, guid: ad2891175f609f245886800d8fde45e4, type: 3}
+  - {fileID: -1780322194, guid: ad2891175f609f245886800d8fde45e4, type: 3}
+  - {fileID: 1981539413, guid: ad2891175f609f245886800d8fde45e4, type: 3}
+  shenIdleSprite: {fileID: 21300000, guid: 48f801c2ee4571c46a63f0153247c424, type: 3}
+  shenWalkFramesPerSecond: 8
   shenMoveSpeed: 4
   shenExtraLeftBeyondCamera: 1.2
   shenArriveEpsilon: 0.02
+  shenSettleDelaySeconds: 0.2
+  shenIdleStateName: ShenIdle
+  shenWalkRightStateName: ShenWalkRight
   dialogueBubblePrefab: {fileID: 9191823685866065000, guid: b8d7239750b6adc41866acb1283edf0b, type: 3}
   playerCharacter: {fileID: 0}
   playerBubbleAnchor: {fileID: 0}
@@ -923,6 +944,13 @@ MonoBehaviour:
   bubbleMinWidth: 2
   bubbleMinHeight: 1.2
   bubbleFontSize: 0.5
+  stationSprite: {fileID: 21300000, guid: e1f2ccbeec4492e448dd5f7afc0f77fb, type: 3}
+  stationDisplaySeconds: 7
+  stationFadeInSeconds: 0.35
+  autoLoadNextSceneOnDialogueEnd: 1
+  nextSceneName: Level 3
+  fadeOutToBlackDuration: 0.75
+  fadeInFromBlackDuration: 0.75
 --- !u!114 &1947630614
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -938,8 +966,9 @@ MonoBehaviour:
   chapter5: {fileID: 0}
   busObjectName: Bus
   busMoveSpeed: 5
-  busExtraLeftBeyondCamera: 2
   busArriveEpsilon: 0.02
+  busStartExtraLeftBeyondCamera: 15
+  busStopRightScreenMargin: 0.05
 --- !u!1 &2145040554
 GameObject:
   m_ObjectHideFlags: 0

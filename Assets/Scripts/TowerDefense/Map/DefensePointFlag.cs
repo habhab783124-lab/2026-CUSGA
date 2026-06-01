@@ -100,7 +100,7 @@ public sealed class DefensePointFlag : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (ShouldSkipAuthoringReadabilityRefresh())
+        if (Application.isPlaying || ShouldSkipAuthoringReadabilityRefresh())
         {
             return;
         }
@@ -117,6 +117,19 @@ public sealed class DefensePointFlag : MonoBehaviour
     /// </summary>
     private void RefreshReadabilityVisuals(bool force)
     {
+        if (Application.isPlaying)
+        {
+            // Play 期间不显示防御点的作者可读标记，只保留实际目标点语义。
+            Transform readabilityRoot = ResolveReadabilityRoot(allowCreate: false);
+            if (readabilityRoot != null && readabilityRoot.gameObject.activeSelf)
+            {
+                readabilityRoot.gameObject.SetActive(false);
+            }
+
+            _lastReadabilityHash = 0;
+            return;
+        }
+
         if (ShouldSkipAuthoringReadabilityRefresh())
         {
             _lastReadabilityHash = 0;
@@ -268,7 +281,8 @@ public sealed class DefensePointFlag : MonoBehaviour
 
     private bool ShouldShowDefenseZone()
     {
-        return !Application.isPlaying || showDefenseZoneInPlayMode;
+        // 防御区提示仅用于 Scene 作者化和编辑期理解，运行时统一隐藏。
+        return !Application.isPlaying;
     }
 
     private Transform ResolveReadabilityRoot(bool allowCreate)

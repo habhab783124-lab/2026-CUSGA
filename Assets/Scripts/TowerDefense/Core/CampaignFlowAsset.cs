@@ -100,11 +100,19 @@ public sealed class CampaignFlowAsset : ScriptableObject
     [SerializeField, InspectorName("战役 ID")] private string campaignId = "MainCampaign"; // 中文：战役标识
     [SerializeField, InspectorName("完成后返回场景")] private string completionSceneName = "MainMenu"; // 中文：完成场景名称
 
+    [Header("默认切场过渡")]
+    [SerializeField, InspectorName("默认淡出时长")] private float defaultFadeOutToBlackDuration = 0.75f; // 中文：默认淡出时长
+    [SerializeField, InspectorName("默认淡入时长")] private float defaultFadeInFromBlackDuration = 0.75f; // 中文：默认淡入时长
+    [SerializeField, InspectorName("默认是否黑场起步")] private bool defaultStartOpaqueOnLoad; // 中文：默认是否黑场起步
+
     [Header("流程顺序")]
     [SerializeField, InspectorName("流程段列表")] private CampaignStep[] steps = Array.Empty<CampaignStep>(); // 中文：步骤列表
 
     public string CampaignId => string.IsNullOrWhiteSpace(campaignId) ? name : campaignId; // 中文：战役标识
     public string CompletionSceneName => completionSceneName; // 中文：完成场景名称
+    public float DefaultFadeOutToBlackDuration => Mathf.Max(0f, defaultFadeOutToBlackDuration); // 中文：默认淡出时长
+    public float DefaultFadeInFromBlackDuration => Mathf.Max(0f, defaultFadeInFromBlackDuration); // 中文：默认淡入时长
+    public bool DefaultStartOpaqueOnLoad => defaultStartOpaqueOnLoad; // 中文：默认黑场起步
     public int StepCount => steps != null ? steps.Length : 0; // 中文：步骤数量
     public CampaignStep[] Steps => steps ?? Array.Empty<CampaignStep>(); // 中文：步骤列表
 

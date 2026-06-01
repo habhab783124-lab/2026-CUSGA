@@ -43,11 +43,16 @@ Assets/Screenshots/
 
 # Local Codex tooling
 .codex/
+SKILL.md
+git-fork-workflow/
+karpathy-guidelines/
 
 # Local AI collaboration memory and helper tooling
 AGENTS.md
 docs/ai-memory/
 docs/github-collaborator-setup.md
+docs/current-task-card.md
+docs/current-task-card.json
 Packages/SkillsForUnity/
 
 # Local / non-essential TextMesh Pro sample content

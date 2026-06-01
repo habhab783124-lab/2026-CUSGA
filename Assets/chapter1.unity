@@ -195,6 +195,10 @@ MonoBehaviour:
   musicResourcePath: StoryAudio/BGM/rain
   musicVolume: 1
   loopMusic: 1
+  autoLoadNextSceneOnDialogueEnd: 1
+  nextSceneName: Tutorial Level
+  fadeOutToBlackDuration: 0.75
+  fadeInFromBlackDuration: 0.75
 --- !u!4 &541692575
 Transform:
   m_ObjectHideFlags: 0

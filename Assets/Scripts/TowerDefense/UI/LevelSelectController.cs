@@ -293,8 +293,7 @@ public sealed class LevelSelectController : MonoBehaviour
             CreateDefaultLevel("Level02", "Assets/Scenes/Level02.unity", "LEVEL 02", "SECOND FRONT", "A new mission scene prepared for your next map. You can open it directly in the editor and start rebuilding terrain, routes, and decoration.", "EDIT READY", new Color(0.34f, 0.88f, 0.96f, 1f)),
             CreateDefaultLevel("Level03", "Assets/Scenes/Level03.unity", "LEVEL 03", "OUTER GRID", "Reserved for the third mission layout. The gameplay skeleton is copied over so you can focus on map authoring first.", "EDIT READY", new Color(0.47f, 0.96f, 0.74f, 1f)),
             CreateDefaultLevel("Level04", "Assets/Scenes/Level04.unity", "LEVEL 04", "RELAY BREAK", "Reserved for the fourth mission layout. Treat this as another fully editable gameplay scene slot.", "EDIT READY", new Color(1f, 0.78f, 0.43f, 1f)),
-            CreateDefaultLevel("Level05", "Assets/Scenes/Level05.unity", "LEVEL 05", "FINAL CIRCUIT", "Reserved for the fifth mission layout. Keep this one for your later, more advanced battlefield ideas.", "EDIT READY", new Color(1f, 0.52f, 0.41f, 1f)),
-            CreateDefaultLevel("Level06", "Assets/Scenes/Level06.unity", "LEVEL 06", "CHALKBOARD ROUTE", "A two-gate chalkboard-style battlefield with separated upper and lower corridors converging on one home point.", "EDIT READY", new Color(0.72f, 0.9f, 0.82f, 1f))
+            CreateDefaultLevel("Level05", "Assets/Scenes/Level05.unity", "LEVEL 05", "FINAL CIRCUIT", "Reserved for the fifth mission layout. Keep this one for your later, more advanced battlefield ideas.", "EDIT READY", new Color(1f, 0.52f, 0.41f, 1f))
         };
 
         MarkSceneDirty();

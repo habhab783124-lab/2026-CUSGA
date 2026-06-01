@@ -450,7 +450,6 @@ MonoBehaviour:
   npcBubbleAnchor: {fileID: 1828891818}
   playerBubbleOffset: {x: -400, y: -500, z: 10}
   npcBubbleOffset: {x: 400, y: -500, z: 10}
-  mouseButton: 0
   backgroundMusic: {fileID: 0}
   musicResourcePath: StoryAudio/BGM/rain
   musicVolume: 1
@@ -458,8 +457,12 @@ MonoBehaviour:
   finalMessage: "\u51CC\u2026\u2026\u5E0C\u671B\u4EE5\u540E\u6211\u4EEC\u90FD\u4E0D\u7528\u518D\u6DCB\u96E8\u4E86\u3002"
   finalMessageDelay: 0.5
   finalMessageFadeDuration: 1.2
+  finalMessageHoldDuration: 2
   finalMessageFontSize: 54
   finalMessageColor: {r: 1, g: 1, b: 1, a: 1}
+  nextSceneName: end_scene
+  fadeOutToBlackDuration: 1
+  fadeInFromBlackDuration: 1
 --- !u!1 &1083997828
 GameObject:
   m_ObjectHideFlags: 0

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.Callbacks;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -34,15 +33,12 @@ namespace TowerDefense.Editor
     {
         private const string Level03ScenePath = "Assets/Scenes/Level03.unity";
         private const string Level04ScenePath = "Assets/Scenes/Level04.unity";
-        private const string Level06ScenePath = "Assets/Scenes/Level06.unity";
         private const string AutoRunMarkerPath = "Temp/level_route_blueprint_autorun.txt";
-        private const int AutoRunMaxUpdateChecks = 240;
 
         private const string BattlefieldMapName = "BattlefieldMap";
         private const string BuildZoneName = "BuildZone";
         private const string PathVisualsName = "PathVisuals";
         private const string MainCameraName = "Main Camera";
-        private static int autoRunUpdateChecks;
 
         /// <summary>
         /// A minimal route description for one authored EnemyPath.
@@ -87,73 +83,30 @@ namespace TowerDefense.Editor
         [InitializeOnLoadMethod]
         private static void TryAutoRunPendingBlueprint()
         {
-            ScheduleAutoRunMarkerCheck();
-        }
-
-        [DidReloadScripts]
-        private static void TryAutoRunPendingBlueprintAfterReload()
-        {
-            ScheduleAutoRunMarkerCheck();
-        }
-
-        private static void ScheduleAutoRunMarkerCheck()
-        {
-            autoRunUpdateChecks = 0;
-            EditorApplication.update -= TryConsumeAutoRunMarkerOnEditorUpdate;
-            EditorApplication.update += TryConsumeAutoRunMarkerOnEditorUpdate;
-            EditorApplication.delayCall -= TryConsumeAutoRunMarkerOnEditorUpdate;
-            EditorApplication.delayCall += TryConsumeAutoRunMarkerOnEditorUpdate;
-        }
-
-        private static void TryConsumeAutoRunMarkerOnEditorUpdate()
-        {
-            string markerPath = GetAutoRunMarkerPath();
-            if (File.Exists(markerPath))
+            EditorApplication.delayCall += () =>
             {
-                EditorApplication.update -= TryConsumeAutoRunMarkerOnEditorUpdate;
-                ConsumeAutoRunMarker(markerPath);
-                return;
-            }
-
-            autoRunUpdateChecks++;
-            if (autoRunUpdateChecks >= AutoRunMaxUpdateChecks)
-            {
-                EditorApplication.update -= TryConsumeAutoRunMarkerOnEditorUpdate;
-            }
-        }
-
-        private static void ConsumeAutoRunMarker(string markerPath)
-        {
-            try
-            {
-                string marker = File.ReadAllText(markerPath).Trim();
-                if (string.Equals(marker, "Level06", StringComparison.OrdinalIgnoreCase))
+                if (!File.Exists(AutoRunMarkerPath))
                 {
-                    ApplyLevel06BlueprintBatch();
+                    return;
                 }
-                else
+
+                try
                 {
                     ApplyLevel03AndLevel04BlueprintsBatch();
+                    Debug.Log("[LevelRouteBlueprintApplier] Auto-run marker consumed successfully.");
                 }
-                Debug.Log("[LevelRouteBlueprintApplier] Auto-run marker consumed successfully.");
-            }
-            catch (Exception exception)
-            {
-                Debug.LogError($"[LevelRouteBlueprintApplier] Auto-run failed: {exception}");
-            }
-            finally
-            {
-                if (File.Exists(markerPath))
+                catch (Exception exception)
                 {
-                    File.Delete(markerPath);
+                    Debug.LogError($"[LevelRouteBlueprintApplier] Auto-run failed: {exception}");
                 }
-            }
-        }
-
-        private static string GetAutoRunMarkerPath()
-        {
-            string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            return Path.Combine(projectRoot, AutoRunMarkerPath);
+                finally
+                {
+                    if (File.Exists(AutoRunMarkerPath))
+                    {
+                        File.Delete(AutoRunMarkerPath);
+                    }
+                }
+            };
         }
 
         /// <summary>
@@ -189,19 +142,6 @@ namespace TowerDefense.Editor
         public static void ApplyLevel04BlueprintBatch()
         {
             ApplyLevel04ExpandedBlueprint();
-            AssetDatabase.SaveAssets();
-            AssetDatabase.Refresh();
-        }
-
-        [MenuItem("Tools/Tower Defense/Authoring/Apply Level06 Chalkboard Blueprint")]
-        public static void ApplyLevel06ChalkboardBlueprintMenu()
-        {
-            ApplyLevel06ChalkboardBlueprint();
-        }
-
-        public static void ApplyLevel06BlueprintBatch()
-        {
-            ApplyLevel06ChalkboardBlueprint();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
@@ -426,102 +366,6 @@ namespace TowerDefense.Editor
                     routes,
                     defenses,
                     relayLimit: 7);
-            }
-
-            RefreshSceneAuthoringVisuals(scene);
-            EditorSceneManager.SaveScene(scene);
-        }
-
-        private static void ApplyLevel06ChalkboardBlueprint()
-        {
-            Scene scene = EditorSceneManager.OpenScene(Level06ScenePath, OpenSceneMode.Single);
-            using (BattlefieldAuthoringGuard.BeginReadabilitySuppressionScope())
-            {
-                BattlefieldMapDefinition map = FindRequiredComponent<BattlefieldMapDefinition>(scene, BattlefieldMapName);
-                BuildZone buildZone = FindRequiredComponent<BuildZone>(scene, BuildZoneName);
-                Transform pathVisualsRoot = FindRequiredTransform(scene, PathVisualsName);
-                Camera mainCamera = FindRequiredComponent<Camera>(scene, MainCameraName);
-
-                // Level06 follows the user's chalkboard sketch: an upper-left attack
-                // gate drops into the upper corridor, a lower-left attack gate climbs
-                // through the lower corridor, and both routes merge before the right-side home.
-                // The point layout intentionally follows the chalkboard drawing more than a grid.
-                buildZone.transform.localScale = new Vector3(20.5f, 12f, 1f);
-                mainCamera.orthographicSize = 6.9f;
-
-                RouteBlueprint[] routes =
-                {
-                    new RouteBlueprint
-                    {
-                        GateObjectName = "SpawnGate_Main",
-                        GateId = "Gate_A",
-                        GateDisplayName = "Upper Chalk Attack Gate",
-                        PathObjectName = "EnemyPath",
-                        DefensePointObjectName = "DefensePoint_Core",
-                        WaypointNames = BuildWaypointNames("Waypoint_", 12),
-                        Waypoints = new[]
-                        {
-                            new Vector2(-7.8f, 3.45f),
-                            new Vector2(-7.8f, 2.55f),
-                            new Vector2(-7.55f, 1.75f),
-                            new Vector2(-6.75f, 1.25f),
-                            new Vector2(-4.1f, 1.35f),
-                            new Vector2(-1.2f, 1.4f),
-                            new Vector2(2.2f, 1.38f),
-                            new Vector2(4.15f, 1.18f),
-                            new Vector2(5.75f, -0.78f),
-                            new Vector2(6.65f, -1.1f),
-                            new Vector2(7.75f, -1.1f),
-                            new Vector2(8.9f, -1.1f)
-                        }
-                    },
-                    new RouteBlueprint
-                    {
-                        GateObjectName = "SpawnGate_Alt",
-                        GateId = "Gate_B",
-                        GateDisplayName = "Lower Chalk Attack Gate",
-                        PathObjectName = "EnemyPath_B",
-                        DefensePointObjectName = "DefensePoint_Core",
-                        WaypointNames = BuildWaypointNames("Waypoint_B", 13),
-                        Waypoints = new[]
-                        {
-                            new Vector2(-8.9f, -2.9f),
-                            new Vector2(-7.35f, -2.9f),
-                            new Vector2(-6.5f, -2.55f),
-                            new Vector2(-5.85f, -1.85f),
-                            new Vector2(-5.25f, -1.2f),
-                            new Vector2(-4.15f, -0.82f),
-                            new Vector2(-2.45f, -0.7f),
-                            new Vector2(-0.2f, -0.72f),
-                            new Vector2(2.1f, -0.7f),
-                            new Vector2(3.95f, -0.78f),
-                            new Vector2(5.75f, -0.78f),
-                            new Vector2(6.65f, -1.1f),
-                            new Vector2(7.75f, -1.1f),
-                            new Vector2(8.9f, -1.1f)
-                        }
-                    }
-                };
-
-                DefenseBlueprint[] defenses =
-                {
-                    new DefenseBlueprint
-                    {
-                        ObjectName = "DefensePoint_Core",
-                        PointId = "Home",
-                        DisplayName = "Home",
-                        Position = new Vector2(8.9f, -1.1f)
-                    }
-                };
-
-                ApplyBlueprintIntoScene(
-                    scene,
-                    map,
-                    buildZone,
-                    pathVisualsRoot,
-                    routes,
-                    defenses,
-                    relayLimit: 5);
             }
 
             RefreshSceneAuthoringVisuals(scene);
@@ -833,39 +677,18 @@ namespace TowerDefense.Editor
             }
 
             int segmentCounter = 1;
-            HashSet<string> createdSegmentKeys = new HashSet<string>(StringComparer.Ordinal);
             foreach (RouteBlueprint route in routes)
             {
                 for (int index = 0; index < route.Waypoints.Length - 1; index++)
                 {
                     Vector2 start = route.Waypoints[index];
                     Vector2 end = route.Waypoints[index + 1];
-                    string segmentKey = BuildSegmentKey(start, end);
-                    if (!createdSegmentKeys.Add(segmentKey))
-                    {
-                        continue;
-                    }
-
                     CreateRoadSegment(pathVisualsRoot, template, $"PathSegment_{route.GateId}_{segmentCounter:D2}", start, end);
                     segmentCounter++;
                 }
             }
 
             Object.DestroyImmediate(template);
-        }
-
-        private static string BuildSegmentKey(Vector2 start, Vector2 end)
-        {
-            string first = BuildPointKey(start);
-            string second = BuildPointKey(end);
-            return string.CompareOrdinal(first, second) <= 0
-                ? $"{first}|{second}"
-                : $"{second}|{first}";
-        }
-
-        private static string BuildPointKey(Vector2 point)
-        {
-            return $"{Mathf.RoundToInt(point.x * 100f)}:{Mathf.RoundToInt(point.y * 100f)}";
         }
 
         private static GameObject BuildRoadTemplate(Transform pathVisualsRoot)
@@ -890,18 +713,17 @@ namespace TowerDefense.Editor
             segmentObject.hideFlags = HideFlags.None;
             segmentObject.name = objectName;
 
+            bool horizontal = Mathf.Abs(start.y - end.y) <= 0.001f;
             float thickness = 1.8f;
-            Vector2 direction = end - start;
-            float length = direction.magnitude;
-            if (length <= 0.001f)
-            {
-                Object.DestroyImmediate(segmentObject);
-                return;
-            }
+            float length = horizontal ? Mathf.Abs(end.x - start.x) : Mathf.Abs(end.y - start.y);
 
-            segmentObject.transform.localPosition = new Vector3((start.x + end.x) * 0.5f, (start.y + end.y) * 0.5f, 0f);
-            segmentObject.transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg);
-            segmentObject.transform.localScale = new Vector3(length + thickness, thickness, 1f);
+            segmentObject.transform.localPosition = horizontal
+                ? new Vector3((start.x + end.x) * 0.5f, start.y, 0f)
+                : new Vector3(start.x, (start.y + end.y) * 0.5f, 0f);
+            segmentObject.transform.localRotation = Quaternion.identity;
+            segmentObject.transform.localScale = horizontal
+                ? new Vector3(length + thickness, thickness, 1f)
+                : new Vector3(thickness, length + thickness, 1f);
         }
 
         private static EnemyPath GetOrDuplicateEnemyPath(EnemyPath template, Transform parent, string objectName)

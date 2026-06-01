@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 18041264370856023}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.99999994, z: 0}
+  m_LocalPosition: {x: -0.2, y: 3.4008827, z: 0}
   m_LocalScale: {x: 1.1764705, y: 1.1764705, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -105,7 +105,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 324
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -127,6 +127,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2955791358491000165}
   - component: {fileID: 4703230808979152243}
+  - component: {fileID: 4512265793993596884}
   m_Layer: 0
   m_Name: VisualScaleRoot
   m_TagString: Untagged
@@ -143,8 +144,8 @@ Transform:
   m_GameObject: {fileID: 4517063768651193088}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -0.11, y: 1.53, z: 0}
+  m_LocalScale: {x: 0.26015, y: 0.26015, z: 0.26015}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 12472910763174817}
@@ -189,8 +190,8 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
+  m_SortingOrder: 283
+  m_Sprite: {fileID: 2077807066, guid: 74f19c7c55819f94d8c3a8f3a2b7042d, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -201,6 +202,27 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!95 &4512265793993596884
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4517063768651193088}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 0751851c7823a5f46b7e779755a23986, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &5863667738006183233
 GameObject:
   m_ObjectHideFlags: 0
@@ -213,6 +235,7 @@ GameObject:
   - component: {fileID: 8745601186219457358}
   - component: {fileID: 6611000000000000001}
   - component: {fileID: 3537248986107967254}
+  - component: {fileID: 990000000000000010}
   m_Layer: 0
   m_Name: BannerScavengerEnemy
   m_TagString: Untagged
@@ -253,7 +276,6 @@ MonoBehaviour:
   bodyRendererReference: {fileID: 4703230808979152243}
   visualScaleRootReference: {fileID: 2955791358491000165}
   bodyColor: {r: 0.9, g: 0.25, b: 0.25, a: 1}
-  shieldTintColor: {r: 0.42, g: 0.9, b: 1, a: 1}
   slowTintColor: {r: 0.42, g: 0.95, b: 0.9, a: 1}
   standardHitFlashColor: {r: 1, g: 0.96, b: 0.9, a: 1}
   bombardHitFlashColor: {r: 1, g: 0.74, b: 0.45, a: 1}
@@ -265,7 +287,6 @@ MonoBehaviour:
   slowHitPulseScale: 1.04
   hitPulseDuration: 0.12
   healthBarFillColor: {r: 0.2, g: 0.9, b: 0.35, a: 1}
-  healthBarShieldColor: {r: 0.44, g: 0.9, b: 1, a: 1}
   healthBarBackgroundColor: {r: 0.15, g: 0.15, b: 0.15, a: 1}
   healthBarFillSpriteOverride: {fileID: 0}
   healthBarBackgroundSpriteOverride: {fileID: 0}
@@ -273,6 +294,12 @@ MonoBehaviour:
   healthBarFillReference: {fileID: 73256587356198457}
   healthBarFillRendererReference: {fileID: 6767933192600016444}
   healthBarBackgroundRendererReference: {fileID: 2381135231609418050}
+  animatorSpeedBaseline: 1.8
+  animatorSpeedMultiplier: 1
+  minAnimatorSpeed: 0.75
+  maxAnimatorSpeed: 2.2
+  randomizeAnimationPhaseOnSpawn: 1
+  enableRuntimeVisualDiagnostics: 1
 --- !u!114 &6611000000000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -342,6 +369,26 @@ SpriteRenderer:
   m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &990000000000000010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5863667738006183233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8d82ec2a4a4f3cb1f95fbe0c4a1e63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sourceRendererReference: {fileID: 4703230808979152243}
+  sortingBaseOrder: 300
+  sortingOrdersPerUnit: 20
+  topLayerSortingOffset: 24
+  healthBarSortingOffset: 40
+  splitIntoBaseAndTop: 0
+  topLayerStartNormalized: 0.38
+  autoSortHealthBarRenderers: 1
 --- !u!1 &6622377668521617220
 GameObject:
   m_ObjectHideFlags: 0
@@ -414,7 +461,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 323
   m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0

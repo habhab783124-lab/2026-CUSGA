@@ -18,49 +18,75 @@ MonoBehaviour:
     spawnGroups:
     - enemyType: 3
       enemyCount: 2
-      spawnInterval: 1
-    - enemyType: 5
-      enemyCount: 2
-      spawnInterval: 1
+      spawnInterval: 5
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
     - enemyType: 1
-      enemyCount: 5
-      spawnInterval: 0.75
+      enemyCount: 6
+      spawnInterval: 2
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
+    - enemyType: 2
+      enemyCount: 8
+      spawnInterval: 1
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
   - displayName: "\u7B2C 02 \u6CE2"
     designerNote: "\u7B2C\u4E09\u5173\u7EF4\u4FEE\u6CE2\u3002\u673A\u68B0\u5E08\u8BA9\u524D\u7EBF\u66F4\u96BE\u88AB\u5543\u52A8\uFF0C\u8981\u6C42\u73A9\u5BB6\u5177\u5907\u66F4\u7A33\u7684\u7A7F\u7532\u4F24\u5BB3\u3002"
     spawnGroups:
     - enemyType: 4
       enemyCount: 2
       spawnInterval: 1.1
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
     - enemyType: 5
       enemyCount: 3
       spawnInterval: 0.95
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
     - enemyType: 2
       enemyCount: 3
       spawnInterval: 0.5
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
   - displayName: "\u7B2C 03 \u6CE2"
     designerNote: "\u7B2C\u4E09\u5173\u9690\u88AD\u6CE2\u3002\u9690\u8EAB\u4EBA\u548C\u72FC\u8D70\u526F\u7EBF\uFF0C\u903C\u73A9\u5BB6\u4E0D\u80FD\u53EA\u987E\u4E3B\u6218\u573A\u3002"
     spawnGroups:
     - enemyType: 6
       enemyCount: 4
       spawnInterval: 0.65
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
     - enemyType: 2
       enemyCount: 4
       spawnInterval: 0.45
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
     - enemyType: 1
       enemyCount: 6
       spawnInterval: 0.75
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
   - displayName: "\u7B2C 04 \u6CE2"
     designerNote: "\u7B2C\u4E09\u5173\u6536\u5C3E\u6CE2\u3002\u618E\u6076\u5E26\u961F\uFF0C\u540E\u65B9\u8FD8\u6709\u673A\u68B0\u4E0E\u9690\u8EAB\u652F\u63F4\uFF0C\u68C0\u9A8C\u6574\u5957\u4F9B\u7535\u4E0E\u706B\u529B\u8C03\u5EA6\u3002"
     spawnGroups:
     - enemyType: 7
       enemyCount: 1
       spawnInterval: 1.5
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
     - enemyType: 5
       enemyCount: 2
       spawnInterval: 1
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
     - enemyType: 4
       enemyCount: 1
       spawnInterval: 1.05
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
     - enemyType: 6
       enemyCount: 3
       spawnInterval: 0.7
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0

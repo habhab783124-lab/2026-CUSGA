@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f6d1f63fbcf4b27baf4b7c60a20d056, type: 3}
+  m_Name: TowerDefenseAudioProfile
+  m_EditorClassIdentifier: 
+  backgroundMusic: {fileID: 8300000, guid: 301dbe7cc030b304684a9fa7e7843393, type: 3}
+  placeStructureClip: {fileID: 8300000, guid: 64ac85aa158ff754fb4f0cc896c69a79, type: 3}
+  singleTargetImpactClip: {fileID: 8300000, guid: e9eb5deb76d21f045b968e59065e7498, type: 3}
+  slowFieldImpactClip: {fileID: 8300000, guid: 6a5db08ab554fe6448c72852c6ace7a4, type: 3}
+  bombardImpactClip: {fileID: 8300000, guid: 0a9950add6b2bad498808514c729ed0a, type: 3}

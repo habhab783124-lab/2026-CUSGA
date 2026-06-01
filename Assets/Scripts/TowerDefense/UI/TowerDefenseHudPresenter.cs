@@ -2,6 +2,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 /// <summary>
 /// `HudNoticeTone` 描述一条 HUD 反馈在视觉上应该偏向什么语气。
@@ -303,11 +304,19 @@ public readonly struct TowerDefenseHudTheme
 public sealed class TowerDefenseHudPresenter
 {
     private TowerDefenseHudTheme _theme = TowerDefenseHudTheme.Default;
+    private bool _showPrimaryOperationSection = true;
+    private bool _showPowerGridSection = true;
 
     private TMP_Text _scrapText;
     private TMP_Text _baseHealthText;
     private TMP_Text _waveText;
     private TMP_Text _selectionText;
+    private TMP_Text _structureStatusText;
+    private string _scrapTextTemplate;
+    private string _baseHealthTextTemplate;
+    private string _waveTextTemplate;
+    private string _selectionTextTemplate;
+    private string _structureStatusTextTemplate;
 
     private TMP_Text _gameOverTitle;
     private TMP_Text _gameOverHint;
@@ -316,6 +325,7 @@ public sealed class TowerDefenseHudPresenter
     private TMP_Text _slowFieldTowerButtonText;
     private TMP_Text _bombardTowerButtonText;
     private TMP_Text _clearSelectionButtonText;
+    private TMP_Text _demolishSelectedStructureButtonText;
     private TMP_Text _dragPreviewLabel;
 
     private Button _relayTowerButton;
@@ -323,8 +333,11 @@ public sealed class TowerDefenseHudPresenter
     private Button _slowFieldTowerButton;
     private Button _bombardTowerButton;
     private Button _clearSelectionButton;
+    private Button _demolishSelectedStructureButton;
     private GameObject _gameOverPanel;
     private GameObject _dragPreviewPanel;
+    private GameObject _topBarRoot;
+    private GameObject _bottomBarRoot;
 
     /// <summary>
     /// 由总控把 HUD 主题快照注入进来。
@@ -335,6 +348,12 @@ public sealed class TowerDefenseHudPresenter
     public void SetTheme(TowerDefenseHudTheme theme)
     {
         _theme = theme;
+    }
+
+    public void ConfigureSelectionSections(bool showPrimaryOperationSection, bool showPowerGridSection)
+    {
+        _showPrimaryOperationSection = showPrimaryOperationSection;
+        _showPowerGridSection = showPowerGridSection;
     }
 
     /// <summary>
@@ -353,11 +372,13 @@ public sealed class TowerDefenseHudPresenter
         TMP_Text baseHealthText,
         TMP_Text waveText,
         TMP_Text selectionText,
+        TMP_Text structureStatusText,
         Button relayTowerButton,
         Button defenseTowerButton,
         Button slowFieldTowerButton,
         Button bombardTowerButton,
         Button clearSelectionButton,
+        Button demolishSelectedStructureButton,
         GameObject gameOverPanel,
         TMP_Text gameOverTitle,
         TMP_Text gameOverHint,
@@ -368,11 +389,13 @@ public sealed class TowerDefenseHudPresenter
         _baseHealthText = baseHealthText;
         _waveText = waveText;
         _selectionText = selectionText;
+        _structureStatusText = structureStatusText;
         _relayTowerButton = relayTowerButton;
         _defenseTowerButton = defenseTowerButton;
         _slowFieldTowerButton = slowFieldTowerButton;
         _bombardTowerButton = bombardTowerButton;
         _clearSelectionButton = clearSelectionButton;
+        _demolishSelectedStructureButton = demolishSelectedStructureButton;
         _gameOverPanel = gameOverPanel;
         _gameOverTitle = gameOverTitle;
         _gameOverHint = gameOverHint;
@@ -380,12 +403,15 @@ public sealed class TowerDefenseHudPresenter
         _dragPreviewLabel = dragPreviewLabel;
 
         EnsureDragPreviewDoesNotBlockRaycasts();
+        CacheSceneAuthoredTextTemplates();
+        CaptureOptionalHudRoots();
 
         _relayTowerButtonText = _relayTowerButton != null ? _relayTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
         _defenseTowerButtonText = _defenseTowerButton != null ? _defenseTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
         _slowFieldTowerButtonText = _slowFieldTowerButton != null ? _slowFieldTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
         _bombardTowerButtonText = _bombardTowerButton != null ? _bombardTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
         _clearSelectionButtonText = _clearSelectionButton != null ? _clearSelectionButton.GetComponentInChildren<TMP_Text>(true) : null;
+        _demolishSelectedStructureButtonText = _demolishSelectedStructureButton != null ? _demolishSelectedStructureButton.GetComponentInChildren<TMP_Text>(true) : null;
     }
 
     /// <summary>
@@ -399,6 +425,32 @@ public sealed class TowerDefenseHudPresenter
     /// </summary>
     public void FindSceneReferences()
     {
+        if (_selectionText == null)
+        {
+            TMP_Text[] texts = UnityEngine.Object.FindObjectsByType<TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int index = 0; index < texts.Length; index++)
+            {
+                if (texts[index] != null && texts[index].name == "SelectionText")
+                {
+                    _selectionText = texts[index];
+                    break;
+                }
+            }
+        }
+
+        if (_structureStatusText == null)
+        {
+            TMP_Text[] texts = UnityEngine.Object.FindObjectsByType<TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int index = 0; index < texts.Length; index++)
+            {
+                if (texts[index] != null && texts[index].name == "StructureStatusText")
+                {
+                    _structureStatusText = texts[index];
+                    break;
+                }
+            }
+        }
+
         if (_relayTowerButtonText == null && _relayTowerButton != null)
         {
             _relayTowerButtonText = _relayTowerButton.GetComponentInChildren<TMP_Text>(true);
@@ -424,17 +476,36 @@ public sealed class TowerDefenseHudPresenter
             _clearSelectionButtonText = _clearSelectionButton.GetComponentInChildren<TMP_Text>(true);
         }
 
+        if (_demolishSelectedStructureButton == null)
+        {
+            _demolishSelectedStructureButton = FindButtonByName("DeleteSelectedStructureButton");
+        }
+
+        if (_demolishSelectedStructureButton == null)
+        {
+            _demolishSelectedStructureButton = CreateRuntimeDemolishButton();
+        }
+
+        if (_demolishSelectedStructureButtonText == null && _demolishSelectedStructureButton != null)
+        {
+            _demolishSelectedStructureButtonText = _demolishSelectedStructureButton.GetComponentInChildren<TMP_Text>(true);
+        }
+
         EnsureDragPreviewDoesNotBlockRaycasts();
+        CacheSceneAuthoredTextTemplates();
+        CaptureOptionalHudRoots();
 
         WarnIfMissing(_scrapText, "ScrapText");
         WarnIfMissing(_baseHealthText, "BaseHealthText");
         WarnIfMissing(_waveText, "WaveText");
         WarnIfMissing(_selectionText, "SelectionText");
+        WarnIfMissing(_structureStatusText, "StructureStatusText");
         WarnIfMissing(_relayTowerButton, "RelayTowerButton");
         WarnIfMissing(_defenseTowerButton, "DefenseTowerButton");
         WarnIfMissing(_slowFieldTowerButton, "SlowFieldTowerButton");
         WarnIfMissing(_bombardTowerButton, "BombardTowerButton");
         WarnIfMissing(_clearSelectionButton, "ClearSelectionButton");
+        WarnIfMissing(_demolishSelectedStructureButton, "DeleteSelectedStructureButton");
         WarnIfMissing(_gameOverPanel, "GameOverPanel");
         WarnIfMissing(_gameOverTitle, "GameOverTitle");
         WarnIfMissing(_gameOverHint, "GameOverHint");
@@ -483,12 +554,95 @@ public sealed class TowerDefenseHudPresenter
         }
     }
 
+    private void CacheSceneAuthoredTextTemplates()
+    {
+        if (_scrapText != null && !string.IsNullOrWhiteSpace(_scrapText.text))
+        {
+            _scrapTextTemplate = _scrapText.text;
+        }
+
+        if (_baseHealthText != null && !string.IsNullOrWhiteSpace(_baseHealthText.text))
+        {
+            _baseHealthTextTemplate = _baseHealthText.text;
+        }
+
+        if (_waveText != null && !string.IsNullOrWhiteSpace(_waveText.text))
+        {
+            _waveTextTemplate = _waveText.text;
+        }
+
+        if (_selectionText != null && !string.IsNullOrWhiteSpace(_selectionText.text))
+        {
+            _selectionTextTemplate = _selectionText.text;
+        }
+
+        if (_structureStatusText != null && !string.IsNullOrWhiteSpace(_structureStatusText.text))
+        {
+            _structureStatusTextTemplate = _structureStatusText.text;
+        }
+    }
+
     private static void WarnIfMissing(UnityEngine.Object reference, string expectedName)
     {
         if (reference == null)
         {
             Debug.LogWarning($"TowerDefenseHudPresenter is missing HUD reference: {expectedName}. Check the scene wiring.");
         }
+    }
+
+    private static void SetActiveIfPresent(Component component, bool visible)
+    {
+        if (component != null)
+        {
+            component.gameObject.SetActive(visible);
+        }
+    }
+
+    private static void SetActiveIfPresent(GameObject target, bool visible)
+    {
+        if (target != null)
+        {
+            target.SetActive(visible);
+        }
+    }
+
+    private static Button FindButtonByName(string buttonName)
+    {
+        if (string.IsNullOrWhiteSpace(buttonName))
+        {
+            return null;
+        }
+
+        Button[] buttons = Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int index = 0; index < buttons.Length; index++)
+        {
+            Button button = buttons[index];
+            if (button != null && string.Equals(button.name, buttonName, StringComparison.Ordinal))
+            {
+                return button;
+            }
+        }
+
+        return null;
+    }
+
+    private static string BuildSceneMetricText(string template, string fallbackLabel, string value)
+    {
+        string label = fallbackLabel;
+        if (!string.IsNullOrWhiteSpace(template))
+        {
+            int colonIndex = template.IndexOf(':');
+            if (colonIndex > 0)
+            {
+                label = template.Substring(0, colonIndex).Trim();
+            }
+            else
+            {
+                label = template.Trim();
+            }
+        }
+
+        return $"{label}: {value}";
     }
 
     /// <summary>
@@ -504,17 +658,10 @@ public sealed class TowerDefenseHudPresenter
     /// </summary>
     public void ConfigureCardLabels(TowerCatalog towerCatalog)
     {
-        ConfigureTowerCard(_relayTowerButton, _relayTowerButtonText, towerCatalog.GetDefinition(TowerType.Relay));
-        ConfigureTowerCard(_defenseTowerButton, _defenseTowerButtonText, towerCatalog.GetDefinition(TowerType.SingleTarget));
-        ConfigureTowerCard(_slowFieldTowerButton, _slowFieldTowerButtonText, towerCatalog.GetDefinition(TowerType.SlowField));
-        ConfigureTowerCard(_bombardTowerButton, _bombardTowerButtonText, towerCatalog.GetDefinition(TowerType.Bombard));
-
-        if (_clearSelectionButtonText != null)
-        {
-            string secondaryHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
-            _clearSelectionButtonText.text = $"CANCEL DEPLOY\n<size=20><color=#{secondaryHex}>Esc / RMB</color></size>";
-            _clearSelectionButtonText.alignment = TextAlignmentOptions.Center;
-        }
+        ApplyTowerCardVisualsOnly(_relayTowerButton, towerCatalog.GetDefinition(TowerType.Relay));
+        ApplyTowerCardVisualsOnly(_defenseTowerButton, towerCatalog.GetDefinition(TowerType.SingleTarget));
+        ApplyTowerCardVisualsOnly(_slowFieldTowerButton, towerCatalog.GetDefinition(TowerType.SlowField));
+        ApplyTowerCardVisualsOnly(_bombardTowerButton, towerCatalog.GetDefinition(TowerType.Bombard));
     }
 
     /// <summary>
@@ -524,22 +671,26 @@ public sealed class TowerDefenseHudPresenter
     /// 所以你在场景里调好的布局会被保留下来；
     /// 脚本只负责把当前游戏状态填进对应文本里。
     /// </summary>
-    public void Refresh(TowerDefenseHudState state, TowerCatalog towerCatalog, Func<TowerType, bool> canAffordTower)
+    public void Refresh(
+        TowerDefenseHudState state,
+        TowerCatalog towerCatalog,
+        Func<TowerType, bool> canAffordTower,
+        Func<TowerType, TowerTutorialAvailability> tutorialTowerAvailabilityQuery = null)
     {
         if (_scrapText != null)
         {
-            _scrapText.text = BuildMetricText("SCRAP STOCK", state.CurrentScrap.ToString(), _theme.ScrapValueColor);
+            _scrapText.text = BuildSceneMetricText(_scrapTextTemplate, "Scrap", state.CurrentScrap.ToString());
         }
 
         if (_baseHealthText != null)
         {
-            _baseHealthText.text = BuildMetricText("BASE CORE", state.CurrentBaseHealth.ToString(), _theme.BaseValueColor);
+            _baseHealthText.text = BuildSceneMetricText(_baseHealthTextTemplate, "Base HP", state.CurrentBaseHealth.ToString());
         }
 
         if (_waveText != null)
         {
             string waveDisplay = state.TotalWaves > 0 ? $"{state.CurrentWave}/{state.TotalWaves}" : "0/0";
-            _waveText.text = BuildMetricText("WAVE CLOCK", waveDisplay, _theme.WaveValueColor);
+            _waveText.text = BuildSceneMetricText(_waveTextTemplate, "Wave", waveDisplay);
         }
 
         if (_selectionText != null)
@@ -547,7 +698,12 @@ public sealed class TowerDefenseHudPresenter
             _selectionText.text = BuildSelectionText(state, towerCatalog);
         }
 
-        UpdateButtonInteractableState(canAffordTower);
+        if (_structureStatusText != null)
+        {
+            _structureStatusText.text = BuildStructureStatusText(state);
+        }
+
+        UpdateButtonInteractableState(canAffordTower, tutorialTowerAvailabilityQuery);
     }
 
     /// <summary>
@@ -630,6 +786,122 @@ public sealed class TowerDefenseHudPresenter
     /// </summary>
     public void ShowGameOver(string title, string hint)
     {
+        ShowResultPanel(title, hint);
+    }
+
+    /// <summary>
+    /// 当前项目还没有独立的 VictoryPanel 结构，
+    /// 所以先复用同一块结果面板来承载胜利结算。
+    ///
+    /// 这样做的重点不是长期 UI 命名有多优雅，
+    /// 而是先把“胜利后停住 -> 玩家点击继续 -> 再切剧情”这条体验链接通，
+    /// 同时不强迫现有关卡场景立刻重接一整套新引用。
+    /// </summary>
+    public void ShowVictory(string title, string hint)
+    {
+        ShowResultPanel(title, hint);
+    }
+
+    /// <summary>
+    /// 单独控制 `Game Over` 面板显隐。
+    /// </summary>
+    public void SetGameOverVisible(bool visible)
+    {
+        if (_gameOverPanel != null)
+        {
+            _gameOverPanel.SetActive(visible);
+        }
+    }
+
+    /// <summary>
+    /// 把“删除当前选中建筑”的按钮显示控制也统一交给 HUD Presenter。
+    ///
+    /// 这里故意不把判定逻辑塞进 UI 层，
+    /// Presenter 只接受上层告诉它“现在该不该显示”，避免 UI 反向依赖总控内部状态。
+    /// </summary>
+    public void SetDemolishSelectedStructureButtonVisible(bool visible)
+    {
+        if (_demolishSelectedStructureButton != null)
+        {
+            _demolishSelectedStructureButton.gameObject.SetActive(visible);
+        }
+    }
+
+    /// <summary>
+    /// 统一给删除按钮注册点击事件。
+    ///
+    /// 用脚本绑定而不是依赖场景 YAML 里的 onClick，
+    /// 可以让运行时兜底创建出来的按钮和场景里作者化的按钮走同一条接线逻辑。
+    /// </summary>
+    public void BindDemolishSelectedStructureButton(Action onClick)
+    {
+        if (_demolishSelectedStructureButton == null)
+        {
+            return;
+        }
+
+        _demolishSelectedStructureButton.onClick.RemoveAllListeners();
+        if (onClick != null)
+        {
+            _demolishSelectedStructureButton.onClick.AddListener(() => onClick());
+        }
+    }
+
+    /// <summary>
+    /// 在真正跨场景过渡前，把塔防 HUD 与结果面板统一隐藏。
+    ///
+    /// 这样黑场压上来时，玩家不会再看到旧的胜利界面、HUD 或拖拽提示残留一帧。
+    /// </summary>
+    public void HideAllGameplayPresentationForSceneTransition()
+    {
+        SetActiveIfPresent(_topBarRoot, false);
+        SetActiveIfPresent(_bottomBarRoot, false);
+        SetActiveIfPresent(_scrapText, false);
+        SetActiveIfPresent(_baseHealthText, false);
+        SetActiveIfPresent(_waveText, false);
+        SetActiveIfPresent(_selectionText, false);
+        SetActiveIfPresent(_structureStatusText, false);
+        SetActiveIfPresent(_relayTowerButton, false);
+        SetActiveIfPresent(_defenseTowerButton, false);
+        SetActiveIfPresent(_slowFieldTowerButton, false);
+        SetActiveIfPresent(_bombardTowerButton, false);
+        SetActiveIfPresent(_clearSelectionButton, false);
+        SetActiveIfPresent(_demolishSelectedStructureButton, false);
+        SetActiveIfPresent(_dragPreviewPanel, false);
+        SetActiveIfPresent(_gameOverPanel, false);
+    }
+
+    /// <summary>
+    /// The authored HUD keeps some decorative and layout-only elements grouped under larger roots
+    /// such as `TopBar` and `BottomBar`. Hiding only the child texts and buttons still leaves those
+    /// larger bars visible behind the formal victory page, which is why the user could still see
+    /// the normal HUD framing after clearing a level.
+    ///
+    /// We treat these roots as optional because older scenes may not have exactly the same
+    /// structure. When they exist, they join the transition-hide group together with the gameplay
+    /// widgets above.
+    /// </summary>
+    private void CaptureOptionalHudRoots()
+    {
+        Canvas hudCanvas = ResolveHudCanvas();
+        if (hudCanvas == null)
+        {
+            return;
+        }
+
+        if (_topBarRoot == null)
+        {
+            _topBarRoot = FindChildGameObject(hudCanvas.transform, "TopBar");
+        }
+
+        if (_bottomBarRoot == null)
+        {
+            _bottomBarRoot = FindChildGameObject(hudCanvas.transform, "BottomBar");
+        }
+    }
+
+    private void ShowResultPanel(string title, string hint)
+    {
         if (_gameOverPanel != null)
         {
             _gameOverPanel.SetActive(true);
@@ -646,15 +918,81 @@ public sealed class TowerDefenseHudPresenter
         }
     }
 
-    /// <summary>
-    /// 单独控制 `Game Over` 面板显隐。
-    /// </summary>
-    public void SetGameOverVisible(bool visible)
+    private Button CreateRuntimeDemolishButton()
     {
-        if (_gameOverPanel != null)
+        Canvas targetCanvas = ResolveHudCanvas();
+        if (targetCanvas == null)
         {
-            _gameOverPanel.SetActive(visible);
+            return null;
         }
+
+        GameObject buttonObject = new GameObject("DeleteSelectedStructureButton");
+        buttonObject.transform.SetParent(targetCanvas.transform, false);
+
+        RectTransform rectTransform = buttonObject.AddComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(1f, 1f);
+        rectTransform.anchorMax = new Vector2(1f, 1f);
+        rectTransform.pivot = new Vector2(1f, 1f);
+        rectTransform.anchoredPosition = new Vector2(-24f, -24f);
+        rectTransform.sizeDelta = new Vector2(172f, 46f);
+
+        Image background = buttonObject.AddComponent<Image>();
+        background.color = new Color(0.78f, 0.16f, 0.16f, 0.96f);
+        background.raycastTarget = true;
+
+        Button button = buttonObject.AddComponent<Button>();
+        ColorBlock colors = button.colors;
+        colors.normalColor = background.color;
+        colors.highlightedColor = new Color(0.88f, 0.24f, 0.24f, 1f);
+        colors.pressedColor = new Color(0.62f, 0.12f, 0.12f, 1f);
+        colors.selectedColor = colors.highlightedColor;
+        colors.disabledColor = new Color(0.42f, 0.14f, 0.14f, 0.5f);
+        button.colors = colors;
+        button.transition = Selectable.Transition.ColorTint;
+
+        GameObject labelObject = new GameObject("Label");
+        labelObject.transform.SetParent(buttonObject.transform, false);
+        RectTransform labelRect = labelObject.AddComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+
+        TMP_Text label = labelObject.AddComponent<TextMeshProUGUI>();
+        label.text = "Delete";
+        label.fontSize = 26f;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = new Color(1f, 0.96f, 0.96f, 1f);
+        label.raycastTarget = false;
+
+        buttonObject.SetActive(false);
+        return button;
+    }
+
+    private static Canvas ResolveHudCanvas()
+    {
+        Canvas[] canvases = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int index = 0; index < canvases.Length; index++)
+        {
+            Canvas canvas = canvases[index];
+            if (canvas != null && string.Equals(canvas.name, "HUDCanvas", StringComparison.Ordinal))
+            {
+                return canvas;
+            }
+        }
+
+        return null;
+    }
+
+    private static GameObject FindChildGameObject(Transform parent, string childName)
+    {
+        if (parent == null || string.IsNullOrWhiteSpace(childName))
+        {
+            return null;
+        }
+
+        Transform child = parent.Find(childName);
+        return child != null ? child.gameObject : null;
     }
 
     /// <summary>
@@ -664,7 +1002,7 @@ public sealed class TowerDefenseHudPresenter
     /// 只是为了确保多行卡片文案在当前卡片里能稳定读清楚。
     /// 但它不会再去改按钮位置、父物体布局或整个右侧区结构。
     /// </summary>
-    private void ConfigureTowerCard(Button button, TMP_Text label, TowerDefinition definition)
+    private void ApplyTowerCardVisualsOnly(Button button, TowerDefinition definition)
     {
         if (button != null)
         {
@@ -674,19 +1012,6 @@ public sealed class TowerDefenseHudPresenter
                 towerShopCard.ApplyDefinitionVisuals(definition);
             }
         }
-
-        if (label == null || definition == null)
-        {
-            return;
-        }
-
-        label.text = definition.BuildCardLabelMarkup(_theme.SecondaryInfoColor);
-        label.alignment = TextAlignmentOptions.Left;
-        label.margin = _theme.CardLabelMargin;
-        label.enableWordWrapping = false;
-        label.characterSpacing = _theme.CardLabelCharacterSpacing;
-        label.lineSpacing = _theme.CardLabelLineSpacing;
-        label.color = _theme.CardTextColor;
     }
 
     /// <summary>
@@ -697,14 +1022,50 @@ public sealed class TowerDefenseHudPresenter
     /// </summary>
     private string BuildSelectionText(TowerDefenseHudState state, TowerCatalog towerCatalog)
     {
-        string composedText = BuildPrimaryOperationBlock(state, towerCatalog);
+        string composedText = string.Empty;
+
+        if (_showPrimaryOperationSection)
+        {
+            AppendSection(ref composedText, BuildPrimaryOperationBlock(state, towerCatalog));
+        }
 
         AppendSection(ref composedText, BuildStatusBlock(state.CurrentStatusMessage));
-        AppendSection(ref composedText, BuildPowerGridBlock(state.PowerGridSnapshot));
         AppendSection(ref composedText, BuildTransientNoticeBlock(state.TransientNotice));
         AppendSection(ref composedText, BuildRecentNoticeBlock(state.RecentHudNotices, state.TransientNotice));
 
-        return composedText;
+        if (_showPowerGridSection)
+        {
+            AppendSection(ref composedText, BuildPowerGridBlock(state.PowerGridSnapshot));
+        }
+
+        if (!string.IsNullOrWhiteSpace(composedText))
+        {
+            return composedText;
+        }
+
+        return !string.IsNullOrWhiteSpace(_selectionTextTemplate)
+            ? _selectionTextTemplate
+            : string.Empty;
+    }
+
+    private string BuildStructureStatusText(TowerDefenseHudState state)
+    {
+        if (state.PlacedStructureState.HasSelection)
+        {
+            if (string.IsNullOrWhiteSpace(state.PlacedStructureState.Details))
+            {
+                return state.PlacedStructureState.Title;
+            }
+
+            return $"{state.PlacedStructureState.Title}  |  {state.PlacedStructureState.Details}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(_structureStatusTextTemplate))
+        {
+            return _structureStatusTextTemplate;
+        }
+
+        return "Select a relay or turret to inspect live stats.";
     }
 
     /// <summary>
@@ -956,31 +1317,59 @@ public sealed class TowerDefenseHudPresenter
     /// 如果你想修改不可购买时的颜色、选中时的高亮、按下时的过渡，
     /// 现在更推荐直接去 Button 的 `Transition / ColorBlock` 里改。
     /// </summary>
-    private void UpdateButtonInteractableState(Func<TowerType, bool> canAffordTower)
+    private void UpdateButtonInteractableState(
+        Func<TowerType, bool> canAffordTower,
+        Func<TowerType, TowerTutorialAvailability> tutorialTowerAvailabilityQuery)
     {
-        if (_relayTowerButton != null)
-        {
-            _relayTowerButton.interactable = canAffordTower(TowerType.Relay);
-        }
-
-        if (_defenseTowerButton != null)
-        {
-            _defenseTowerButton.interactable = canAffordTower(TowerType.SingleTarget);
-        }
-
-        if (_slowFieldTowerButton != null)
-        {
-            _slowFieldTowerButton.interactable = canAffordTower(TowerType.SlowField);
-        }
-
-        if (_bombardTowerButton != null)
-        {
-            _bombardTowerButton.interactable = canAffordTower(TowerType.Bombard);
-        }
+        ApplyTowerButtonState(_relayTowerButton, TowerType.Relay, canAffordTower, tutorialTowerAvailabilityQuery);
+        ApplyTowerButtonState(_defenseTowerButton, TowerType.SingleTarget, canAffordTower, tutorialTowerAvailabilityQuery);
+        ApplyTowerButtonState(_slowFieldTowerButton, TowerType.SlowField, canAffordTower, tutorialTowerAvailabilityQuery);
+        ApplyTowerButtonState(_bombardTowerButton, TowerType.Bombard, canAffordTower, tutorialTowerAvailabilityQuery);
 
         if (_clearSelectionButton != null)
         {
             _clearSelectionButton.interactable = true;
+        }
+    }
+
+    private static void ApplyTowerButtonState(
+        Button button,
+        TowerType towerType,
+        Func<TowerType, bool> canAffordTower,
+        Func<TowerType, TowerTutorialAvailability> tutorialTowerAvailabilityQuery)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        TowerTutorialAvailability tutorialAvailability = tutorialTowerAvailabilityQuery != null
+            ? tutorialTowerAvailabilityQuery(towerType)
+            : TowerTutorialAvailability.Default;
+        bool isTutorialLocked = tutorialAvailability == TowerTutorialAvailability.Locked;
+        button.interactable = !isTutorialLocked && canAffordTower(towerType);
+
+        TowerShopCard towerShopCard = button.GetComponent<TowerShopCard>();
+        if (towerShopCard == null)
+        {
+            return;
+        }
+
+        towerShopCard.ApplyInteractionVisualState(ResolveTowerShopCardInteractionState(tutorialAvailability));
+    }
+
+    private static TowerShopCardInteractionState ResolveTowerShopCardInteractionState(TowerTutorialAvailability availability)
+    {
+        switch (availability)
+        {
+            case TowerTutorialAvailability.Locked:
+                return TowerShopCardInteractionState.Locked;
+            case TowerTutorialAvailability.Available:
+                return TowerShopCardInteractionState.Available;
+            case TowerTutorialAvailability.Recommended:
+                return TowerShopCardInteractionState.Recommended;
+            default:
+                return TowerShopCardInteractionState.Default;
         }
     }
 

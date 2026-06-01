@@ -77,3 +77,8 @@
 *.7z binary
 *.rar binary
 *.unitypackage binary
+
+# TextMesh Pro font atlases that frequently rewrite large embedded texture blobs
+# should not participate in line-based merges. Real font changes should be
+# handled in isolated commits / PRs.
+Assets/_Project/Fonts/zpix SDF.asset binary

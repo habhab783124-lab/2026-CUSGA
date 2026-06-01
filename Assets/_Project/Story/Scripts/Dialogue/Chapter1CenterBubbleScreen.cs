@@ -7,6 +7,11 @@ public sealed class Chapter1CenterBubbleScreen : MonoBehaviour
     [Header("References")]
     [SerializeField] private SpriteRenderer targetRenderer;
 
+    [Header("Open SFX")]
+    [SerializeField] private AudioClip openSfx;
+    [SerializeField] private string openSfxResourcePath = "StoryAudio/SFX/对话框浮现音效1";
+    [SerializeField] [Range(0f, 1f)] private float openSfxVolume = 1f;
+
     [Header("Transition")]
     [SerializeField] private float openDuration = 0.32f;
     [SerializeField] private float closeDuration = 0.24f;
@@ -23,6 +28,7 @@ public sealed class Chapter1CenterBubbleScreen : MonoBehaviour
     [SerializeField] private float closeFlickerInterval = 0.03f;
 
     private CenterBubbleTransitionDriver transitionDriver;
+    private AudioSource openSfxAudioSource;
 
     public bool IsOpen => transitionDriver != null && transitionDriver.IsOpen;
     public bool IsTransitioning => transitionDriver != null && transitionDriver.IsTransitioning;
@@ -31,6 +37,7 @@ public sealed class Chapter1CenterBubbleScreen : MonoBehaviour
     {
         transitionDriver = new CenterBubbleTransitionDriver(this);
         ResolveTargetRenderer();
+        EnsureOpenSfxAudioSource();
         ConfigureDriver();
     }
 
@@ -48,6 +55,7 @@ public sealed class Chapter1CenterBubbleScreen : MonoBehaviour
     public Coroutine PlayOpen(MonoBehaviour owner, System.Action onComplete = null)
     {
         ConfigureDriver();
+        PlayOpenSfx();
         return transitionDriver.PlayOpen(onComplete);
     }
 
@@ -108,5 +116,39 @@ public sealed class Chapter1CenterBubbleScreen : MonoBehaviour
                 closeFlickerCount = closeFlickerCount,
                 closeFlickerInterval = closeFlickerInterval
             });
+    }
+
+    private void EnsureOpenSfxAudioSource()
+    {
+        openSfxAudioSource = GetComponent<AudioSource>();
+        if (openSfxAudioSource == null)
+        {
+            openSfxAudioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        openSfxAudioSource.playOnAwake = false;
+        openSfxAudioSource.loop = false;
+        openSfxAudioSource.spatialBlend = 0f;
+    }
+
+    private void PlayOpenSfx()
+    {
+        if (openSfxAudioSource == null)
+        {
+            return;
+        }
+
+        AudioClip clip = openSfx;
+        if (clip == null && !string.IsNullOrWhiteSpace(openSfxResourcePath))
+        {
+            clip = Resources.Load<AudioClip>(openSfxResourcePath);
+        }
+
+        if (clip == null)
+        {
+            return;
+        }
+
+        openSfxAudioSource.PlayOneShot(clip, Mathf.Clamp01(openSfxVolume));
     }
 }

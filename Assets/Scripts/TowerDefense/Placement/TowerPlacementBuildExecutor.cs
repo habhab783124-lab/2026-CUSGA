@@ -36,6 +36,7 @@ public sealed class TowerPlacementBuildExecutor
     private readonly Func<TowerType, GameObject> _getPrototype;
     private readonly Func<Transform> _getPlacedTowerRoot;
     private readonly Func<TowerType, float> _getPlacementRadius;
+    private readonly Func<Vector3, Vector3> _snapPlacementWorldPosition;
     private readonly PlacementValidator _validatePlacementPosition;
     private readonly Action<GameObject, TowerType> _registerPlacedStructure;
     private readonly Action _invalidatePlacementAreaOverlayCache;
@@ -56,6 +57,7 @@ public sealed class TowerPlacementBuildExecutor
         Func<TowerType, GameObject> getPrototype,
         Func<Transform> getPlacedTowerRoot,
         Func<TowerType, float> getPlacementRadius,
+        Func<Vector3, Vector3> snapPlacementWorldPosition,
         PlacementValidator validatePlacementPosition,
         Action<GameObject, TowerType> registerPlacedStructure,
         Action invalidatePlacementAreaOverlayCache,
@@ -71,6 +73,7 @@ public sealed class TowerPlacementBuildExecutor
         _getPrototype = getPrototype;
         _getPlacedTowerRoot = getPlacedTowerRoot;
         _getPlacementRadius = getPlacementRadius;
+        _snapPlacementWorldPosition = snapPlacementWorldPosition;
         _validatePlacementPosition = validatePlacementPosition;
         _registerPlacedStructure = registerPlacedStructure;
         _invalidatePlacementAreaOverlayCache = invalidatePlacementAreaOverlayCache;
@@ -94,6 +97,8 @@ public sealed class TowerPlacementBuildExecutor
     /// </summary>
     public bool TryPlaceTowerAt(Vector3 worldPosition, TowerType towerType, BuildPad ownerPad = null)
     {
+        worldPosition = _snapPlacementWorldPosition != null ? _snapPlacementWorldPosition(worldPosition) : worldPosition;
+
         if ((_isGameOverQuery != null && _isGameOverQuery()) || towerType == TowerType.None)
         {
             return false;
@@ -171,6 +176,7 @@ public sealed class TowerPlacementBuildExecutor
         _setCurrentScrap?.Invoke(currentScrap - cost);
         _invalidatePlacementAreaOverlayCache?.Invoke();
         _setStatusMessage?.Invoke($"Deployed {towerDisplayName} for {cost} SCRAP.");
+        TowerDefenseGame.Instance?.PlayPlaceStructureSound();
         TowerDefenseGame.Instance?.ShowTransientHudNotice($"-{cost} SCRAP spent.", 2.2f);
         _logPlacementDiagnostic?.Invoke($"TryPlace succeeded: tower={towerType} world={worldPosition} cost={cost} remainingScrap={currentScrap - cost}");
         _refreshHud?.Invoke();

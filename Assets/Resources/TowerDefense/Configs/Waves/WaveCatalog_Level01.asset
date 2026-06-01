@@ -14,40 +14,41 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   waves:
   - displayName: "\u7B2C 01 \u6CE2"
-    designerNote: Level 1 opening wave. Introduce basic scavengers and a short fast-wolf
-      burst.
+    designerNote: "\u6559\u5B66\u9996\u6CE2\u3002\u53EA\u7528\u4E3B\u8DEF\u4F4E\u538B\u529B\u5C0F\u602A\uFF0C\u8BA9\u73A9\u5BB6\u5148\u5B8C\u6210\u7EE7\u7535\u5668 + \u5355\u4F53\u5854\u7684\u57FA\u7840\u95ED\u73AF\u3002"
     spawnGroups:
     - enemyType: 1
-      enemyCount: 10
-      spawnInterval: 0.95
-    - enemyType: 8
-      enemyCount: 10
-      spawnInterval: 0.55
+      enemyCount: 3
+      spawnInterval: 1.15
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
   - displayName: "\u7B2C 02 \u6CE2"
-    designerNote: Level 1 second wave. Introduce shield support and stealth pressure.
+    designerNote: "\u6559\u5B66\u7B2C\u4E8C\u6CE2\u3002\u4ECE\u526F\u8DEF\u5148\u538B\u5165\u4E00\u5C0F\u6279\u6742\u5175\uFF0C\u518D\u63A5\u4E3B\u8DEF\u654C\u7FA4\uFF0C\u8BA9\u73A9\u5BB6\u7406\u89E3\u6C47\u5408\u53E3\u548C\u51CF\u901F\u5854\u7684\u4EF7\u503C\u3002"
     spawnGroups:
+    - enemyType: 1
+      enemyCount: 2
+      spawnInterval: 0.85
+      enemyPathReference: {fileID: 0}
+      pathSequence: 1
     - enemyType: 1
       enemyCount: 4
-      spawnInterval: 0.85
+      spawnInterval: 0.95
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
+  - displayName: "\u7B2C 03 \u6CE2"
+    designerNote: "\u6559\u5B66\u6536\u5C3E\u6CE2\u3002\u4E3B\u8DEF\u5C0F\u7CBE\u82F1 + \u526F\u8DEF\u5206\u5175\u7EC4\u5408\u51FA\u573A\uFF0C\u4F46\u603B\u4F53\u4ECD\u4FDD\u6301\u53EF\u63A7\uFF0C\u7528\u6765\u5B8C\u6210\u7B2C\u4E00\u5173\u7684\u6210\u529F\u51FA\u51FB\u4F53\u9A8C\u3002"
+    spawnGroups:
     - enemyType: 3
       enemyCount: 1
-      spawnInterval: 1.1
-    - enemyType: 6
+      spawnInterval: 1.4
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0
+    - enemyType: 1
       enemyCount: 2
       spawnInterval: 0.8
-  - displayName: "\u7B2C 03 \u6CE2"
-    designerNote: Level 1 closing wave. Mix heavy armor, repair support and one split-on-death
-      boss.
-    spawnGroups:
-    - enemyType: 5
-      enemyCount: 2
-      spawnInterval: 1
-    - enemyType: 4
-      enemyCount: 1
-      spawnInterval: 1.15
-    - enemyType: 7
-      enemyCount: 1
-      spawnInterval: 1.4
-    - enemyType: 2
+      enemyPathReference: {fileID: 0}
+      pathSequence: 1
+    - enemyType: 1
       enemyCount: 3
-      spawnInterval: 0.5
+      spawnInterval: 0.8
+      enemyPathReference: {fileID: 0}
+      pathSequence: 0

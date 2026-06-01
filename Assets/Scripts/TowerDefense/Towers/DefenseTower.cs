@@ -103,6 +103,19 @@ public class DefenseTower : MonoBehaviour
     [Header("Type")]
     [SerializeField] private TowerType buildType = TowerType.SingleTarget;
 
+    private void OnDrawGizmosSelected()
+    {
+        PlacementGrid placementGrid = FindFirstObjectByType<PlacementGrid>();
+        if (placementGrid != null)
+        {
+            TowerDefenseGame game = TowerDefenseGame.Instance != null
+                ? TowerDefenseGame.Instance
+                : FindFirstObjectByType<TowerDefenseGame>();
+            float noBuildSquareSize = game != null ? game.GetPlacementNoBuildSquareSize(buildType) : 0f;
+            placementGrid.DrawStructureGizmo(transform.position, buildType, noBuildSquareSize);
+        }
+    }
+
     [Header("Tunings")]
     [SerializeField] private CombatTuning singleTargetTuning = new CombatTuning
     {
@@ -412,6 +425,22 @@ public class DefenseTower : MonoBehaviour
         return ActiveTuning.upgradeCostBase + (CurrentLevel - 1) * ActiveTuning.upgradeCostPerLevel;
     }
 
+    /// <summary>
+    /// 给删除返还逻辑提供一个“这座塔到当前为止一共花过多少升级费”的可靠入口。
+    ///
+    /// 这样总控只需要关心返还比例，不需要再复制一份和塔内部升级规则耦合的成本计算。
+    /// </summary>
+    public int CalculateAccumulatedUpgradeCost()
+    {
+        int totalUpgradeCost = 0;
+        for (int level = 1; level < CurrentLevel; level++)
+        {
+            totalUpgradeCost += ActiveTuning.upgradeCostBase + (level - 1) * ActiveTuning.upgradeCostPerLevel;
+        }
+
+        return Mathf.Max(0, totalUpgradeCost);
+    }
+
     public int PreviewUpgradedPowerRequired()
     {
         return CanUpgrade ? EvaluatePowerRequired(CurrentLevel + 1) : PowerRequired;
@@ -520,6 +549,7 @@ public class DefenseTower : MonoBehaviour
         }
 
         target.TakeDamage(DamagePerShot, Enemy.DamageFeedbackType.Standard);
+        TowerDefenseGame.Instance?.PlaySingleTargetImpactSound();
         StartCoroutine(FlashRoutine());
         StartCoroutine(PlayTracerFeedback(target.transform.position));
     }
@@ -550,6 +580,7 @@ public class DefenseTower : MonoBehaviour
 
         if (affectedAnyEnemy)
         {
+            TowerDefenseGame.Instance?.PlaySlowFieldImpactSound();
             StartCoroutine(FlashRoutine());
             StartCoroutine(PlaySlowPulseFeedback());
         }
@@ -640,6 +671,7 @@ public class DefenseTower : MonoBehaviour
 
         if (hitCount > 0)
         {
+            TowerDefenseGame.Instance?.PlayBombardImpactSound();
             StartCoroutine(FlashRoutine());
         }
     }
@@ -866,6 +898,7 @@ public class DefenseTower : MonoBehaviour
         _spriteRenderer.sprite = ResolveBodySprite();
         _spriteRenderer.color = Color.white;
         RefreshTypeSignatureStyle();
+        TowerRenderSorting.ApplyPlacedTowerTopmostSorting(transform, _spriteRenderer);
     }
 
     /// <summary>
@@ -1134,7 +1167,7 @@ public class DefenseTower : MonoBehaviour
         _typeSignatureRenderer.color = IsPowered
             ? tuning.signatureColor
             : new Color(offlineColor.r, offlineColor.g, offlineColor.b, Mathf.Max(0.16f, tuning.signatureColor.a * 0.75f));
-        _typeSignatureRenderer.sortingOrder = (_spriteRenderer != null ? _spriteRenderer.sortingOrder : 0) + 1;
+        TowerRenderSorting.ApplyPlacedTowerAdornmentSorting(_typeSignatureRenderer, _spriteRenderer, 1);
         _typeSignatureRenderer.gameObject.SetActive(TowerTypeUtility.IsCombatTower(buildType));
     }
 
@@ -1177,7 +1210,7 @@ public class DefenseTower : MonoBehaviour
                 0f);
             pipTransform.localScale = new Vector3(levelPipScale, levelPipScale, 1f);
             pipRenderer.color = IsPowered ? levelPipColor : new Color(offlineColor.r, offlineColor.g, offlineColor.b, 0.92f);
-            pipRenderer.sortingOrder = (_spriteRenderer != null ? _spriteRenderer.sortingOrder : 0) + levelPipSortingOffset;
+            TowerRenderSorting.ApplyPlacedTowerAdornmentSorting(pipRenderer, _spriteRenderer, levelPipSortingOffset);
         }
     }
 
@@ -1307,7 +1340,7 @@ public class DefenseTower : MonoBehaviour
             feedbackRenderer.sharedMaterial = feedbackMaterial;
         }
 
-        feedbackRenderer.sortingOrder = (_spriteRenderer != null ? _spriteRenderer.sortingOrder : 0) + sortingOffset;
+        TowerRenderSorting.ApplyPlacedTowerEffectSorting(feedbackRenderer, _spriteRenderer, sortingOffset);
         Transform feedbackParent = feedbackParentOverride != null
             ? feedbackParentOverride
             : (feedbackRootReference != null ? feedbackRootReference : transform);
@@ -1344,8 +1377,7 @@ public class DefenseTower : MonoBehaviour
         instance.transform.localScale = new Vector3(scale, scale, 1f);
 
         SpriteRenderer[] renderers = instance.GetComponentsInChildren<SpriteRenderer>(true);
-        int baseSortingOrder = (_spriteRenderer != null ? _spriteRenderer.sortingOrder : 0) + sortingOffset;
-        int firstRendererOrder = renderers.Length > 0 ? renderers[0].sortingOrder : 0;
+        TowerRenderSorting.ApplyPlacedTowerEffectSorting(renderers, _spriteRenderer, sortingOffset);
         for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
         {
             SpriteRenderer renderer = renderers[rendererIndex];
@@ -1355,7 +1387,6 @@ public class DefenseTower : MonoBehaviour
             }
 
             renderer.color = color;
-            renderer.sortingOrder = baseSortingOrder + (renderer.sortingOrder - firstRendererOrder);
             if (feedbackMaterial != null)
             {
                 renderer.sharedMaterial = feedbackMaterial;

@@ -2,6 +2,7 @@ using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 
@@ -126,8 +127,30 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private int slowFieldTowerCost = 50;
     [SerializeField] private int bombardTowerCost = 62;
 
-    [Header("Placement Rules")]
+    [Header("Placement Rules (Legacy Compatibility)")]
+
+    /// <summary>
+    /// Legacy compatibility field.
+    ///
+    /// This value is no longer the authoritative source for relay footprint / placement blocking.
+    /// The current authoritative source is the `CircleCollider2D` configured directly on the
+    /// relay runtime prefab.
+    ///
+    /// We intentionally keep this serialized field for one transition period so old scenes do not
+    /// immediately lose data or break deserialization, but new tuning work should not use it.
+    /// </summary>
     [SerializeField] private float relayPlacementRadius = 0.52f;
+
+    /// <summary>
+    /// Legacy compatibility field.
+    ///
+    /// This value is no longer the authoritative source for combat-tower footprint / placement
+    /// blocking. The current authoritative source is the `CircleCollider2D` configured directly on
+    /// each combat-tower runtime prefab.
+    ///
+    /// We intentionally keep this serialized field for one transition period so old scenes do not
+    /// immediately lose data or break deserialization, but new tuning work should not use it.
+    /// </summary>
     [SerializeField] private float defensePlacementRadius = 0.58f;
 
     [Header("Placement Expansion")]
@@ -135,6 +158,13 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private float defenseExpansionSquareSize = 4.5f;
     [SerializeField] private Vector2 initialPlacementSquareCenter = new Vector2(-6.5f, -2.25f);
     [SerializeField] private float initialPlacementSquareSize = 3f;
+
+    [Header("Placement Grid")]
+    [SerializeField] private float placementGridCellSize = 0.5f;
+    [SerializeField] private Vector2 placementGridOrigin;
+    [SerializeField] private bool snapPlacementToCellCenter = true;
+    [SerializeField] private Vector2Int relayFootprintCells = new Vector2Int(2, 2);
+    [SerializeField] private Vector2Int defenseFootprintCells = new Vector2Int(2, 2);
 
     [Header("Placement Preview")]
     [SerializeField] private Color validPreviewColor = new Color(0.26f, 0.95f, 0.78f, 0.72f);
@@ -155,6 +185,11 @@ public class TowerDefenseGame : MonoBehaviour
 
     [Header("Diagnostics")]
     [SerializeField] private bool enablePlacementDiagnostics;
+
+    [Header("Scene Flow")]
+    [SerializeField] private bool restartCurrentSceneOnGameOverClick = true;
+    [SerializeField] private float gameOverRestartClickDelaySeconds = 0.2f;
+    [SerializeField] private float levelClearContinueClickDelaySeconds = 0.2f;
 
     [Header("Tower Presentation")]
     [SerializeField] private TowerPresentationAuthoring relayPresentation = new TowerPresentationAuthoring
@@ -205,6 +240,16 @@ public class TowerDefenseGame : MonoBehaviour
     [Header("HUD Theme")]
     [SerializeField] private HudThemeAuthoring hudTheme = new HudThemeAuthoring();
 
+    [Header("Audio")]
+    [SerializeField] private TowerDefenseAudioProfileAsset audioProfileReference;
+    [SerializeField] private AudioClip backgroundMusicClip;
+    [SerializeField] private AudioClip placeStructureClip;
+    [SerializeField] private AudioClip singleTargetImpactClip;
+    [SerializeField] private AudioClip slowFieldImpactClip;
+    [SerializeField] private AudioClip bombardImpactClip;
+    [SerializeField] private float backgroundMusicVolume = 0.55f;
+    [SerializeField] private float soundEffectVolume = 0.85f;
+
     [Header("Scene References (Preferred)")]
 
     /// <summary>
@@ -221,12 +266,14 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private Transform placedTowerRootReference;
     [SerializeField] private Transform placementPreviewRootReference;
     [SerializeField] private BuildZone buildZoneReference;
+    [SerializeField] private PlacementGrid placementGridReference;
     [SerializeField] private BattlefieldMapDefinition battlefieldMapReference;
 
     [Header("Scene Object Names")]
     [SerializeField] private string placedTowerRootName = "PlacedTowers";
     [SerializeField] private string placementPreviewRootName = "PlacementPreviewRoot";
     [SerializeField] private string buildZoneName = "BuildZone";
+    [SerializeField] private string placementGridName = "PlacementGrid";
 
     [Header("HUD References (Preferred)")]
 
@@ -239,17 +286,20 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private TMP_Text baseHealthTextReference;
     [SerializeField] private TMP_Text waveTextReference;
     [SerializeField] private TMP_Text selectionTextReference;
+    [SerializeField] private TMP_Text structureStatusTextReference;
 
     [SerializeField] private Button relayTowerButtonReference;
     [SerializeField] private Button defenseTowerButtonReference;
     [SerializeField] private Button slowFieldTowerButtonReference;
     [SerializeField] private Button bombardTowerButtonReference;
     [SerializeField] private Button clearSelectionButtonReference;
+    [SerializeField] private Button demolishSelectedStructureButtonReference;
     [SerializeField] private GameObject gameOverPanelReference;
     [SerializeField] private TMP_Text gameOverTitleReference;
     [SerializeField] private TMP_Text gameOverHintReference;
     [SerializeField] private GameObject dragPreviewPanelReference;
     [SerializeField] private TMP_Text dragPreviewLabelReference;
+    [SerializeField] private VictoryResultPageView victoryResultPageViewReference;
 
     /// <summary>
     /// `_sessionState` 负责保存这一局的资源、基地、波次和结算状态。
@@ -263,6 +313,7 @@ public class TowerDefenseGame : MonoBehaviour
     private GameObject _bombardTowerPrototype;
     private Camera _mainCamera;
     private BuildZone _buildZone;
+    private PlacementGrid _placementGrid;
     private BattlefieldMapDefinition _battlefieldMapDefinition;
     private Transform _placedTowerRoot;
     private Transform _placementPreviewRoot;
@@ -316,6 +367,9 @@ public class TowerDefenseGame : MonoBehaviour
     private TowerPlacementSupportCoordinator _placementSupportCoordinator;
     private RelayTower _selectedRelayTower;
     private DefenseTower _selectedDefenseTower;
+    private TowerDefenseAudioCoordinator _audioCoordinator;
+    private AudioSource _backgroundMusicSource;
+    private AudioSource _soundEffectSource;
 
     /// <summary>
     /// `_towerCatalog` 提供塔的静态定义，例如显示名、造价、占地半径和扩张方格边长。
@@ -329,6 +383,20 @@ public class TowerDefenseGame : MonoBehaviour
     /// 这样做的目的，是把“状态计算”和“界面呈现”分开，减少总控脚本继续膨胀。
     /// </summary>
     private TowerDefenseHudPresenter _hudPresenter;
+    private StructureSelectionRangeVisualizer _selectionRangeVisualizer;
+    private bool _gameOverRestartTriggered;
+    private float _gameOverRestartAllowedAtUnscaledTime;
+    private bool _levelClearPresentationActive;
+    private bool _levelClearContinueTriggered;
+    private float _levelClearContinueAllowedAtUnscaledTime;
+    private bool _continueCampaignAfterLevelClear;
+    private string _fallbackNextSceneNameAfterLevelClear = string.Empty;
+    private float _levelClearFadeOutDuration = 0.75f;
+    private float _levelClearFadeInDuration = 0.75f;
+    private bool _levelClearStartOpaqueOnContinue;
+    private const float DemolishRefundRatio = 0.5f;
+    private const string VictoryResultPagePrefabResourcePath = "TowerDefense/UI/VictoryResultPage";
+    private const string FailureResultPagePrefabResourcePath = "TowerDefense/UI/FailureResultPage";
 
     /// <summary>
     /// 对外暴露只读的结算状态，方便 HUD、敌人和其他运行时对象判断当前是否已经 Game Over。
@@ -361,6 +429,9 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private void OnDestroy()
     {
+        _selectionRangeVisualizer?.Dispose();
+        _selectionRangeVisualizer = null;
+
         _placementVisualController?.Dispose();
         _placementVisualController = null;
 
@@ -384,6 +455,7 @@ public class TowerDefenseGame : MonoBehaviour
         _presentationCoordinator?.InitializePresentation("Place a relay on any empty ground, then deploy towers inside relay coverage. You can drag the deploy cards or use hotkeys 1 / 2 / 3 / 4.");
         _placementSupportCoordinator?.HidePlacementAreaOverlay();
         _powerGridCoordinator?.RecalculatePowerDistribution();
+        _audioCoordinator?.StartBackgroundMusic();
     }
 
     /// <summary>
@@ -393,7 +465,13 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private void Update()
     {
+        if (HandleLevelClearContinueInput())
+        {
+            return;
+        }
+
         _inputCoordinator?.Tick();
+        HandleGameOverRestartInput();
     }
 
     /// <summary>
@@ -514,9 +592,49 @@ public class TowerDefenseGame : MonoBehaviour
         _presentationCoordinator?.SetStatusMessage(message);
     }
 
+    public void ContinueAfterVictoryPresentation()
+    {
+        if (!_levelClearPresentationActive)
+        {
+            return;
+        }
+
+        HandleLevelClearContinueInputFromUi();
+    }
+
+    public void RetryAfterFailurePresentation()
+    {
+        if (!IsGameOver || _gameOverRestartTriggered)
+        {
+            return;
+        }
+
+        RestartCurrentScene();
+    }
+
     public void ShowTransientHudNotice(string message, float duration = 2.5f, HudNoticeTone tone = HudNoticeTone.Auto)
     {
         _presentationCoordinator?.ShowTransientHudNotice(message, duration, tone);
+    }
+
+    public void PlayPlaceStructureSound()
+    {
+        _audioCoordinator?.PlayPlaceStructure();
+    }
+
+    public void PlaySingleTargetImpactSound()
+    {
+        _audioCoordinator?.PlaySingleTargetImpact();
+    }
+
+    public void PlaySlowFieldImpactSound()
+    {
+        _audioCoordinator?.PlaySlowFieldImpact();
+    }
+
+    public void PlayBombardImpactSound()
+    {
+        _audioCoordinator?.PlayBombardImpact();
     }
 
     /// <summary>
@@ -526,6 +644,7 @@ public class TowerDefenseGame : MonoBehaviour
     {
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectRelayTower();
+        RefreshHud();
     }
 
     /// <summary>
@@ -535,18 +654,21 @@ public class TowerDefenseGame : MonoBehaviour
     {
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectSingleTargetTower();
+        RefreshHud();
     }
 
     public void SelectSlowFieldTower()
     {
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectSlowFieldTower();
+        RefreshHud();
     }
 
     public void SelectBombardTower()
     {
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectBombardTower();
+        RefreshHud();
     }
 
     /// <summary>
@@ -641,10 +763,19 @@ public class TowerDefenseGame : MonoBehaviour
         if (_selectedRelayTower != null)
         {
             RelayTower relayTower = _selectedRelayTower;
+            int refundAmount = CalculateRelayDemolishRefund(relayTower);
             ClearPlacedStructureSelection();
             Destroy(relayTower.gameObject);
             InvalidatePlacementAreaOverlayCache();
-            SetStatusMessage($"Relay #{relayTower.RelayNumber} dismantled.");
+            if (refundAmount > 0)
+            {
+                AddScrap(refundAmount);
+            }
+
+            SetStatusMessage(
+                refundAmount > 0
+                    ? $"Relay #{relayTower.RelayNumber} dismantled. Refunded {refundAmount} SCRAP."
+                    : $"Relay #{relayTower.RelayNumber} dismantled.");
             RefreshHud();
             return true;
         }
@@ -652,10 +783,19 @@ public class TowerDefenseGame : MonoBehaviour
         if (_selectedDefenseTower != null)
         {
             DefenseTower defenseTower = _selectedDefenseTower;
+            int refundAmount = CalculateDefenseTowerDemolishRefund(defenseTower);
             ClearPlacedStructureSelection();
             Destroy(defenseTower.gameObject);
             InvalidatePlacementAreaOverlayCache();
-            SetStatusMessage($"{GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber} dismantled.");
+            if (refundAmount > 0)
+            {
+                AddScrap(refundAmount);
+            }
+
+            SetStatusMessage(
+                refundAmount > 0
+                    ? $"{GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber} dismantled. Refunded {refundAmount} SCRAP."
+                    : $"{GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber} dismantled.");
             RefreshHud();
             return true;
         }
@@ -761,6 +901,7 @@ public class TowerDefenseGame : MonoBehaviour
 
         _placementRules = new TowerPlacementRules(
             towerType => _placementSupportCoordinator != null ? _placementSupportCoordinator.GetPlacementRadius(towerType) : 0.5f,
+            towerType => _placementSupportCoordinator != null ? _placementSupportCoordinator.GetPlacementCenterOffset(towerType) : Vector2.zero,
             towerType => _placementSupportCoordinator != null ? _placementSupportCoordinator.GetExpansionSquareSize(towerType) : 4.5f);
         _placementSupportCoordinator = new TowerPlacementSupportCoordinator(
             initialPlacementSquareCenter,
@@ -772,6 +913,7 @@ public class TowerDefenseGame : MonoBehaviour
             placementVisualControllerQuery: () => _placementVisualController,
             placedTowerRootQuery: () => _placedTowerRoot != null ? _placedTowerRoot : placedTowerRootReference,
             buildZoneQuery: () => _buildZone != null ? _buildZone : buildZoneReference,
+            placementGridQuery: () => _placementGrid != null ? _placementGrid : placementGridReference,
             relayTowerPrototypeQuery: () => _relayTowerPrototype,
             singleTargetTowerPrototypeQuery: () => _singleTargetTowerPrototype,
             slowFieldTowerPrototypeQuery: () => _slowFieldTowerPrototype,
@@ -784,6 +926,7 @@ public class TowerDefenseGame : MonoBehaviour
             logDiagnostic: LogPlacementDiagnostic);
         _inputCoordinator = new TowerDefenseInputCoordinator(
             isGameOverQuery: () => IsGameOver,
+            trySelectPlacedStructureAtWorld: TrySelectPlacedStructureAtWorld,
             tryQuickPlacementAtCurrentMouse: () => _placementInteractionController != null &&
                                                    _inputCoordinator != null &&
                                                    _placementInteractionController.TryQuickPlacementAt(_inputCoordinator.GetMouseWorldPosition()),
@@ -802,7 +945,7 @@ public class TowerDefenseGame : MonoBehaviour
             getPrototype: GetPrototype,
             getTowerDisplayName: GetTowerDisplayName,
             screenToWorldPosition: screenPosition => _inputCoordinator != null
-                ? _inputCoordinator.ScreenToWorldPosition(screenPosition)
+                ? SnapPlacementWorldPosition(_inputCoordinator.ScreenToWorldPosition(screenPosition))
                 : Vector3.zero,
             validatePlacementPosition: ValidatePlacementPosition,
             getPlacementOverlayWorldBounds: GetPlacementOverlayWorldBounds,
@@ -822,6 +965,7 @@ public class TowerDefenseGame : MonoBehaviour
             getPrototype: GetPrototype,
             getPlacedTowerRoot: () => _placedTowerRoot,
             getPlacementRadius: GetPlacementRadius,
+            snapPlacementWorldPosition: SnapPlacementWorldPosition,
             validatePlacementPosition: ValidatePlacementPosition,
             registerPlacedStructure: (structureObject, towerType) => _powerGridCoordinator?.RegisterPlacedStructure(structureObject, towerType),
             invalidatePlacementAreaOverlayCache: InvalidatePlacementAreaOverlayCache,
@@ -838,8 +982,10 @@ public class TowerDefenseGame : MonoBehaviour
             canAffordTower: CanAffordTower,
             refreshStarterZoneMarker: () => _placementSupportCoordinator?.RefreshStarterZoneMarker());
         _hudPresenter.SetTheme(hudTheme.ToRuntimeTheme());
+        _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());
         _presentationCoordinator.BindPresentation(_hudPresenter, _towerCatalog);
         _sceneBootstrapper = new TowerDefenseSceneBootstrapper();
+        InitializeAudioCoordinator();
     }
 
     /// <summary>
@@ -869,6 +1015,64 @@ public class TowerDefenseGame : MonoBehaviour
 
         _placementVisualController.BindPlacementPreviewRoot(_placementPreviewRoot);
         _placementInteractionController?.BindPresentation(_placementVisualController, _hudPresenter, _towerCatalog);
+
+        if (_selectionRangeVisualizer == null)
+        {
+            _selectionRangeVisualizer = new StructureSelectionRangeVisualizer(GetSelectionRangeColor);
+        }
+
+        _selectionRangeVisualizer.BindRoot(_placementPreviewRoot);
+    }
+
+    private void InitializeAudioCoordinator()
+    {
+        if (audioProfileReference == null)
+        {
+            audioProfileReference = Resources.Load<TowerDefenseAudioProfileAsset>("TowerDefense/Configs/TowerDefenseAudioProfile");
+        }
+
+        EnsureAudioSource(ref _backgroundMusicSource);
+        EnsureAudioSource(ref _soundEffectSource);
+
+        _backgroundMusicSource.volume = backgroundMusicVolume;
+        _soundEffectSource.volume = soundEffectVolume;
+
+        AudioClip resolvedBackgroundMusic = audioProfileReference != null && audioProfileReference.BackgroundMusic != null
+            ? audioProfileReference.BackgroundMusic
+            : backgroundMusicClip;
+        AudioClip resolvedPlaceStructure = audioProfileReference != null && audioProfileReference.PlaceStructureClip != null
+            ? audioProfileReference.PlaceStructureClip
+            : placeStructureClip;
+        AudioClip resolvedSingleTarget = audioProfileReference != null && audioProfileReference.SingleTargetImpactClip != null
+            ? audioProfileReference.SingleTargetImpactClip
+            : singleTargetImpactClip;
+        AudioClip resolvedSlowField = audioProfileReference != null && audioProfileReference.SlowFieldImpactClip != null
+            ? audioProfileReference.SlowFieldImpactClip
+            : slowFieldImpactClip;
+        AudioClip resolvedBombard = audioProfileReference != null && audioProfileReference.BombardImpactClip != null
+            ? audioProfileReference.BombardImpactClip
+            : bombardImpactClip;
+
+        _audioCoordinator = new TowerDefenseAudioCoordinator(
+            _backgroundMusicSource,
+            _soundEffectSource,
+            resolvedBackgroundMusic,
+            resolvedPlaceStructure,
+            resolvedSingleTarget,
+            resolvedSlowField,
+            resolvedBombard);
+    }
+
+    private void EnsureAudioSource(ref AudioSource source)
+    {
+        if (source != null)
+        {
+            return;
+        }
+
+        source = gameObject.AddComponent<AudioSource>();
+        source.playOnAwake = false;
+        source.spatialBlend = 0f;
     }
 
     /// <summary>
@@ -889,6 +1093,8 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private void RefreshHud()
     {
+        RefreshSelectedStructureRangeVisualization();
+        _hudPresenter?.SetDemolishSelectedStructureButtonVisible(HasSelectedPlacedStructure());
         _presentationCoordinator?.RefreshHud();
     }
 
@@ -912,44 +1118,187 @@ public class TowerDefenseGame : MonoBehaviour
     {
         _selectedRelayTower = null;
         _selectedDefenseTower = null;
+        _selectionRangeVisualizer?.Hide();
+    }
+
+    private bool HasSelectedPlacedStructure()
+    {
+        return _selectedRelayTower != null || _selectedDefenseTower != null;
+    }
+
+    /// <summary>
+    /// Tries to select an already-placed structure under the given world position.
+    ///
+    /// We route this through the game coordinator instead of relying only on `OnMouseDown()`
+    /// because scene UI can legitimately block some Unity mouse callbacks. The input layer now
+    /// asks gameplay first: "is this click actually selecting an existing structure?" before it
+    /// falls through to quick-build placement.
+    /// </summary>
+    private bool TrySelectPlacedStructureAtWorld(Vector3 worldPosition)
+    {
+        Transform placedTowerRoot = _placedTowerRoot != null ? _placedTowerRoot : placedTowerRootReference;
+        if (placedTowerRoot == null)
+        {
+            return false;
+        }
+
+        DefenseTower bestDefenseTower = null;
+        RelayTower bestRelayTower = null;
+        float bestDistanceSqr = float.MaxValue;
+
+        for (int index = 0; index < placedTowerRoot.childCount; index++)
+        {
+            Transform placedStructure = placedTowerRoot.GetChild(index);
+            if (placedStructure == null)
+            {
+                continue;
+            }
+
+            DefenseTower defenseTower = placedStructure.GetComponent<DefenseTower>();
+            if (defenseTower != null)
+            {
+                if (TryMeasureStructureSelectionHit(placedStructure, worldPosition, out float defenseDistanceSqr) &&
+                    defenseDistanceSqr < bestDistanceSqr)
+                {
+                    bestDefenseTower = defenseTower;
+                    bestRelayTower = null;
+                    bestDistanceSqr = defenseDistanceSqr;
+                }
+
+                continue;
+            }
+
+            RelayTower relayTower = placedStructure.GetComponent<RelayTower>();
+            if (relayTower != null &&
+                TryMeasureStructureSelectionHit(placedStructure, worldPosition, out float relayDistanceSqr) &&
+                relayDistanceSqr < bestDistanceSqr)
+            {
+                bestRelayTower = relayTower;
+                bestDefenseTower = null;
+                bestDistanceSqr = relayDistanceSqr;
+            }
+        }
+
+        if (bestDefenseTower != null)
+        {
+            SelectPlacedStructure(bestDefenseTower);
+            return true;
+        }
+
+        if (bestRelayTower != null)
+        {
+            SelectPlacedStructure(bestRelayTower);
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Measures whether the player click should count as hitting an already placed structure.
+    ///
+    /// We intentionally avoid relying only on global 2D overlap queries here:
+    /// - some placed-structure colliders are triggers
+    /// - trigger query behavior can be scene / project setting dependent
+    /// - scene-authored art and collider offsets are not always centered the same way
+    ///
+    /// Instead, selection uses a layered fallback:
+    /// 1. primary collider bounds
+    /// 2. primary sprite renderer bounds
+    /// 3. a small radius fallback around the structure pivot
+    ///
+    /// This makes "click the visible tower / relay" much more forgiving and reliable in Play.
+    /// </summary>
+    private static bool TryMeasureStructureSelectionHit(Transform structureTransform, Vector3 worldPosition, out float distanceSqr)
+    {
+        distanceSqr = float.MaxValue;
+        if (structureTransform == null)
+        {
+            return false;
+        }
+
+        Vector2 clickPoint = worldPosition;
+        Vector2 pivotPoint = structureTransform.position;
+        distanceSqr = (clickPoint - pivotPoint).sqrMagnitude;
+
+        Collider2D primaryCollider = structureTransform.GetComponent<Collider2D>();
+        if (primaryCollider != null)
+        {
+            Vector3 boundsPoint = new Vector3(worldPosition.x, worldPosition.y, primaryCollider.bounds.center.z);
+            if (primaryCollider.bounds.Contains(boundsPoint))
+            {
+                return true;
+            }
+
+            if (primaryCollider is CircleCollider2D circleCollider)
+            {
+                Vector2 worldCenter = circleCollider.transform.TransformPoint(circleCollider.offset);
+                float worldRadius = circleCollider.radius * Mathf.Max(
+                    Mathf.Abs(circleCollider.transform.lossyScale.x),
+                    Mathf.Abs(circleCollider.transform.lossyScale.y));
+                distanceSqr = (clickPoint - worldCenter).sqrMagnitude;
+                if (distanceSqr <= worldRadius * worldRadius)
+                {
+                    return true;
+                }
+            }
+        }
+
+        SpriteRenderer primaryRenderer = structureTransform.GetComponent<SpriteRenderer>();
+        if (primaryRenderer != null)
+        {
+            Bounds rendererBounds = primaryRenderer.bounds;
+            Vector3 boundsPoint = new Vector3(worldPosition.x, worldPosition.y, rendererBounds.center.z);
+            if (rendererBounds.Contains(boundsPoint))
+            {
+                distanceSqr = (clickPoint - (Vector2)rendererBounds.center).sqrMagnitude;
+                return true;
+            }
+
+            float rendererRadius = Mathf.Max(rendererBounds.extents.x, rendererBounds.extents.y);
+            if (rendererRadius > 0.01f)
+            {
+                distanceSqr = (clickPoint - (Vector2)rendererBounds.center).sqrMagnitude;
+                if (distanceSqr <= rendererRadius * rendererRadius)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return distanceSqr <= 0.45f * 0.45f;
     }
 
     private PlacedStructureHudState BuildPlacedStructureHudState()
     {
         if (_selectedRelayTower != null)
         {
-            int upgradeCost = 0;
-            string invalidReason = string.Empty;
-            bool canUpgrade = _powerGridCoordinator != null &&
-                              _sessionState != null &&
-                              _powerGridCoordinator.CanUpgradeRelay(_selectedRelayTower, _sessionState.CurrentScrap, out upgradeCost, out invalidReason);
-            string detail = $"Relay #{_selectedRelayTower.RelayNumber} / LV {_selectedRelayTower.CurrentLevel} / Load {_selectedRelayTower.CurrentAssignedLoad}/{_selectedRelayTower.SupplyCapacity}";
-            detail += $"\nRange {_selectedRelayTower.SupplyRange:0.0} / Next cap {_selectedRelayTower.PreviewUpgradedSupplyCapacity()}";
-            detail += canUpgrade
-                ? $"\nAfter upgrade: {_sessionState.CurrentScrap - upgradeCost} SCRAP left."
-                  + $"\nU Upgrade ({upgradeCost} SCRAP) / Delete Dismantle"
-                : $"\n{invalidReason}";
+            string detail =
+                $"POWER {_selectedRelayTower.RemainingCapacity} / {_selectedRelayTower.SupplyCapacity}";
             return new PlacedStructureHudState(true, "Relay Node", detail);
         }
 
         if (_selectedDefenseTower != null)
         {
-            int upgradeCost = 0;
-            string invalidReason = string.Empty;
-            string powerState = _selectedDefenseTower.IsPowered
-                ? $"ONLINE / Relay #{(_selectedDefenseTower.AssignedRelay != null ? _selectedDefenseTower.AssignedRelay.RelayNumber : 0)}"
-                : _selectedDefenseTower.PowerStatusMessage;
-            bool canUpgrade = _powerGridCoordinator != null &&
-                              _sessionState != null &&
-                              _powerGridCoordinator.CanUpgradeDefenseTower(_selectedDefenseTower, _sessionState.CurrentScrap, out upgradeCost, out invalidReason);
-            string detail = $"Turret #{_selectedDefenseTower.TowerNumber} / LV {_selectedDefenseTower.CurrentLevel} / {powerState}";
-            detail += $"\n{_selectedDefenseTower.BuildCurrentCombatSummary()}";
-            detail += $"\n{_selectedDefenseTower.BuildUpgradePreviewSummary()}";
-            detail += canUpgrade
-                ? $"\nAfter upgrade: {_sessionState.CurrentScrap - upgradeCost} SCRAP left."
-                  + $"\nU Upgrade ({upgradeCost} SCRAP) / Delete Dismantle"
-                : $"\n{invalidReason}";
+            string powerState = _selectedDefenseTower.IsPowered ? "powered" : "unpowered";
+            string detail =
+                $"POWER {_selectedDefenseTower.PowerRequired}  |  STATE {powerState}";
             return new PlacedStructureHudState(true, GetTowerDisplayName(_selectedDefenseTower.BuildType), detail);
+        }
+
+        TowerType selectedTowerType = _placementInteractionController != null
+            ? _placementInteractionController.SelectedTowerType
+            : TowerType.None;
+        if (selectedTowerType == TowerType.SingleTarget ||
+            selectedTowerType == TowerType.SlowField ||
+            selectedTowerType == TowerType.Bombard)
+        {
+            GameObject prototype = GetPrototype(selectedTowerType);
+            DefenseTower prototypeTower = prototype != null ? prototype.GetComponent<DefenseTower>() : null;
+            if (prototypeTower != null)
+            {
+                return new PlacedStructureHudState(true, GetTowerDisplayName(selectedTowerType), $"POWER {prototypeTower.PowerRequired}");
+            }
         }
 
         return new PlacedStructureHudState(false, string.Empty, string.Empty);
@@ -966,7 +1315,8 @@ public class TowerDefenseGame : MonoBehaviour
         _placementInteractionController?.SetSelectionSilently(TowerType.None);
         _selectedRelayTower = relayTower;
         _selectedDefenseTower = null;
-        SetStatusMessage($"Selected relay #{relayTower.RelayNumber}. Press U to upgrade or Delete to dismantle.");
+        int refundAmount = CalculateRelayDemolishRefund(relayTower);
+        SetStatusMessage($"Selected relay #{relayTower.RelayNumber}. Press U to upgrade or click Delete to dismantle for {refundAmount} SCRAP.");
         RefreshHud();
     }
 
@@ -981,7 +1331,8 @@ public class TowerDefenseGame : MonoBehaviour
         _placementInteractionController?.SetSelectionSilently(TowerType.None);
         _selectedDefenseTower = defenseTower;
         _selectedRelayTower = null;
-        SetStatusMessage($"Selected {GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber}. Press U to upgrade or Delete to dismantle.");
+        int refundAmount = CalculateDefenseTowerDemolishRefund(defenseTower);
+        SetStatusMessage($"Selected {GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber}. Press U to upgrade or click Delete to dismantle for {refundAmount} SCRAP.");
         RefreshHud();
     }
 
@@ -1001,8 +1352,183 @@ public class TowerDefenseGame : MonoBehaviour
         }
 
         _placementInteractionController?.ForceCancelPlacementDrag();
+        _gameOverRestartTriggered = false;
+        _gameOverRestartAllowedAtUnscaledTime = Time.unscaledTime + Mathf.Max(0f, gameOverRestartClickDelaySeconds);
         Time.timeScale = 0f;
-        _presentationCoordinator?.ShowGameOver();
+        ShowFormalGameOverPresentation();
+    }
+
+    /// <summary>
+    /// 胜利后不再立即切剧情，
+    /// 而是先进入一个短暂停住的胜利界面，
+    /// 等玩家点击确认后再继续切场。
+    ///
+    /// 这样胜利反馈就不会像以前那样一闪而过，
+    /// 也更符合你现在希望的“塔防胜利 -> 胜利界面 -> 点击继续 -> 2D 剧情”的节奏。
+    /// </summary>
+    public bool BeginLevelClearSequence(
+        bool continueCampaignAfterClear,
+        string fallbackNextSceneNameAfterClear,
+        float fadeOutToBlackDurationAfterClear,
+        float fadeInFromBlackDurationAfterClear,
+        bool startOpaqueOnContinue = false)
+    {
+        if (IsGameOver || _levelClearPresentationActive || _levelClearContinueTriggered)
+        {
+            return false;
+        }
+
+        _placementInteractionController?.ForceCancelPlacementDrag();
+        _continueCampaignAfterLevelClear = continueCampaignAfterClear;
+        _fallbackNextSceneNameAfterLevelClear = fallbackNextSceneNameAfterClear ?? string.Empty;
+        _levelClearFadeOutDuration = Mathf.Max(0f, fadeOutToBlackDurationAfterClear);
+        _levelClearFadeInDuration = Mathf.Max(0f, fadeInFromBlackDurationAfterClear);
+        _levelClearStartOpaqueOnContinue = startOpaqueOnContinue;
+        _levelClearPresentationActive = true;
+        _levelClearContinueTriggered = false;
+        _levelClearContinueAllowedAtUnscaledTime = Time.unscaledTime + Mathf.Max(0f, levelClearContinueClickDelaySeconds);
+
+        Time.timeScale = 0f;
+        ShowFormalVictoryPresentation();
+        return true;
+    }
+
+    /// <summary>
+    /// 失败后的补救路径非常明确：
+    /// 先停住战斗并展示 Game Over，
+    /// 然后在一个很短的无缩放时间窗口后，允许玩家点击任意位置重开当前关卡。
+    /// 这样既能保证玩家看见失败反馈，也不会被迫回到别的入口重新找关卡。
+    /// </summary>
+    private void HandleGameOverRestartInput()
+    {
+        if (!restartCurrentSceneOnGameOverClick || !IsGameOver || _gameOverRestartTriggered)
+        {
+            return;
+        }
+
+        if (Time.unscaledTime < _gameOverRestartAllowedAtUnscaledTime)
+        {
+            return;
+        }
+
+        if (!DidPressRestartAfterGameOver())
+        {
+            return;
+        }
+
+        RestartCurrentScene();
+    }
+
+    private static bool DidPressRestartAfterGameOver()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            return true;
+        }
+
+        for (int index = 0; index < Input.touchCount; index++)
+        {
+            if (Input.GetTouch(index).phase == TouchPhase.Began)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void RestartCurrentScene()
+    {
+        Scene activeScene = SceneManager.GetActiveScene();
+        if (!activeScene.IsValid() || string.IsNullOrWhiteSpace(activeScene.name))
+        {
+            Debug.LogWarning("TowerDefenseGame could not restart the current scene because the active scene name was unavailable.", this);
+            return;
+        }
+
+        _gameOverRestartTriggered = true;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(activeScene.name, LoadSceneMode.Single);
+    }
+
+    private bool HandleLevelClearContinueInput()
+    {
+        if (!_levelClearPresentationActive)
+        {
+            return false;
+        }
+
+        if (Time.unscaledTime < _levelClearContinueAllowedAtUnscaledTime)
+        {
+            return true;
+        }
+
+        if (!DidPressRestartAfterGameOver())
+        {
+            return true;
+        }
+
+        return HandleLevelClearContinueInputFromUi();
+    }
+
+    private bool HandleLevelClearContinueInputFromUi()
+    {
+        if (_levelClearContinueTriggered)
+        {
+            return true;
+        }
+
+        _levelClearContinueTriggered = true;
+        Time.timeScale = 1f;
+
+        bool shouldAdvanceCampaign = _continueCampaignAfterLevelClear && CampaignFlowController.HasActiveCampaign;
+        bool transitioned = shouldAdvanceCampaign
+            ? CampaignFlowController.AdvanceToNextStepOrLoadFallback(
+                _fallbackNextSceneNameAfterLevelClear,
+                _levelClearFadeOutDuration,
+                _levelClearFadeInDuration,
+                _levelClearStartOpaqueOnContinue)
+            : !string.IsNullOrWhiteSpace(_fallbackNextSceneNameAfterLevelClear) &&
+              CampaignFlowController.AdvanceToNextStepOrLoadFallback(
+                  _fallbackNextSceneNameAfterLevelClear,
+                  _levelClearFadeOutDuration,
+                  _levelClearFadeInDuration,
+                  _levelClearStartOpaqueOnContinue);
+
+        if (!transitioned)
+        {
+            Debug.LogWarning("TowerDefenseGame 无法在胜利界面后继续切场：既没有活动战役流程，也没有有效的 fallback 场景名。", this);
+            _levelClearContinueTriggered = false;
+            return true;
+        }
+
+        HideForSceneTransition();
+        _levelClearPresentationActive = false;
+        return true;
+    }
+
+    /// <summary>
+    /// 在胜利点击继续后的真正切场开始前，
+    /// 先把当前塔防场景里最醒目的可见层收掉。
+    ///
+    /// 这里优先隐藏：
+    /// - HUD 与结果面板
+    /// - 路线预览 / 放置覆盖层
+    /// - 选中范围线
+    ///
+    /// 再叠加立即黑场，
+    /// 玩家看到的就会是干净纯黑，而不是塔防界面残留。
+    /// </summary>
+    private void HideForSceneTransition()
+    {
+        if (victoryResultPageViewReference != null)
+        {
+            victoryResultPageViewReference.Hide();
+        }
+
+        _presentationCoordinator?.HideGameplayPresentationForSceneTransition();
+        _selectionRangeVisualizer?.Hide();
+        _placementSupportCoordinator?.HidePlacementAreaOverlay();
     }
 
 
@@ -1014,7 +1540,19 @@ public class TowerDefenseGame : MonoBehaviour
     private bool TryPlaceTowerAt(Vector3 worldPosition, TowerType towerType, BuildPad ownerPad = null)
     {
         return _placementBuildExecutor != null &&
-               _placementBuildExecutor.TryPlaceTowerAt(worldPosition, towerType, ownerPad);
+               _placementBuildExecutor.TryPlaceTowerAt(SnapPlacementWorldPosition(worldPosition), towerType, ownerPad);
+    }
+
+    /// <summary>
+    /// 所有“玩家想在这里建”的世界坐标都先经过这一层。
+    ///
+    /// 这样拖拽、快速点击和旧 BuildPad 兼容入口都会使用同一套格子锚点，
+    /// 避免出现“预览看起来在格子上，真正落塔却落在鼠标原点”的错位。
+    /// </summary>
+    private Vector3 SnapPlacementWorldPosition(Vector3 worldPosition)
+    {
+        PlacementGrid placementGrid = _placementGrid != null ? _placementGrid : placementGridReference;
+        return placementGrid != null ? placementGrid.SnapWorldPosition(worldPosition) : worldPosition;
     }
 
     /// <summary>
@@ -1111,12 +1649,46 @@ public class TowerDefenseGame : MonoBehaviour
         return _placementSupportCoordinator != null ? _placementSupportCoordinator.GetPlacementRadius(towerType) : 0.5f;
     }
 
+    private int CalculateRelayDemolishRefund(RelayTower relayTower)
+    {
+        if (relayTower == null)
+        {
+            return 0;
+        }
+
+        int totalInvestedCost = Mathf.Max(0, relayTowerCost) + relayTower.CalculateAccumulatedUpgradeCost();
+        return Mathf.FloorToInt(totalInvestedCost * DemolishRefundRatio);
+    }
+
+    private int CalculateDefenseTowerDemolishRefund(DefenseTower defenseTower)
+    {
+        if (defenseTower == null)
+        {
+            return 0;
+        }
+
+        int totalInvestedCost = Mathf.Max(0, GetTowerCost(defenseTower.BuildType)) + defenseTower.CalculateAccumulatedUpgradeCost();
+        return Mathf.FloorToInt(totalInvestedCost * DemolishRefundRatio);
+    }
+
     /// <summary>
     /// 读取塔型对应的扩张方格边长。
     /// </summary>
     private float GetExpansionSquareSize(TowerType towerType)
     {
         return _placementSupportCoordinator != null ? _placementSupportCoordinator.GetExpansionSquareSize(towerType) : 4.5f;
+    }
+
+    /// <summary>
+    /// 给 Scene Gizmo 和后续编辑器工具读取当前建筑周边禁建方形大小。
+    ///
+    /// 它本质上复用现有的 `ExpansionSquareSize` 配置：
+    /// - 旧名字暂时保留，避免破坏现有场景序列化数据
+    /// - 新语义是“已放置建筑周围生成多大的方形禁建格”
+    /// </summary>
+    public float GetPlacementNoBuildSquareSize(TowerType towerType)
+    {
+        return GetExpansionSquareSize(towerType);
     }
 
     /// <summary>
@@ -1253,16 +1825,25 @@ public class TowerDefenseGame : MonoBehaviour
             placementPreviewRootName,
             buildZoneReference,
             buildZoneName,
+            placementGridReference,
+            placementGridName,
+            placementGridCellSize,
+            placementGridOrigin,
+            snapPlacementToCellCenter,
+            relayFootprintCells,
+            defenseFootprintCells,
             new TowerDefenseHudSceneReferences(
                 scrapTextReference,
                 baseHealthTextReference,
                 waveTextReference,
                 selectionTextReference,
+                structureStatusTextReference,
                 relayTowerButtonReference,
                 defenseTowerButtonReference,
                 slowFieldTowerButtonReference,
                 bombardTowerButtonReference,
                 clearSelectionButtonReference,
+                demolishSelectedStructureButtonReference,
                 gameOverPanelReference,
                 gameOverTitleReference,
                 gameOverHintReference,
@@ -1276,12 +1857,15 @@ public class TowerDefenseGame : MonoBehaviour
         _slowFieldTowerPrototype = bootstrapResult.SlowFieldTowerPrototype;
         _bombardTowerPrototype = bootstrapResult.BombardTowerPrototype;
         _buildZone = bootstrapResult.BuildZone;
+        _placementGrid = bootstrapResult.PlacementGrid;
         _placedTowerRoot = bootstrapResult.PlacedTowerRoot;
         _placementPreviewRoot = bootstrapResult.PlacementPreviewRoot;
         _battlefieldMapDefinition = battlefieldMapReference != null ? battlefieldMapReference : FindFirstObjectByType<BattlefieldMapDefinition>();
+        _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());
 
         mainCameraReference = _mainCamera;
         buildZoneReference = _buildZone;
+        placementGridReference = _placementGrid;
         singleTargetTowerPrototypeReference = _singleTargetTowerPrototype;
         slowFieldTowerPrototypeReference = _slowFieldTowerPrototype;
         bombardTowerPrototypeReference = _bombardTowerPrototype;
@@ -1302,6 +1886,132 @@ public class TowerDefenseGame : MonoBehaviour
         }
     }
 
+    private void EnsureVictoryResultPageView(VictoryResultPageView.ResultPageTone tone)
+    {
+        // Destroy any existing page view with the wrong prefab origin.
+        if (victoryResultPageViewReference != null)
+        {
+            Destroy(victoryResultPageViewReference.gameObject);
+            victoryResultPageViewReference = null;
+        }
+
+        string resourcePath = tone == VictoryResultPageView.ResultPageTone.Failure
+            ? FailureResultPagePrefabResourcePath
+            : VictoryResultPagePrefabResourcePath;
+
+        GameObject prefabRoot = Resources.Load<GameObject>(resourcePath);
+        if (prefabRoot == null)
+        {
+            Debug.LogWarning($"TowerDefenseGame could not load result page prefab from Resources path '{resourcePath}'.", this);
+            return;
+        }
+
+        GameObject instantiatedRoot = Instantiate(prefabRoot);
+        instantiatedRoot.name = prefabRoot.name;
+        instantiatedRoot.transform.localScale = Vector3.one;
+
+        VictoryResultPageView instantiatedView = instantiatedRoot.GetComponent<VictoryResultPageView>();
+        if (instantiatedView == null)
+        {
+            instantiatedView = instantiatedRoot.AddComponent<VictoryResultPageView>();
+        }
+
+        instantiatedView.Hide();
+        victoryResultPageViewReference = instantiatedView;
+    }
+
+    private void ShowFormalVictoryPresentation()
+    {
+        EnsureVictoryResultPageView(VictoryResultPageView.ResultPageTone.Victory);
+        if (victoryResultPageViewReference != null)
+        {
+            victoryResultPageViewReference.BindContinueAction(ContinueAfterVictoryPresentation);
+            VictoryResultPageContent content = BuildVictoryResultPageContent();
+            victoryResultPageViewReference.Show(content);
+            _presentationCoordinator?.ShowVictorySummaryOnly();
+            return;
+        }
+
+        _presentationCoordinator?.ShowVictory();
+    }
+
+    private void ShowFormalGameOverPresentation()
+    {
+        EnsureVictoryResultPageView(VictoryResultPageView.ResultPageTone.Failure);
+        if (victoryResultPageViewReference != null)
+        {
+            victoryResultPageViewReference.BindContinueAction(RetryAfterFailurePresentation);
+            VictoryResultPageContent content = BuildFailureResultPageContent();
+            victoryResultPageViewReference.Show(content);
+            _presentationCoordinator?.ShowGameOverSummaryOnly();
+            return;
+        }
+
+        _presentationCoordinator?.ShowGameOver();
+    }
+
+    private VictoryResultPageContent BuildVictoryResultPageContent()
+    {
+        int currentBaseHealth = _sessionState != null ? _sessionState.CurrentBaseHealth : 0;
+        int startingBase = Mathf.Max(1, startingBaseHealth);
+        int integrityPercent = Mathf.RoundToInt((currentBaseHealth / (float)startingBase) * 100f);
+        int currentScrap = _sessionState != null ? _sessionState.CurrentScrap : 0;
+        int currentWave = _sessionState != null ? _sessionState.CurrentWave : 0;
+        int totalWaves = _sessionState != null ? _sessionState.TotalWaves : 0;
+        string commanderLine = integrityPercent >= 80
+            ? "做得不错，这一波我们守住了。"
+            : "守得很好，虽然代价不小，但防线仍在我们手里。";
+
+        return new VictoryResultPageContent(
+            tone: VictoryResultPageView.ResultPageTone.Victory,
+            signalTitle: "指挥链路接通",
+            signalStatus: "战区信号稳定",
+            signalChannel: "HOLO-LINK / FRONT 02",
+            title: "防线稳定",
+            subtitle: "战术全息简报已生成",
+            reportHeader: "战区汇报",
+            integrityRow: $"基地完整度：{Mathf.Clamp(integrityPercent, 0, 999)}%",
+            scrapRow: $"当前废料：{currentScrap}",
+            eventRow: $"关键记录：第 {Mathf.Max(1, currentWave)} 波已完成，当前进度 {currentWave}/{Mathf.Max(1, totalWaves)}。",
+            footerHint: "等待接收后续指令",
+            commanderName: "指挥官",
+            commanderCodename: "前线总控 / C-07",
+            dialogueText: commanderLine + "\n前线已经稳定，准备接收下一阶段指令。",
+            continueButtonText: "继续汇报",
+            continueHintText: "同步完成后可继续推进剧情");
+    }
+
+    private VictoryResultPageContent BuildFailureResultPageContent()
+    {
+        int currentBaseHealth = _sessionState != null ? _sessionState.CurrentBaseHealth : 0;
+        int startingBase = Mathf.Max(1, startingBaseHealth);
+        int integrityPercent = Mathf.RoundToInt((currentBaseHealth / (float)startingBase) * 100f);
+        int currentScrap = _sessionState != null ? _sessionState.CurrentScrap : 0;
+        int currentWave = _sessionState != null ? _sessionState.CurrentWave : 0;
+        int totalWaves = _sessionState != null ? _sessionState.TotalWaves : 0;
+        string commanderLine = integrityPercent <= 0
+            ? "核心防区已经失守，我们丢掉了整条前线。"
+            : "敌军已经撕开防线，当前部署没能把战区稳住。";
+
+        return new VictoryResultPageContent(
+            tone: VictoryResultPageView.ResultPageTone.Failure,
+            signalTitle: "指挥链路震荡",
+            signalStatus: "战区失稳 / 核心告警",
+            signalChannel: "DISTRESS // CORE BREACH",
+            title: "防线崩溃",
+            subtitle: "失利全息警报已锁定",
+            reportHeader: "战损断面",
+            integrityRow: $"基地完整度：{Mathf.Clamp(integrityPercent, 0, 999)}%",
+            scrapRow: $"残余废料：{currentScrap}",
+            eventRow: $"战损焦点：第 {Mathf.Max(1, currentWave)} 波撕开防线，核心节点失守，当前进度 {currentWave}/{Mathf.Max(1, totalWaves)}。",
+            footerHint: "立即重组部署序列",
+            commanderName: "指挥官",
+            commanderCodename: "前线总控 / C-07",
+            dialogueText: commanderLine + "\n放弃旧部署思路，立刻重算塔位、供电和火力覆盖，马上回到战区。",
+            continueButtonText: "紧急重部署",
+            continueHintText: "点击按钮或任意位置，立即回到当前关卡");
+    }
+
     /// <summary>
     /// 让规则层和可视化层继续拿到当前真正可用的运行时根节点。
     /// 由于根节点的确保存在已经由 `_sceneBootstrapper` 处理，
@@ -1313,5 +2023,72 @@ public class TowerDefenseGame : MonoBehaviour
         placementPreviewRootReference = _placementPreviewRoot;
         RefreshPlacementRuleContext();
         _placementVisualController?.BindPlacementPreviewRoot(_placementPreviewRoot);
+        _selectionRangeVisualizer?.BindRoot(_placementPreviewRoot);
+    }
+
+    /// <summary>
+    /// 同步“当前已选中建筑”的范围显示。
+    ///
+    /// 这里故意把刷新入口挂在 `RefreshHud()` 之前，
+    /// 因为选中建筑后的可视化和状态栏本质上是同一批状态变化：
+    /// - HUD 要更新标题 / 详情
+    /// - 世界里的范围辅助线也要跟着切换
+    ///
+    /// 这样外部只需要继续走现有的 `RefreshHud()` 门面，
+    /// 不需要再记住额外调用一套“刷新选中范围”的分支。
+    /// </summary>
+    private void RefreshSelectedStructureRangeVisualization()
+    {
+        if (_selectionRangeVisualizer == null)
+        {
+            return;
+        }
+
+        if (_selectedRelayTower != null)
+        {
+            _selectionRangeVisualizer.ShowRelayCoverage(_selectedRelayTower);
+            return;
+        }
+
+        if (_selectedDefenseTower != null)
+        {
+            _selectionRangeVisualizer.ShowDefenseRange(_selectedDefenseTower);
+            return;
+        }
+
+        _selectionRangeVisualizer.Hide();
+    }
+
+    /// <summary>
+    /// 统一解析“当前这类建筑的范围线颜色”。
+    ///
+    /// 这里优先复用塔目录里已经存在的语义强调色，
+    /// 保持：
+    /// - 继电器仍然偏橙
+    /// - 单体塔偏蓝
+    /// - 减速塔偏青绿
+    /// - 轰炸塔偏橙红
+    ///
+    /// 这样玩家在看 UI 卡片颜色和世界范围线时，会自然把两层认知连起来。
+    /// </summary>
+    private Color GetSelectionRangeColor(TowerType towerType)
+    {
+        if (_towerCatalog != null && _towerCatalog.TryGetDefinition(towerType, out TowerDefinition definition) && definition != null)
+        {
+            return definition.AccentColor;
+        }
+
+        switch (towerType)
+        {
+            case TowerType.Relay:
+                return relayPresentation.AccentColor;
+            case TowerType.SlowField:
+                return slowFieldPresentation.AccentColor;
+            case TowerType.Bombard:
+                return bombardPresentation.AccentColor;
+            case TowerType.SingleTarget:
+            default:
+                return singleTargetPresentation.AccentColor;
+        }
     }
 }

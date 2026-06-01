@@ -567,7 +567,7 @@ Animator:
   m_GameObject: {fileID: 323238202}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: ad3dfdb2d56f71a4cadfefd531d775d1, type: 2}
+  m_Controller: {fileID: 9100000, guid: 8cf038221e33b904db0ef501af50ac89, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -625,7 +625,32 @@ MonoBehaviour:
   playerMotor: {fileID: 0}
   playerInteractor: {fileID: 0}
   npc: {fileID: 122054168}
-  npcSprite: {fileID: 0}
+  npcSprite: {fileID: 122054167}
+  npcAnimator: {fileID: 122054169}
+  npcWalkLeftFrames:
+  - {fileID: -369702943, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2142474081, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2098524698, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2046068377, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -1289958125, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: 962985988, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -1276910788, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: 1422783262, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2046455638, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  - {fileID: -2118035383, guid: a1596fe173e3bc04e9dcc7f52f554b12, type: 3}
+  npcWalkRightFrames:
+  - {fileID: -649326195, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 383418462, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 1456302690, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 702979644, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: -1163956243, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 1769017905, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: -798478279, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: -405345037, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 740805072, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  - {fileID: 2129486555, guid: 5fb2d7dcc23685543baaca62c434157f, type: 3}
+  npcIdleSprite: {fileID: 21300000, guid: fce32e4c2667ab6438a26d9443b07987, type: 3}
+  npcWalkFramesPerSecond: 8
   playAlarmOnSceneStart: 1
   alarmResourcePath: StoryAudio/BGM/alarm
   alarmVolume: 0
@@ -651,6 +676,10 @@ MonoBehaviour:
   unlockPlayerWhenNpcArrives: 1
   restoreInteractionPromptAfter: 0
   restoreInteractionInputAfter: 1
+  autoLoadNextSceneAfterDialogue: 1
+  nextSceneName: Level 2
+  fadeOutToBlackDuration: 0.75
+  fadeInFromBlackDuration: 0.75
   onNpcArrived:
     m_PersistentCalls:
       m_Calls: []
