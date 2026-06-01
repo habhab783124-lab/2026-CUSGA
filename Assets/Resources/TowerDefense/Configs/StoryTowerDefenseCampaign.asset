@@ -25,9 +25,9 @@ MonoBehaviour:
     designerNote: 第一段正式 2D 横板剧情场景。
     continuePrompt: 按 Enter / Space 进入第一段塔防战斗。
   - segmentType: 1
-    sceneName: level 1
-    scenePath: Assets/Scenes/level 1.unity
-    displayName: 防线 01
+    sceneName: Tutorial Level
+    scenePath: Assets/Scenes/Tutorial Level.unity
+    displayName: Tutorial Level
     designerNote: 第一段正式塔防关卡。
     continuePrompt: 清完这一关的波次后，继续进入下一段剧情。
   - segmentType: 0
