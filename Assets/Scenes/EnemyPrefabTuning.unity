@@ -170,6 +170,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2381135231609418050, guid: 56952ecff0f24007bcc01a9cba3ca66c, type: 3}
+      propertyPath: m_SortingOrder
+      value: 328
+      objectReference: {fileID: 0}
+    - target: {fileID: 4703230808979152243, guid: 56952ecff0f24007bcc01a9cba3ca66c, type: 3}
+      propertyPath: m_SortingOrder
+      value: 288
+      objectReference: {fileID: 0}
     - target: {fileID: 5863667738006183233, guid: 56952ecff0f24007bcc01a9cba3ca66c, type: 3}
       propertyPath: m_Name
       value: AbominationEnemy
@@ -177,6 +185,10 @@ PrefabInstance:
     - target: {fileID: 5863667738006183233, guid: 56952ecff0f24007bcc01a9cba3ca66c, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767933192600016444, guid: 56952ecff0f24007bcc01a9cba3ca66c, type: 3}
+      propertyPath: m_SortingOrder
+      value: 329
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -236,6 +248,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2381135231609418050, guid: 52167178d7714cd09ecedd6ecd2fba18, type: 3}
+      propertyPath: m_SortingOrder
+      value: 316
+      objectReference: {fileID: 0}
+    - target: {fileID: 4703230808979152243, guid: 52167178d7714cd09ecedd6ecd2fba18, type: 3}
+      propertyPath: m_SortingOrder
+      value: 276
+      objectReference: {fileID: 0}
     - target: {fileID: 5863667738006183233, guid: 52167178d7714cd09ecedd6ecd2fba18, type: 3}
       propertyPath: m_Name
       value: SmallScavengerEnemy
@@ -243,6 +263,10 @@ PrefabInstance:
     - target: {fileID: 5863667738006183233, guid: 52167178d7714cd09ecedd6ecd2fba18, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767933192600016444, guid: 52167178d7714cd09ecedd6ecd2fba18, type: 3}
+      propertyPath: m_SortingOrder
+      value: 317
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -302,6 +326,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2381135231609418050, guid: 81fd033f311a422c8cb5a2bd36065840, type: 3}
+      propertyPath: m_SortingOrder
+      value: 243
+      objectReference: {fileID: 0}
+    - target: {fileID: 4703230808979152243, guid: 81fd033f311a422c8cb5a2bd36065840, type: 3}
+      propertyPath: m_SortingOrder
+      value: 203
+      objectReference: {fileID: 0}
     - target: {fileID: 5863667738006183233, guid: 81fd033f311a422c8cb5a2bd36065840, type: 3}
       propertyPath: m_Name
       value: WolfEnemy
@@ -309,6 +341,10 @@ PrefabInstance:
     - target: {fileID: 5863667738006183233, guid: 81fd033f311a422c8cb5a2bd36065840, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767933192600016444, guid: 81fd033f311a422c8cb5a2bd36065840, type: 3}
+      propertyPath: m_SortingOrder
+      value: 244
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -368,6 +404,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2381135231609418050, guid: 7e0659a5e1344c4cb1f7cb3bc838553d, type: 3}
+      propertyPath: m_SortingOrder
+      value: 238
+      objectReference: {fileID: 0}
+    - target: {fileID: 4703230808979152243, guid: 7e0659a5e1344c4cb1f7cb3bc838553d, type: 3}
+      propertyPath: m_SortingOrder
+      value: 198
+      objectReference: {fileID: 0}
     - target: {fileID: 5863667738006183233, guid: 7e0659a5e1344c4cb1f7cb3bc838553d, type: 3}
       propertyPath: m_Name
       value: MechanicEnemy
@@ -375,6 +419,10 @@ PrefabInstance:
     - target: {fileID: 5863667738006183233, guid: 7e0659a5e1344c4cb1f7cb3bc838553d, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767933192600016444, guid: 7e0659a5e1344c4cb1f7cb3bc838553d, type: 3}
+      propertyPath: m_SortingOrder
+      value: 239
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -473,6 +521,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2381135231609418050, guid: 993157e063b944119f0f1b51f50d49fb, type: 3}
+      propertyPath: m_SortingOrder
+      value: 233
+      objectReference: {fileID: 0}
+    - target: {fileID: 4703230808979152243, guid: 993157e063b944119f0f1b51f50d49fb, type: 3}
+      propertyPath: m_SortingOrder
+      value: 193
+      objectReference: {fileID: 0}
     - target: {fileID: 5863667738006183233, guid: 993157e063b944119f0f1b51f50d49fb, type: 3}
       propertyPath: m_Name
       value: BannerScavengerEnemy
@@ -480,6 +536,10 @@ PrefabInstance:
     - target: {fileID: 5863667738006183233, guid: 993157e063b944119f0f1b51f50d49fb, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767933192600016444, guid: 993157e063b944119f0f1b51f50d49fb, type: 3}
+      propertyPath: m_SortingOrder
+      value: 234
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -539,6 +599,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2381135231609418050, guid: cc224b0a4ac14743957cc942ebac5ed0, type: 3}
+      propertyPath: m_SortingOrder
+      value: 325
+      objectReference: {fileID: 0}
+    - target: {fileID: 4703230808979152243, guid: cc224b0a4ac14743957cc942ebac5ed0, type: 3}
+      propertyPath: m_SortingOrder
+      value: 285
+      objectReference: {fileID: 0}
     - target: {fileID: 5863667738006183233, guid: cc224b0a4ac14743957cc942ebac5ed0, type: 3}
       propertyPath: m_Name
       value: HeavyArmoredMachineEnemy
@@ -546,6 +614,10 @@ PrefabInstance:
     - target: {fileID: 5863667738006183233, guid: cc224b0a4ac14743957cc942ebac5ed0, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767933192600016444, guid: cc224b0a4ac14743957cc942ebac5ed0, type: 3}
+      propertyPath: m_SortingOrder
+      value: 326
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -702,6 +774,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2381135231609418050, guid: 78b7eeefa4534c6080b83b8df189bbe3, type: 3}
+      propertyPath: m_SortingOrder
+      value: 304
+      objectReference: {fileID: 0}
+    - target: {fileID: 4703230808979152243, guid: 78b7eeefa4534c6080b83b8df189bbe3, type: 3}
+      propertyPath: m_SortingOrder
+      value: 264
+      objectReference: {fileID: 0}
     - target: {fileID: 5863667738006183233, guid: 78b7eeefa4534c6080b83b8df189bbe3, type: 3}
       propertyPath: m_Name
       value: StealthStalkerEnemy
@@ -709,6 +789,10 @@ PrefabInstance:
     - target: {fileID: 5863667738006183233, guid: 78b7eeefa4534c6080b83b8df189bbe3, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767933192600016444, guid: 78b7eeefa4534c6080b83b8df189bbe3, type: 3}
+      propertyPath: m_SortingOrder
+      value: 305
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -792,6 +876,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2381135231609418050, guid: c02c6ae9c9a44e04bddd4ec15b7cdf72, type: 3}
+      propertyPath: m_SortingOrder
+      value: 238
+      objectReference: {fileID: 0}
+    - target: {fileID: 4703230808979152243, guid: c02c6ae9c9a44e04bddd4ec15b7cdf72, type: 3}
+      propertyPath: m_SortingOrder
+      value: 198
+      objectReference: {fileID: 0}
     - target: {fileID: 5863667738006183233, guid: c02c6ae9c9a44e04bddd4ec15b7cdf72, type: 3}
       propertyPath: m_Name
       value: ScavengerEnemy
@@ -799,6 +891,10 @@ PrefabInstance:
     - target: {fileID: 5863667738006183233, guid: c02c6ae9c9a44e04bddd4ec15b7cdf72, type: 3}
       propertyPath: m_IsActive
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6767933192600016444, guid: c02c6ae9c9a44e04bddd4ec15b7cdf72, type: 3}
+      propertyPath: m_SortingOrder
+      value: 239
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
