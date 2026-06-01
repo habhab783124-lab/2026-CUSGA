@@ -157,9 +157,9 @@ MonoBehaviour:
     signatureVerticalBobAmplitude: 0
     signatureVerticalBobSpeed: 2
   slowFieldTuning:
-    attackRange: 2.8
+    attackRange: 3.2
     attackRangePerUpgrade: 0.3
-    attackInterval: 1
+    attackInterval: 1.5
     attackIntervalPerUpgradeDelta: -0.05
     baseDamage: 0
     damagePerUpgrade: 1
@@ -172,7 +172,7 @@ MonoBehaviour:
     powerRequiredPerUpgrade: 1
     upgradeCostBase: 34
     upgradeCostPerLevel: 16
-    slowMultiplier: 0.7
+    slowMultiplier: 0.6
     slowMultiplierPerUpgradeDelta: -0.08
     slowDuration: 1.25
     slowDurationPerUpgrade: 0.25

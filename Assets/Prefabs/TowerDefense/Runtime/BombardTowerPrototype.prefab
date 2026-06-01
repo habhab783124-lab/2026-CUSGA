@@ -237,7 +237,7 @@ MonoBehaviour:
     slowPulseScaleMultiplier: 2.1
     bombFlightTime: 0.4
     bombFlightTimePerUpgradeDelta: -0.05
-    bombRadius: 1.4
+    bombRadius: 1.5
     bombRadiusPerUpgrade: 0.3
     bombArcHeight: 0.75
     bombProjectileScale: 0.32
