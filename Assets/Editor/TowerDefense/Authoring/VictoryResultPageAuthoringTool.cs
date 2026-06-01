@@ -20,7 +20,8 @@ namespace TowerDefense.Editor
     {
         public const string VictoryPreviewScenePath = "Assets/Scenes/VictoryResultPreview.unity";
         public const string FailurePreviewScenePath = "Assets/Scenes/FailureResultPreview.unity";
-        public const string SharedPrefabPath = "Assets/Resources/TowerDefense/UI/VictoryResultPage.prefab";
+        public const string VictoryPrefabPath = "Assets/Resources/TowerDefense/UI/VictoryResultPage.prefab";
+        public const string FailurePrefabPath = "Assets/Resources/TowerDefense/UI/FailureResultPage.prefab";
 
         public static readonly string[] FormalLevelScenePaths =
         {
@@ -45,18 +46,21 @@ namespace TowerDefense.Editor
             string previewScenePath,
             string previewSceneName,
             string pageDisplayName,
-            string windowTitle)
+            string windowTitle,
+            string prefabPath)
         {
             PreviewScenePath = previewScenePath ?? string.Empty;
             PreviewSceneName = previewSceneName ?? string.Empty;
             PageDisplayName = pageDisplayName ?? string.Empty;
             WindowTitle = windowTitle ?? string.Empty;
+            PrefabPath = prefabPath ?? string.Empty;
         }
 
         public string PreviewScenePath { get; }
         public string PreviewSceneName { get; }
         public string PageDisplayName { get; }
         public string WindowTitle { get; }
+        public string PrefabPath { get; }
     }
 
     internal static class ResultPageAuthoringProfiles
@@ -65,13 +69,15 @@ namespace TowerDefense.Editor
             ResultPageAuthoringPaths.VictoryPreviewScenePath,
             "VictoryResultPreview",
             "胜利页",
-            "胜利页同步");
+            "胜利页同步",
+            ResultPageAuthoringPaths.VictoryPrefabPath);
 
         public static readonly ResultPageAuthoringProfile Failure = new ResultPageAuthoringProfile(
             ResultPageAuthoringPaths.FailurePreviewScenePath,
             "FailureResultPreview",
             "失败页",
-            "失败页同步");
+            "失败页同步",
+            ResultPageAuthoringPaths.FailurePrefabPath);
 
         public static ResultPageAuthoringProfile ResolveFromScenePath(string scenePath)
         {
@@ -141,17 +147,17 @@ namespace TowerDefense.Editor
             GameObject previewRoot = previewView.gameObject;
             string currentSourcePath = GetConnectedPrefabAssetPath(previewRoot);
 
-            if (string.Equals(currentSourcePath, ResultPageAuthoringPaths.SharedPrefabPath, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(currentSourcePath, profile.PrefabPath, StringComparison.OrdinalIgnoreCase))
             {
                 PrefabUtility.ApplyPrefabInstance(previewRoot, InteractionMode.UserAction);
             }
             else
             {
                 // If the preview root somehow lost its prefab connection, we still keep the tool
-                // one-click friendly by rebuilding the shared prefab from the current preview state.
+                // one-click friendly by rebuilding the correct prefab from the current preview state.
                 PrefabUtility.SaveAsPrefabAssetAndConnect(
                     previewRoot,
-                    ResultPageAuthoringPaths.SharedPrefabPath,
+                    profile.PrefabPath,
                     InteractionMode.UserAction);
             }
 
@@ -161,8 +167,8 @@ namespace TowerDefense.Editor
             EditorSceneManager.SaveScene(activeScene);
 
             summary =
-                $"已把当前 {profile.PreviewSceneName} 里的 VictoryResultPage 回写到共享 prefab。\n" +
-                $"Prefab: {ResultPageAuthoringPaths.SharedPrefabPath}";
+                $"已把当前 {profile.PreviewSceneName} 里的 VictoryResultPage 回写到 {profile.PageDisplayName} prefab。\n" +
+                $"Prefab: {profile.PrefabPath}";
             return true;
         }
 
@@ -251,7 +257,7 @@ namespace TowerDefense.Editor
                 return new SceneValidationItem(
                     scenePath,
                     true,
-                    $"通过：当前关卡会在运行时走共享 prefab {ResultPageAuthoringPaths.SharedPrefabPath}。");
+                    "通过：当前关卡会在运行时走独立 prefab。");
             }
             finally
             {
@@ -464,8 +470,8 @@ namespace TowerDefense.Editor
 
             EditorGUILayout.Space(10f);
             EditorGUILayout.HelpBox(
-                $"这个预览场景现在直接复用正式 {ResultPageAuthoringPaths.SharedPrefabPath}。\n" +
-                $"你在这里调完 {_profileLabel(profile)} 后，点击下面这个按钮就会把当前页面一键应用回共享 prefab。",
+                $"这个预览场景对应独立 prefab：{profile.PrefabPath}。\n" +
+                $"你在这里调完 {_profileLabel(profile)} 后，点击下面这个按钮就会一键应用到对应 prefab。",
                 MessageType.Info);
 
             if (GUILayout.Button("应用当前预览到所有关卡", GUILayout.Height(28f)))

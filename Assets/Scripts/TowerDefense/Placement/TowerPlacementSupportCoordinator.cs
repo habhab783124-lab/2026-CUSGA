@@ -438,6 +438,7 @@ public sealed class TowerPlacementSupportCoordinator
     {
         BuildZone buildZone = _buildZoneQuery != null ? _buildZoneQuery() : null;
         PlacementGrid placementGrid = _placementGridQuery != null ? _placementGridQuery() : null;
+        PlacementStaticMask staticMask = _staticPlacementMask;
         List<PlacementBlockerShape> blockerShapes = CollectPlacementBlockerShapes();
         List<PlacedStructureFootprint> placedStructureFootprints = CollectPlacedStructureFootprints();
         List<PlacedStructureNoBuildArea> placedStructureNoBuildAreas = CollectPlacedStructureNoBuildAreas(placementGrid);
@@ -453,7 +454,7 @@ public sealed class TowerPlacementSupportCoordinator
 
             if (placementGrid != null)
             {
-                return ValidateGridOverlayPoint(worldPosition, towerType, buildZone, blockerShapes, placedStructureNoBuildAreas, relays);
+                return ValidateGridOverlayPoint(worldPosition, towerType, buildZone, staticMask, placedStructureNoBuildAreas, relays);
             }
 
             if (!buildZone.ContainsPoint(worldPosition))
@@ -504,20 +505,34 @@ public sealed class TowerPlacementSupportCoordinator
         Vector3 worldPosition,
         TowerType towerType,
         BuildZone buildZone,
-        List<PlacementBlockerShape> blockerShapes,
+        PlacementStaticMask staticMask,
         List<PlacedStructureNoBuildArea> placedStructureNoBuildAreas,
         List<RelayTower> relays)
     {
-        // 覆盖层要和 Scene 作者化禁建区完全对齐，所以这里直接读作者画的碰撞体。
-        // 最终落塔判定仍然走 PlacementStaticMask + footprint，保证玩法规则不被显示层改掉。
+        // 覆盖层校验器现在与正式放置判定共享同一份静态遮罩数据源。
+        // 每个像素不再是逐一碰撞测试，而是 O(1) 数组查表，
+        // 既消除了“禁建区显示与实际判定的分叉”，也把拖拽帧率恢复到正常水平。
         if (!buildZone.ContainsPoint(worldPosition))
         {
             return false;
         }
 
-        if (IsBlockedByAnyPlacementBlocker(worldPosition, blockerShapes))
+        if (staticMask != null)
         {
-            return false;
+            // 同一份栅格数据 = 显示与判定完全一致
+            if (!staticMask.IsWorldPointBuildable(worldPosition))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            // 静态遮罩不可用时（旧场景 / 极早期启动帧），退回到碰撞体遍历。
+            // 这是非常见路径，拖拽体验会变差，但不会崩。
+            if (IsBlockedByAnyColliderPoint(worldPosition))
+            {
+                return false;
+            }
         }
 
         if (TowerTypeUtility.IsCombatTower(towerType) && !IsInsideAnyRelayCoverageSquare(worldPosition, relays))
@@ -723,6 +738,25 @@ public sealed class TowerPlacementSupportCoordinator
             && point.x <= bounds.max.x
             && point.y >= bounds.min.y
             && point.y <= bounds.max.y;
+    }
+
+    /// <summary>
+    /// 静态遮罩不可用时的回退：单次 OverlapPoint 查 PlacementBlocker。
+    /// 非常见路径，只在旧场景或极早期帧执行。
+    /// </summary>
+    private static bool IsBlockedByAnyColliderPoint(Vector3 worldPosition)
+    {
+        PlacementBlocker[] blockers = UnityEngine.Object.FindObjectsByType<PlacementBlocker>(
+            FindObjectsInactive.Exclude,
+            FindObjectsSortMode.None);
+        for (int i = 0; i < blockers.Length; i++)
+        {
+            PlacementBlocker blocker = blockers[i];
+            if (blocker == null || !blocker.isActiveAndEnabled) continue;
+            Collider2D c = blocker.GetComponent<Collider2D>();
+            if (c != null && c.enabled && c.OverlapPoint(worldPosition)) return true;
+        }
+        return false;
     }
 
     private static bool IsBlockedByAnyPlacementBlocker(Vector3 worldPosition, List<PlacementBlockerShape> blockerShapes)

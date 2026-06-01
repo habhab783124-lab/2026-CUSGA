@@ -228,6 +228,8 @@ public sealed class PlacementStaticMask
         PlacementBlocker = 2
     }
 
+    private const int OverlapBufferCapacity = 16;
+
     private readonly float _cellSize;
     private readonly Vector2 _origin;
     private readonly int _width;
@@ -319,30 +321,43 @@ public sealed class PlacementStaticMask
         int height = Mathf.Max(1, Mathf.CeilToInt((buildableBounds.max.y - rasterOrigin.y) / rasterCellSize));
 
         RasterCellKind[] cellKinds = new RasterCellKind[width * height];
-        List<Collider2D> blockerColliders = CollectStaticBlockerColliders(
+        HashSet<Collider2D> blockerSet = BuildBlockerHashSet(
             out int placementBlockerCount,
             out int pathSurfaceCount);
+        Collider2D[] overlapBuffer = new Collider2D[OverlapBufferCapacity];
+        Vector2 cellSize = new Vector2(rasterCellSize * 0.95f, rasterCellSize * 0.95f);
 
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
                 int index = (y * width) + x;
-                Vector2 worldSample = rasterOrigin + new Vector2((x + 0.5f) * rasterCellSize, (y + 0.5f) * rasterCellSize);
+                Vector2 cellCenter = rasterOrigin + new Vector2((x + 0.5f) * rasterCellSize, (y + 0.5f) * rasterCellSize);
 
-                if (!buildZone.ContainsPoint(worldSample))
+                if (!buildZone.ContainsPoint(cellCenter))
                 {
                     cellKinds[index] = RasterCellKind.OutsideBuildZone;
                     continue;
                 }
 
-                if (IsBlockedByAnyCollider(worldSample, blockerColliders))
+                // 用 Physics2D.OverlapBoxNonAlloc 做整格区域碰撞检测，
+                // 彻底杜绝薄形路径 Collider 穿过栅格但不到中心点的问题。
+                // 此处仅编辑器 Bake 时执行，不影响运行时性能。
+                int hitCount = Physics2D.OverlapBoxNonAlloc(cellCenter, cellSize, 0f, overlapBuffer);
+                bool blocked = false;
+                for (int i = 0; i < hitCount; i++)
                 {
-                    cellKinds[index] = RasterCellKind.PlacementBlocker;
-                    continue;
+                    Collider2D hit = overlapBuffer[i];
+                    if (hit != null && blockerSet.Contains(hit))
+                    {
+                        blocked = true;
+                        break;
+                    }
                 }
 
-                cellKinds[index] = RasterCellKind.Buildable;
+                cellKinds[index] = blocked
+                    ? RasterCellKind.PlacementBlocker
+                    : RasterCellKind.Buildable;
             }
         }
 
@@ -542,12 +557,15 @@ public sealed class PlacementStaticMask
         return prefix;
     }
 
-    private static List<Collider2D> CollectStaticBlockerColliders(
+    /// <summary>
+    /// 收集场景中所有禁建区 Collider，返回 HashSet 供 Editor Bake 时
+    /// 配合 Physics2D.OverlapBoxNonAlloc 做 O(1) 查表判定。
+    /// </summary>
+    private static HashSet<Collider2D> BuildBlockerHashSet(
         out int placementBlockerCount,
         out int pathSurfaceCount)
     {
-        List<Collider2D> colliders = new List<Collider2D>(16);
-        HashSet<Collider2D> uniqueColliders = new HashSet<Collider2D>();
+        HashSet<Collider2D> set = new HashSet<Collider2D>();
         placementBlockerCount = 0;
         pathSurfaceCount = 0;
 
@@ -569,9 +587,8 @@ public sealed class PlacementStaticMask
                 continue;
             }
 
-            if (uniqueColliders.Add(blockerCollider))
+            if (set.Add(blockerCollider))
             {
-                colliders.Add(blockerCollider);
                 placementBlockerCount++;
             }
         }
@@ -587,14 +604,13 @@ public sealed class PlacementStaticMask
                 continue;
             }
 
-            if (uniqueColliders.Add(collider))
+            if (set.Add(collider))
             {
-                colliders.Add(collider);
                 pathSurfaceCount++;
             }
         }
 
-        return colliders;
+        return set;
     }
 
     private static bool IsPathSurfaceCollider(Collider2D collider)
@@ -606,18 +622,22 @@ public sealed class PlacementStaticMask
             && collider.gameObject.name.StartsWith("PathSegment_", StringComparison.Ordinal);
     }
 
-    private static bool IsBlockedByAnyCollider(Vector2 worldPosition, List<Collider2D> colliders)
+    /// <summary>
+    /// O(1) 查询世界坐标是否落在可建造栅格内。
+    ///
+    /// 覆盖层采样时每次拖拽都要调用数千次，必须是极轻量的数组查表。
+    /// 边界外的点也统一返回 false，避免额外判断分支。
+    /// </summary>
+    public bool IsWorldPointBuildable(Vector3 worldPosition)
     {
-        for (int index = 0; index < colliders.Count; index++)
+        int x = Mathf.FloorToInt((worldPosition.x - _origin.x) / _cellSize);
+        int y = Mathf.FloorToInt((worldPosition.y - _origin.y) / _cellSize);
+        if (x < 0 || x >= _width || y < 0 || y >= _height)
         {
-            Collider2D collider = colliders[index];
-            if (collider != null && collider.OverlapPoint(worldPosition))
-            {
-                return true;
-            }
+            return false;
         }
 
-        return false;
+        return _cellKinds[(y * _width) + x] == RasterCellKind.Buildable;
     }
 
     private static byte[] PackCellKinds(RasterCellKind[] cellKinds)

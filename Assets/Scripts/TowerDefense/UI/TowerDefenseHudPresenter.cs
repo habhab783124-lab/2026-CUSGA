@@ -304,6 +304,8 @@ public readonly struct TowerDefenseHudTheme
 public sealed class TowerDefenseHudPresenter
 {
     private TowerDefenseHudTheme _theme = TowerDefenseHudTheme.Default;
+    private bool _showPrimaryOperationSection = true;
+    private bool _showPowerGridSection = true;
 
     private TMP_Text _scrapText;
     private TMP_Text _baseHealthText;
@@ -346,6 +348,12 @@ public sealed class TowerDefenseHudPresenter
     public void SetTheme(TowerDefenseHudTheme theme)
     {
         _theme = theme;
+    }
+
+    public void ConfigureSelectionSections(bool showPrimaryOperationSection, bool showPowerGridSection)
+    {
+        _showPrimaryOperationSection = showPrimaryOperationSection;
+        _showPowerGridSection = showPowerGridSection;
     }
 
     /// <summary>
@@ -663,7 +671,11 @@ public sealed class TowerDefenseHudPresenter
     /// 所以你在场景里调好的布局会被保留下来；
     /// 脚本只负责把当前游戏状态填进对应文本里。
     /// </summary>
-    public void Refresh(TowerDefenseHudState state, TowerCatalog towerCatalog, Func<TowerType, bool> canAffordTower)
+    public void Refresh(
+        TowerDefenseHudState state,
+        TowerCatalog towerCatalog,
+        Func<TowerType, bool> canAffordTower,
+        Func<TowerType, TowerTutorialAvailability> tutorialTowerAvailabilityQuery = null)
     {
         if (_scrapText != null)
         {
@@ -691,7 +703,7 @@ public sealed class TowerDefenseHudPresenter
             _structureStatusText.text = BuildStructureStatusText(state);
         }
 
-        UpdateButtonInteractableState(canAffordTower);
+        UpdateButtonInteractableState(canAffordTower, tutorialTowerAvailabilityQuery);
     }
 
     /// <summary>
@@ -1010,12 +1022,30 @@ public sealed class TowerDefenseHudPresenter
     /// </summary>
     private string BuildSelectionText(TowerDefenseHudState state, TowerCatalog towerCatalog)
     {
-        if (!string.IsNullOrWhiteSpace(_selectionTextTemplate))
+        string composedText = string.Empty;
+
+        if (_showPrimaryOperationSection)
         {
-            return _selectionTextTemplate;
+            AppendSection(ref composedText, BuildPrimaryOperationBlock(state, towerCatalog));
         }
 
-        return string.Empty;
+        AppendSection(ref composedText, BuildStatusBlock(state.CurrentStatusMessage));
+        AppendSection(ref composedText, BuildTransientNoticeBlock(state.TransientNotice));
+        AppendSection(ref composedText, BuildRecentNoticeBlock(state.RecentHudNotices, state.TransientNotice));
+
+        if (_showPowerGridSection)
+        {
+            AppendSection(ref composedText, BuildPowerGridBlock(state.PowerGridSnapshot));
+        }
+
+        if (!string.IsNullOrWhiteSpace(composedText))
+        {
+            return composedText;
+        }
+
+        return !string.IsNullOrWhiteSpace(_selectionTextTemplate)
+            ? _selectionTextTemplate
+            : string.Empty;
     }
 
     private string BuildStructureStatusText(TowerDefenseHudState state)
@@ -1287,31 +1317,59 @@ public sealed class TowerDefenseHudPresenter
     /// 如果你想修改不可购买时的颜色、选中时的高亮、按下时的过渡，
     /// 现在更推荐直接去 Button 的 `Transition / ColorBlock` 里改。
     /// </summary>
-    private void UpdateButtonInteractableState(Func<TowerType, bool> canAffordTower)
+    private void UpdateButtonInteractableState(
+        Func<TowerType, bool> canAffordTower,
+        Func<TowerType, TowerTutorialAvailability> tutorialTowerAvailabilityQuery)
     {
-        if (_relayTowerButton != null)
-        {
-            _relayTowerButton.interactable = canAffordTower(TowerType.Relay);
-        }
-
-        if (_defenseTowerButton != null)
-        {
-            _defenseTowerButton.interactable = canAffordTower(TowerType.SingleTarget);
-        }
-
-        if (_slowFieldTowerButton != null)
-        {
-            _slowFieldTowerButton.interactable = canAffordTower(TowerType.SlowField);
-        }
-
-        if (_bombardTowerButton != null)
-        {
-            _bombardTowerButton.interactable = canAffordTower(TowerType.Bombard);
-        }
+        ApplyTowerButtonState(_relayTowerButton, TowerType.Relay, canAffordTower, tutorialTowerAvailabilityQuery);
+        ApplyTowerButtonState(_defenseTowerButton, TowerType.SingleTarget, canAffordTower, tutorialTowerAvailabilityQuery);
+        ApplyTowerButtonState(_slowFieldTowerButton, TowerType.SlowField, canAffordTower, tutorialTowerAvailabilityQuery);
+        ApplyTowerButtonState(_bombardTowerButton, TowerType.Bombard, canAffordTower, tutorialTowerAvailabilityQuery);
 
         if (_clearSelectionButton != null)
         {
             _clearSelectionButton.interactable = true;
+        }
+    }
+
+    private static void ApplyTowerButtonState(
+        Button button,
+        TowerType towerType,
+        Func<TowerType, bool> canAffordTower,
+        Func<TowerType, TowerTutorialAvailability> tutorialTowerAvailabilityQuery)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        TowerTutorialAvailability tutorialAvailability = tutorialTowerAvailabilityQuery != null
+            ? tutorialTowerAvailabilityQuery(towerType)
+            : TowerTutorialAvailability.Default;
+        bool isTutorialLocked = tutorialAvailability == TowerTutorialAvailability.Locked;
+        button.interactable = !isTutorialLocked && canAffordTower(towerType);
+
+        TowerShopCard towerShopCard = button.GetComponent<TowerShopCard>();
+        if (towerShopCard == null)
+        {
+            return;
+        }
+
+        towerShopCard.ApplyInteractionVisualState(ResolveTowerShopCardInteractionState(tutorialAvailability));
+    }
+
+    private static TowerShopCardInteractionState ResolveTowerShopCardInteractionState(TowerTutorialAvailability availability)
+    {
+        switch (availability)
+        {
+            case TowerTutorialAvailability.Locked:
+                return TowerShopCardInteractionState.Locked;
+            case TowerTutorialAvailability.Available:
+                return TowerShopCardInteractionState.Available;
+            case TowerTutorialAvailability.Recommended:
+                return TowerShopCardInteractionState.Recommended;
+            default:
+                return TowerShopCardInteractionState.Default;
         }
     }
 

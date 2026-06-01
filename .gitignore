@@ -43,6 +43,9 @@ Assets/Screenshots/
 
 # Local Codex tooling
 .codex/
+SKILL.md
+git-fork-workflow/
+karpathy-guidelines/
 
 # Local AI collaboration memory and helper tooling
 AGENTS.md
