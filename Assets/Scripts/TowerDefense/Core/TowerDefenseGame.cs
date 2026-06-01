@@ -411,6 +411,9 @@ public class TowerDefenseGame : MonoBehaviour
     private string _tutorialLockedTowerStatusMessage = DefaultTutorialLockedTowerStatusMessage;
     private string _tutorialFailureCommanderLineOverride = string.Empty;
     private string _tutorialFailureFollowUpLineOverride = string.Empty;
+    private bool _tutorialPaused;
+    private float _tutorialResumeAllowedAtUnscaledTime;
+    private Action _tutorialResumeCallback;
 
     /// <summary>
     /// 对外暴露只读的结算状态，方便 HUD、敌人和其他运行时对象判断当前是否已经 Game Over。
@@ -505,6 +508,27 @@ public class TowerDefenseGame : MonoBehaviour
         _presentationCoordinator?.ClearPinnedTransientNotice();
     }
 
+    public bool IsTutorialPaused => _tutorialPaused;
+
+    public void SetTutorialPaused(bool paused, Action onResumeCallback = null)
+    {
+        if (paused)
+        {
+            _tutorialPaused = true;
+            _tutorialResumeCallback = onResumeCallback;
+            _tutorialResumeAllowedAtUnscaledTime = Time.unscaledTime + 0.4f;
+            Time.timeScale = 0f;
+        }
+        else
+        {
+            _tutorialPaused = false;
+            Time.timeScale = 1f;
+            Action cb = _tutorialResumeCallback;
+            _tutorialResumeCallback = null;
+            cb?.Invoke();
+        }
+    }
+
     public void ConfigureTutorialSelectionHudSections(bool showPrimaryOperationSection, bool showPowerGridSection)
     {
         _hudPresenter?.ConfigureSelectionSections(showPrimaryOperationSection, showPowerGridSection);
@@ -577,6 +601,8 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private void Update()
     {
+        HandleTutorialResumeInput();
+
         if (HandleLevelClearContinueInput())
         {
             return;
@@ -584,6 +610,21 @@ public class TowerDefenseGame : MonoBehaviour
 
         _inputCoordinator?.Tick();
         HandleGameOverRestartInput();
+    }
+
+    private void HandleTutorialResumeInput()
+    {
+        if (!_tutorialPaused) return;
+        if (Time.unscaledTime < _tutorialResumeAllowedAtUnscaledTime) return;
+        if (!DidPressTutorialContinue()) return;
+        SetTutorialPaused(false);
+    }
+
+    private static bool DidPressTutorialContinue()
+    {
+        if (Input.GetMouseButtonDown(0)) return true;
+        if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began) return true;
+        return false;
     }
 
     /// <summary>

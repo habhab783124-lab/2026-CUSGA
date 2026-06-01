@@ -71,7 +71,6 @@ namespace TowerDefense.Editor
             "scrapTextReference",
             "baseHealthTextReference",
             "waveTextReference",
-            "selectionTextReference",
             "operationTextReference",
             "liveStatusTextReference",
             "powerGridTextReference",
@@ -255,39 +254,14 @@ namespace TowerDefense.Editor
 
         private void MaterializeHudSplitTexts(TowerDefenseGame game)
         {
-            SerializedProperty selectionProperty = serializedObject.FindProperty("selectionTextReference");
-            TMP_Text legacySelectionText = selectionProperty != null ? selectionProperty.objectReferenceValue as TMP_Text : null;
-            if (legacySelectionText == null)
-            {
-                EditorUtility.DisplayDialog("生成 HUD 拆分文本", "请先在 TowerDefenseGame 上接好 SelectionText 引用，再执行拆分。", "确定");
-                return;
-            }
-
-            RectTransform parent = legacySelectionText.transform.parent as RectTransform;
-            if (parent == null)
-            {
-                EditorUtility.DisplayDialog("生成 HUD 拆分文本", "SelectionText 没有可用的父 RectTransform。", "确定");
-                return;
-            }
-
-            TMP_FontAsset fontAsset = legacySelectionText.font;
-            Material sharedMaterial = legacySelectionText.fontSharedMaterial;
-
             SerializedProperty operationProperty = serializedObject.FindProperty("operationTextReference");
-            SerializedProperty liveStatusProperty = serializedObject.FindProperty("liveStatusTextReference");
-            SerializedProperty powerGridProperty = serializedObject.FindProperty("powerGridTextReference");
-            SerializedProperty latestEventProperty = serializedObject.FindProperty("latestEventTextReference");
-            SerializedProperty recentLogProperty = serializedObject.FindProperty("recentLogTextReference");
+            if (operationProperty == null)
+            {
+                EditorUtility.DisplayDialog("生成 HUD 拆分文本", "未找到 operationTextReference 字段。", "确定");
+                return;
+            }
 
-            operationProperty.objectReferenceValue = EnsureHudBlock(parent, "OperationText", new Vector2(16f, -16f), new Vector2(-16f, -196f), 30f, fontAsset, sharedMaterial);
-            liveStatusProperty.objectReferenceValue = EnsureHudBlock(parent, "LiveStatusText", new Vector2(16f, -212f), new Vector2(-16f, -300f), 18f, fontAsset, sharedMaterial);
-            powerGridProperty.objectReferenceValue = EnsureHudBlock(parent, "PowerGridText", new Vector2(16f, -316f), new Vector2(-16f, -420f), 18f, fontAsset, sharedMaterial);
-            latestEventProperty.objectReferenceValue = EnsureHudBlock(parent, "LatestEventText", new Vector2(16f, -436f), new Vector2(-16f, -500f), 18f, fontAsset, sharedMaterial);
-            recentLogProperty.objectReferenceValue = EnsureHudBlock(parent, "RecentLogText", new Vector2(16f, -516f), new Vector2(-16f, -640f), 16f, fontAsset, sharedMaterial);
-
-            serializedObject.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(game);
-            EditorSceneManager.MarkSceneDirty(game.gameObject.scene);
+            EditorUtility.DisplayDialog("生成 HUD 拆分文本", "SelectionText 已移除，此功能不再可用。", "确定");
         }
 
         private TMP_Text EnsureHudBlock(
