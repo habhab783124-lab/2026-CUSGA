@@ -166,6 +166,8 @@ public sealed class WaveSpawner : MonoBehaviour
     public bool IsRoutePreviewVisible => _routePreviewVisible;
     public int UpcomingWaveNumber => _currentWaveIndex < _runtimeWaves.Count ? _currentWaveIndex + 1 : 0;
 
+    public event Action<int, Vector3> OnWaveFirstSpawn;
+
     private void Start()
     {
         EnsureFallbackWaveData();
@@ -296,6 +298,11 @@ public sealed class WaveSpawner : MonoBehaviour
             TowerDefenseGame.Instance.ShowTransientHudNotice(
                 $"{waveLabel}: salvage potential {runtimeWave.TotalScrapReward} SCRAP.",
                 duration: 3.4f);
+
+            Vector3 spawnPos = runtimeGroup.PathReference != null
+                ? runtimeGroup.PathReference.GetSpawnPosition()
+                : transform.position;
+            OnWaveFirstSpawn?.Invoke(_currentWaveIndex + 1, spawnPos);
         }
 
         if (!SpawnEnemy(runtimeGroup, _currentWaveIndex + 1, _spawnedInCurrentWave + 1))

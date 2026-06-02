@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -18,6 +19,14 @@ public enum TowerType
     SingleTarget,
     SlowField,
     Bombard
+}
+
+public enum TowerTutorialAvailability
+{
+    Default,
+    Locked,
+    Available,
+    Recommended
 }
 
 /// <summary>
@@ -396,12 +405,141 @@ public class TowerDefenseGame : MonoBehaviour
     private bool _levelClearStartOpaqueOnContinue;
     private const float DemolishRefundRatio = 0.5f;
     private const string VictoryResultPagePrefabResourcePath = "TowerDefense/UI/VictoryResultPage";
+    private const string DefaultTutorialLockedTowerStatusMessage = "指挥中心：当前阶段尚未批准部署该塔型，先完成当前指引。";
     private const string FailureResultPagePrefabResourcePath = "TowerDefense/UI/FailureResultPage";
+    private readonly Dictionary<TowerType, TowerTutorialAvailability> _tutorialTowerAvailability = new Dictionary<TowerType, TowerTutorialAvailability>(4);
+    private bool _hasTutorialTowerAvailabilityOverrides;
+    private string _tutorialLockedTowerStatusMessage = DefaultTutorialLockedTowerStatusMessage;
+    private string _tutorialFailureCommanderLineOverride = string.Empty;
+    private string _tutorialFailureFollowUpLineOverride = string.Empty;
+    private bool _tutorialPaused;
+    private float _tutorialResumeAllowedAtUnscaledTime;
+    private Action _tutorialResumeCallback;
 
     /// <summary>
     /// 对外暴露只读的结算状态，方便 HUD、敌人和其他运行时对象判断当前是否已经 Game Over。
     /// </summary>
     public bool IsGameOver => _sessionState != null && _sessionState.IsGameOver;
+    public int CurrentScrap => _sessionState != null ? _sessionState.CurrentScrap : 0;
+    public int CurrentBaseHealth => _sessionState != null ? _sessionState.CurrentBaseHealth : 0;
+    public int CurrentWave => _sessionState != null ? _sessionState.CurrentWave : 0;
+    public int TotalWaves => _sessionState != null ? _sessionState.TotalWaves : 0;
+    public Transform PlacedTowerRoot => _placedTowerRoot;
+
+    public TowerTutorialAvailability GetTutorialTowerAvailability(TowerType towerType)
+    {
+        if (!_hasTutorialTowerAvailabilityOverrides || towerType == TowerType.None)
+        {
+            return TowerTutorialAvailability.Default;
+        }
+
+        return _tutorialTowerAvailability.TryGetValue(towerType, out TowerTutorialAvailability availability)
+            ? availability
+            : TowerTutorialAvailability.Default;
+    }
+
+    public bool CanPreviewTowerCard(TowerType towerType)
+    {
+        return towerType != TowerType.None && !IsGameOver && !IsTowerLockedByTutorial(towerType);
+    }
+
+    private bool IsTowerLockedByTutorial(TowerType towerType)
+    {
+        return GetTutorialTowerAvailability(towerType) == TowerTutorialAvailability.Locked;
+    }
+
+    public void ApplyTutorialTowerAvailability(
+        TowerTutorialAvailability relayAvailability,
+        TowerTutorialAvailability singleTargetAvailability,
+        TowerTutorialAvailability slowFieldAvailability,
+        TowerTutorialAvailability bombardAvailability)
+    {
+        _tutorialTowerAvailability.Clear();
+        _tutorialTowerAvailability[TowerType.Relay] = relayAvailability;
+        _tutorialTowerAvailability[TowerType.SingleTarget] = singleTargetAvailability;
+        _tutorialTowerAvailability[TowerType.SlowField] = slowFieldAvailability;
+        _tutorialTowerAvailability[TowerType.Bombard] = bombardAvailability;
+        _hasTutorialTowerAvailabilityOverrides = true;
+        RefreshHud();
+    }
+
+    public void ClearTutorialTowerAvailability()
+    {
+        if (!_hasTutorialTowerAvailabilityOverrides && _tutorialTowerAvailability.Count == 0)
+        {
+            return;
+        }
+
+        _tutorialTowerAvailability.Clear();
+        _hasTutorialTowerAvailabilityOverrides = false;
+        RefreshHud();
+    }
+
+    public void SetTutorialLockedTowerStatusMessage(string message)
+    {
+        _tutorialLockedTowerStatusMessage = string.IsNullOrWhiteSpace(message)
+            ? DefaultTutorialLockedTowerStatusMessage
+            : message;
+    }
+
+    public void SetTutorialFailureDialogueOverride(string commanderLine, string followUpLine)
+    {
+        _tutorialFailureCommanderLineOverride = commanderLine ?? string.Empty;
+        _tutorialFailureFollowUpLineOverride = followUpLine ?? string.Empty;
+    }
+
+    public void ClearTutorialFailureDialogueOverride()
+    {
+        _tutorialFailureCommanderLineOverride = string.Empty;
+        _tutorialFailureFollowUpLineOverride = string.Empty;
+    }
+
+    public void SetTutorialStatusMessage(string message)
+    {
+        _presentationCoordinator?.SetPinnedStatusMessage(message);
+    }
+
+    public void ClearTutorialStatusMessage()
+    {
+        _presentationCoordinator?.ClearPinnedStatusMessage();
+    }
+
+    public void ShowTutorialHudNotice(string message, HudNoticeTone tone = HudNoticeTone.Auto)
+    {
+        _presentationCoordinator?.SetPinnedTransientNotice(message, tone);
+    }
+
+    public void ClearTutorialHudNotice()
+    {
+        _presentationCoordinator?.ClearPinnedTransientNotice();
+    }
+
+    public bool IsTutorialPaused => _tutorialPaused;
+
+    public void SetTutorialPaused(bool paused, Action onResumeCallback = null)
+    {
+        if (paused)
+        {
+            _tutorialPaused = true;
+            _tutorialResumeCallback = onResumeCallback;
+            _tutorialResumeAllowedAtUnscaledTime = Time.unscaledTime + 0.4f;
+            Time.timeScale = 0f;
+        }
+        else
+        {
+            _tutorialPaused = false;
+            Time.timeScale = 1f;
+            Action cb = _tutorialResumeCallback;
+            _tutorialResumeCallback = null;
+            cb?.Invoke();
+        }
+    }
+
+    public void ConfigureTutorialSelectionHudSections(bool showPrimaryOperationSection, bool showPowerGridSection)
+    {
+        _hudPresenter?.ConfigureSelectionSections(showPrimaryOperationSection, showPowerGridSection);
+        RefreshHud();
+    }
 
     /// <summary>
     /// `Awake()` 负责建立单例、锁定基础运行参数，并把场景引用与协作模块先装配起来。
@@ -465,6 +603,8 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     private void Update()
     {
+        HandleTutorialResumeInput();
+
         if (HandleLevelClearContinueInput())
         {
             return;
@@ -472,6 +612,21 @@ public class TowerDefenseGame : MonoBehaviour
 
         _inputCoordinator?.Tick();
         HandleGameOverRestartInput();
+    }
+
+    private void HandleTutorialResumeInput()
+    {
+        if (!_tutorialPaused) return;
+        if (Time.unscaledTime < _tutorialResumeAllowedAtUnscaledTime) return;
+        if (!DidPressTutorialContinue()) return;
+        SetTutorialPaused(false);
+    }
+
+    private static bool DidPressTutorialContinue()
+    {
+        if (Input.GetMouseButtonDown(0)) return true;
+        if (Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Began) return true;
+        return false;
     }
 
     /// <summary>
@@ -980,6 +1135,7 @@ public class TowerDefenseGame : MonoBehaviour
                 ? _powerGridCoordinator.GetHudSnapshot()
                 : new PowerGridHudSnapshot(0, 0, 0, 0, 0, 0, 0, string.Empty),
             canAffordTower: CanAffordTower,
+            tutorialTowerAvailabilityQuery: GetTutorialTowerAvailability,
             refreshStarterZoneMarker: () => _placementSupportCoordinator?.RefreshStarterZoneMarker());
         _hudPresenter.SetTheme(hudTheme.ToRuntimeTheme());
         _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());

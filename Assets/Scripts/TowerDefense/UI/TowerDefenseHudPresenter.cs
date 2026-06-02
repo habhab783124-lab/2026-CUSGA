@@ -695,12 +695,12 @@ public sealed class TowerDefenseHudPresenter
 
         if (_selectionText != null)
         {
-            _selectionText.text = BuildSelectionText(state, towerCatalog);
+            _selectionText.text = BuildSelectionBlock(state, towerCatalog);
         }
 
         if (_structureStatusText != null)
         {
-            _structureStatusText.text = BuildStructureStatusText(state);
+            _structureStatusText.text = BuildStructureStatusBlock(state);
         }
 
         UpdateButtonInteractableState(canAffordTower, tutorialTowerAvailabilityQuery);
@@ -1020,53 +1020,6 @@ public sealed class TowerDefenseHudPresenter
     /// 这部分仍然由脚本生成，
     /// 因为它本质上就是当前状态的动态摘要，而不是固定装饰性文本。
     /// </summary>
-    private string BuildSelectionText(TowerDefenseHudState state, TowerCatalog towerCatalog)
-    {
-        string composedText = string.Empty;
-
-        if (_showPrimaryOperationSection)
-        {
-            AppendSection(ref composedText, BuildPrimaryOperationBlock(state, towerCatalog));
-        }
-
-        AppendSection(ref composedText, BuildStatusBlock(state.CurrentStatusMessage));
-        AppendSection(ref composedText, BuildTransientNoticeBlock(state.TransientNotice));
-        AppendSection(ref composedText, BuildRecentNoticeBlock(state.RecentHudNotices, state.TransientNotice));
-
-        if (_showPowerGridSection)
-        {
-            AppendSection(ref composedText, BuildPowerGridBlock(state.PowerGridSnapshot));
-        }
-
-        if (!string.IsNullOrWhiteSpace(composedText))
-        {
-            return composedText;
-        }
-
-        return !string.IsNullOrWhiteSpace(_selectionTextTemplate)
-            ? _selectionTextTemplate
-            : string.Empty;
-    }
-
-    private string BuildStructureStatusText(TowerDefenseHudState state)
-    {
-        if (state.PlacedStructureState.HasSelection)
-        {
-            if (string.IsNullOrWhiteSpace(state.PlacedStructureState.Details))
-            {
-                return state.PlacedStructureState.Title;
-            }
-
-            return $"{state.PlacedStructureState.Title}  |  {state.PlacedStructureState.Details}";
-        }
-
-        if (!string.IsNullOrWhiteSpace(_structureStatusTextTemplate))
-        {
-            return _structureStatusTextTemplate;
-        }
-
-        return "Select a relay or turret to inspect live stats.";
-    }
 
     /// <summary>
     /// 组装操作区的主说明块。
@@ -1373,10 +1326,29 @@ public sealed class TowerDefenseHudPresenter
         }
     }
 
+    private string BuildSelectionBlock(TowerDefenseHudState state, TowerCatalog towerCatalog)
+    {
+        return !string.IsNullOrWhiteSpace(_selectionTextTemplate)
+            ? _selectionTextTemplate
+            : string.Empty;
+    }
+
+    private string BuildStructureStatusBlock(TowerDefenseHudState state)
+    {
+        if (state.PlacedStructureState.HasSelection)
+        {
+            return state.PlacedStructureState.Title + "  |  " + state.PlacedStructureState.Details;
+        }
+
+        return !string.IsNullOrWhiteSpace(_structureStatusTextTemplate)
+            ? _structureStatusTextTemplate
+            : string.Empty;
+    }
+
     /// <summary>
     /// 组装顶部资源卡的富文本。
     ///
-    /// 这里返回的是“内容格式”，不是布局格式。
+    /// 这里返回的是”内容格式”，不是布局格式。
     /// 卡片放哪、字号多大、外边距多少，应该主要由场景控制；
     /// 但每张卡内部标签和数值的层级关系，仍然适合由代码统一生成。
     /// </summary>

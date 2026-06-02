@@ -16,6 +16,20 @@ public sealed class Level01TutorialDirector : MonoBehaviour
     [SerializeField] private float evaluationInterval = 0.2f;
     [SerializeField] private float repeatHintInterval = 6f;
     [SerializeField] private float noticeDuration = 3.2f;
+    [SerializeField] private bool pauseOnGuidanceStep = true;
+    [SerializeField] private string continuePromptSuffix = "\n<size=80%><color=#88AABB>[ 点击任意位置继续 ]</color></size>";
+
+    [Header("Commander Bubble")]
+    [SerializeField] private TutorialCommanderBubble commanderBubble;
+
+    [Header("Drag Hint")]
+    [SerializeField] private TutorialDragHintOverlay dragHintOverlay;
+
+    [Header("Camera Focus")]
+    [SerializeField] private TutorialCameraDirector cameraDirector;
+    [SerializeField] private Vector3 firstWaveFocusTarget = new Vector3(-12f, 7.7f, 0f);
+    [SerializeField] private string firstWaveIncomingMessage = "指挥中心：敌人开始发起进攻，请做好防御准备。";
+    [SerializeField] private string firstWaveIncomingNotice = "第一波来袭！";
 
     [Header("Opening")]
     [SerializeField] private string openingStatusMessage = "指挥中心：外围供能尚未接通。先在起始部署区架设继电器，建立前线第一段供能链。";
@@ -34,6 +48,9 @@ public sealed class Level01TutorialDirector : MonoBehaviour
     [Header("Second Wave")]
     [SerializeField] private string secondWaveStatusMessage = "指挥中心：侦测到副路信号抬升。第二波预览已出现，优先在副路附近补上一座减速塔，拉长敌军暴露时间。";
     [SerializeField] private string secondWaveNoticeMessage = "教学 4/4：副路附近部署减速塔。";
+    [SerializeField] private string slowTowerAffordableStatusMessage = "指挥中心：废料储备已足够建造减速塔，在副路附近部署一座。";
+    [SerializeField] private string slowTowerAffordableNoticeMessage = "资源充足，可以建造减速塔了。";
+    [SerializeField] private int slowTowerScrapCost = 42;
     [SerializeField] private string slowTowerPlacedStatusMessage = "指挥中心：减速区已建立。把敌军拖在副路口，主火力就能稳定清线。";
     [SerializeField] private string slowTowerPlacedNoticeMessage = "副路控制完成，继续稳住前线。";
 
@@ -67,13 +84,16 @@ public sealed class Level01TutorialDirector : MonoBehaviour
     private float _nextRepeatHintTime;
     private int _lastKnownScrap = -1;
     private bool _tutorialSetupApplied;
+    private bool _waitingForResume;
     private bool _openingShown;
     private bool _relayStepCompleted;
     private bool _singleTowerStepCompleted;
     private bool _scrapStepCompleted;
     private bool _secondWaveBriefed;
+    private bool _slowTowerAffordablePrompted;
     private bool _slowTowerStepCompleted;
     private bool _finalWaveBriefed;
+    private bool _firstWaveFocusDone;
 
     private void Start()
     {
@@ -83,6 +103,11 @@ public sealed class Level01TutorialDirector : MonoBehaviour
     private void Update()
     {
         _sideLaneMarker?.Tick(Time.time);
+
+        if (_waitingForResume)
+        {
+            return;
+        }
 
         if (Time.time < _nextEvaluationTime)
         {
@@ -115,8 +140,28 @@ public sealed class Level01TutorialDirector : MonoBehaviour
         _sideLaneMarker?.Dispose();
         _sideLaneMarker = null;
 
+        if (_waveSpawner != null)
+        {
+            _waveSpawner.OnWaveFirstSpawn -= HandleWaveFirstSpawn;
+        }
+
+        if (commanderBubble != null)
+        {
+            commanderBubble.HideImmediate();
+        }
+
+        if (dragHintOverlay != null)
+        {
+            dragHintOverlay.Dismiss();
+        }
+
         if (_game != null)
         {
+            if (_tutorialPausedByThis())
+            {
+                _game.SetTutorialPaused(false);
+            }
+
             _game.ClearTutorialTowerAvailability();
             _game.ClearTutorialFailureDialogueOverride();
             _game.ClearTutorialStatusMessage();
@@ -124,6 +169,8 @@ public sealed class Level01TutorialDirector : MonoBehaviour
             _game.ConfigureTutorialSelectionHudSections(showPrimaryOperationSection: true, showPowerGridSection: true);
         }
     }
+
+    private bool _tutorialPausedByThis() => _waitingForResume && _game != null && _game.IsTutorialPaused;
 
     private bool ResolveReferences()
     {
@@ -137,6 +184,10 @@ public sealed class Level01TutorialDirector : MonoBehaviour
         if (_waveSpawner == null)
         {
             _waveSpawner = FindFirstObjectByType<WaveSpawner>();
+            if (_waveSpawner != null)
+            {
+                _waveSpawner.OnWaveFirstSpawn += HandleWaveFirstSpawn;
+            }
         }
 
         if (_game != null && _placedTowerRoot == null)
@@ -174,8 +225,14 @@ public sealed class Level01TutorialDirector : MonoBehaviour
 
         _game.SetTutorialLockedTowerStatusMessage(lockedTowerStatusMessage);
         _game.SetTutorialFailureDialogueOverride(failureCommanderLine, failureFollowUpLine);
-        _game.SetTutorialStatusMessage(openingStatusMessage);
+
+        if (commanderBubble == null)
+        {
+            _game.SetTutorialStatusMessage(openingStatusMessage);
+        }
+
         _game.ConfigureTutorialSelectionHudSections(showPrimaryOperationSection: false, showPowerGridSection: false);
+        HideHudCardPanels();
         ApplyOpeningTowerAvailability();
         _lastKnownScrap = _game.CurrentScrap;
         HideSideLaneMarker();
@@ -202,6 +259,7 @@ public sealed class Level01TutorialDirector : MonoBehaviour
         {
             if (counts.RelayCount > 0)
             {
+                if (dragHintOverlay != null) dragHintOverlay.Dismiss();
                 BroadcastStep(relayPlacedStatusMessage, relayPlacedNoticeMessage, HudNoticeTone.Positive);
                 ApplyPostRelayTowerAvailability();
                 _relayStepCompleted = true;
@@ -209,6 +267,7 @@ public sealed class Level01TutorialDirector : MonoBehaviour
             }
             else
             {
+                if (dragHintOverlay != null && !dragHintOverlay.IsShowing) dragHintOverlay.Show();
                 RepeatHintIfNeeded(openingStatusMessage);
             }
 
@@ -244,7 +303,6 @@ public sealed class Level01TutorialDirector : MonoBehaviour
             BroadcastStep(secondWaveStatusMessage, secondWaveNoticeMessage, HudNoticeTone.Warning);
             ApplySecondWaveTowerAvailability();
             _secondWaveBriefed = true;
-            _nextRepeatHintTime = Time.time + repeatHintInterval;
         }
 
         if (_secondWaveBriefed && !_slowTowerStepCompleted)
@@ -260,7 +318,12 @@ public sealed class Level01TutorialDirector : MonoBehaviour
             else
             {
                 ShowSideLaneMarker();
-                RepeatHintIfNeeded(secondWaveStatusMessage);
+
+                if (!_slowTowerAffordablePrompted && _game.CurrentScrap >= slowTowerScrapCost)
+                {
+                    BroadcastStep(slowTowerAffordableStatusMessage, slowTowerAffordableNoticeMessage, HudNoticeTone.Positive);
+                    _slowTowerAffordablePrompted = true;
+                }
             }
         }
         else
@@ -327,7 +390,15 @@ public sealed class Level01TutorialDirector : MonoBehaviour
             return;
         }
 
-        _game.SetTutorialStatusMessage(statusMessage);
+        if (commanderBubble != null)
+        {
+            commanderBubble.ShowLine(statusMessage);
+        }
+        else
+        {
+            _game.SetTutorialStatusMessage(statusMessage);
+        }
+
         _nextRepeatHintTime = Time.time + repeatHintInterval;
     }
 
@@ -338,15 +409,78 @@ public sealed class Level01TutorialDirector : MonoBehaviour
             return;
         }
 
-        if (!string.IsNullOrWhiteSpace(statusMessage))
+        bool useBubble = commanderBubble != null && !string.IsNullOrWhiteSpace(statusMessage);
+
+        if (useBubble)
         {
-            _game.SetTutorialStatusMessage(statusMessage);
+            commanderBubble.ShowLine(statusMessage);
+        }
+        else if (!string.IsNullOrWhiteSpace(statusMessage))
+        {
+            string displayMessage = pauseOnGuidanceStep
+                ? statusMessage + continuePromptSuffix
+                : statusMessage;
+            _game.SetTutorialStatusMessage(displayMessage);
         }
 
         if (!string.IsNullOrWhiteSpace(noticeMessage))
         {
             _game.ShowTutorialHudNotice(noticeMessage, tone);
         }
+
+        if (pauseOnGuidanceStep)
+        {
+            _waitingForResume = true;
+            _game.SetTutorialPaused(true, () =>
+            {
+                _waitingForResume = false;
+                if (useBubble)
+                {
+                    commanderBubble.Hide();
+                }
+                else if (_game != null && !string.IsNullOrWhiteSpace(statusMessage))
+                {
+                    _game.SetTutorialStatusMessage(statusMessage);
+                }
+            });
+        }
+    }
+
+    private void HandleWaveFirstSpawn(int waveNumber, Vector3 spawnPosition)
+    {
+        if (waveNumber != 1 || _firstWaveFocusDone) return;
+        _firstWaveFocusDone = true;
+
+        if (cameraDirector == null)
+        {
+            BroadcastStep(firstWaveIncomingMessage, firstWaveIncomingNotice, HudNoticeTone.Warning);
+            return;
+        }
+
+        _waitingForResume = true;
+        cameraDirector.FocusOn(firstWaveFocusTarget, () =>
+        {
+            bool useBubble = commanderBubble != null;
+            if (useBubble)
+            {
+                commanderBubble.ShowLine(firstWaveIncomingMessage);
+            }
+            else if (_game != null)
+            {
+                _game.SetTutorialStatusMessage(firstWaveIncomingMessage + continuePromptSuffix);
+            }
+
+            if (_game != null)
+            {
+                _game.ShowTutorialHudNotice(firstWaveIncomingNotice, HudNoticeTone.Warning);
+                _game.SetTutorialPaused(true, () =>
+                {
+                    _waitingForResume = false;
+                    if (useBubble) commanderBubble.Hide();
+                    cameraDirector.ReturnToOrigin();
+                });
+            }
+        });
     }
 
     private void ShowSideLaneMarker()
@@ -367,6 +501,36 @@ public sealed class Level01TutorialDirector : MonoBehaviour
     private void HideSideLaneMarker()
     {
         _sideLaneMarker?.Hide();
+    }
+
+    private void HideHudCardPanels()
+    {
+        string[] panelNames = { "SelectionCard", "StructureStatusCard" };
+        Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        for (int c = 0; c < canvases.Length; c++)
+        {
+            Transform root = canvases[c].transform;
+            for (int i = 0; i < panelNames.Length; i++)
+            {
+                Transform panel = FindDeepChild(root, panelNames[i]);
+                if (panel != null)
+                {
+                    panel.gameObject.SetActive(false);
+                }
+            }
+        }
+    }
+
+    private static Transform FindDeepChild(Transform parent, string childName)
+    {
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            Transform child = parent.GetChild(i);
+            if (child.name == childName) return child;
+            Transform found = FindDeepChild(child, childName);
+            if (found != null) return found;
+        }
+        return null;
     }
 
     private bool TryGetSideLaneMarkerWorldPosition(out Vector3 worldPosition)
