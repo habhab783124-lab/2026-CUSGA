@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -18,6 +19,14 @@ public enum TowerType
     SingleTarget,
     SlowField,
     Bombard
+}
+
+public enum TowerTutorialAvailability
+{
+    Default,
+    Locked,
+    Available,
+    Recommended
 }
 
 /// <summary>
@@ -432,6 +441,11 @@ public class TowerDefenseGame : MonoBehaviour
     public bool CanPreviewTowerCard(TowerType towerType)
     {
         return towerType != TowerType.None && !IsGameOver && !IsTowerLockedByTutorial(towerType);
+    }
+
+    private bool IsTowerLockedByTutorial(TowerType towerType)
+    {
+        return GetTutorialTowerAvailability(towerType) == TowerTutorialAvailability.Locked;
     }
 
     public void ApplyTutorialTowerAvailability(
@@ -1121,6 +1135,7 @@ public class TowerDefenseGame : MonoBehaviour
                 ? _powerGridCoordinator.GetHudSnapshot()
                 : new PowerGridHudSnapshot(0, 0, 0, 0, 0, 0, 0, string.Empty),
             canAffordTower: CanAffordTower,
+            tutorialTowerAvailabilityQuery: GetTutorialTowerAvailability,
             refreshStarterZoneMarker: () => _placementSupportCoordinator?.RefreshStarterZoneMarker());
         _hudPresenter.SetTheme(hudTheme.ToRuntimeTheme());
         _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());
