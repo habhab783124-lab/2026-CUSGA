@@ -166,7 +166,7 @@ namespace TowerDefense.Editor
         internal const string Level02ScenePath = "Assets/Scenes/Level02.unity";
         internal const string Level03ScenePath = "Assets/Scenes/Level03.unity";
         internal const string Level04ScenePath = "Assets/Scenes/Level04.unity";
-        internal const string FinalLevel01ScenePath = "Assets/Scenes/level 1.unity";
+        internal const string FinalLevel01ScenePath = "Assets/Scenes/Tutorial Level.unity";
         internal const string FinalLevel02ScenePath = "Assets/Scenes/Level 2.unity";
         internal const string FinalLevel03ScenePath = "Assets/Scenes/Level 3.unity";
         internal const string FinalLevel04ScenePath = "Assets/Scenes/level 4.unity";
@@ -911,7 +911,6 @@ namespace TowerDefense.Editor
             EnsureNamedRoot(targetScene, "PlacedTowers");
             EnsureNamedRoot(targetScene, "PlacementPreviewRoot");
             EnsureNamedRoot(targetScene, "EnemiesRoot");
-            TMP_Text selectionText = EnsureSelectionHudCompatibility(targetScene);
 
             TowerDefenseGame targetGame = FindFirstComponentInScene<TowerDefenseGame>(targetScene);
             if (targetGame != null)
@@ -929,8 +928,6 @@ namespace TowerDefense.Editor
                 AssignObjectReferenceByName(serializedGame, "scrapTextReference", FindTextByName(targetScene, "ScrapText"));
                 AssignObjectReferenceByName(serializedGame, "baseHealthTextReference", FindTextByName(targetScene, "BaseHealthText"));
                 AssignObjectReferenceByName(serializedGame, "waveTextReference", FindTextByName(targetScene, "WaveText"));
-                AssignObjectReferenceByName(serializedGame, "selectionTextReference", selectionText);
-                AssignObjectReferenceByName(serializedGame, "structureStatusTextReference", FindTextByName(targetScene, "StructureStatusText"));
                 AssignObjectReferenceByName(serializedGame, "relayTowerButtonReference", FindComponentByName<Button>(targetScene, "RelayTowerButton"));
                 AssignObjectReferenceByName(serializedGame, "defenseTowerButtonReference", FindComponentByName<Button>(targetScene, "DefenseTowerButton"));
                 AssignObjectReferenceByName(serializedGame, "slowFieldTowerButtonReference", FindComponentByName<Button>(targetScene, "SlowFieldTowerButton"));
@@ -1140,7 +1137,6 @@ namespace TowerDefense.Editor
                 "ScrapText",
                 "BaseHealthText",
                 "WaveText",
-                "SelectionText",
                 "GameOverTitle",
                 "GameOverHint",
                 "RelayIconText",

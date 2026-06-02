@@ -25,7 +25,7 @@ namespace TowerDefense.Editor
 
         public static readonly string[] FormalLevelScenePaths =
         {
-            "Assets/Scenes/level 1.unity",
+            "Assets/Scenes/Tutorial Level.unity",
             "Assets/Scenes/Level 2.unity",
             "Assets/Scenes/Level 3.unity",
             "Assets/Scenes/level 4.unity"
