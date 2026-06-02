@@ -18,12 +18,12 @@ MonoBehaviour:
     spawnGroups:
     - enemyType: 2
       enemyCount: 3
-      spawnInterval: 0.59895
+      spawnInterval: 2
       enemyPathReference: {fileID: 0}
       pathSequence: 0
     - enemyType: 1
       enemyCount: 4
-      spawnInterval: 1.0182151
+      spawnInterval: 1
       enemyPathReference: {fileID: 0}
       pathSequence: 0
   - displayName: "\u7B2C 02 \u6CE2"

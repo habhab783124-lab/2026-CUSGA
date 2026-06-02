@@ -30,7 +30,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.4447842, y: 0.4447842, z: 0.49420467}
+  m_LocalScale: {x: 0.2547855, y: 0.2547855, z: 0.283095}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2119000001}
@@ -79,7 +79,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 324
-  m_Sprite: {fileID: 21300000, guid: 8ef8982aef8003f40bc893f894257a2e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 1f595d310aff461489a703a571324ee6, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -157,9 +157,9 @@ MonoBehaviour:
     signatureVerticalBobAmplitude: 0
     signatureVerticalBobSpeed: 2
   slowFieldTuning:
-    attackRange: 2.8
+    attackRange: 3.2
     attackRangePerUpgrade: 0.3
-    attackInterval: 1
+    attackInterval: 1.5
     attackIntervalPerUpgradeDelta: -0.05
     baseDamage: 0
     damagePerUpgrade: 1
@@ -172,7 +172,7 @@ MonoBehaviour:
     powerRequiredPerUpgrade: 1
     upgradeCostBase: 34
     upgradeCostPerLevel: 16
-    slowMultiplier: 0.7
+    slowMultiplier: 0.6
     slowMultiplierPerUpgradeDelta: -0.08
     slowDuration: 1.25
     slowDurationPerUpgrade: 0.25

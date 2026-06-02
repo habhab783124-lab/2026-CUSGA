@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -19,14 +18,6 @@ public enum TowerType
     SingleTarget,
     SlowField,
     Bombard
-}
-
-public enum TowerTutorialAvailability
-{
-    Default,
-    Locked,
-    Available,
-    Recommended
 }
 
 /// <summary>
@@ -406,6 +397,7 @@ public class TowerDefenseGame : MonoBehaviour
     private const float DemolishRefundRatio = 0.5f;
     private const string VictoryResultPagePrefabResourcePath = "TowerDefense/UI/VictoryResultPage";
     private const string DefaultTutorialLockedTowerStatusMessage = "指挥中心：当前阶段尚未批准部署该塔型，先完成当前指引。";
+    private const string FailureResultPagePrefabResourcePath = "TowerDefense/UI/FailureResultPage";
     private readonly Dictionary<TowerType, TowerTutorialAvailability> _tutorialTowerAvailability = new Dictionary<TowerType, TowerTutorialAvailability>(4);
     private bool _hasTutorialTowerAvailabilityOverrides;
     private string _tutorialLockedTowerStatusMessage = DefaultTutorialLockedTowerStatusMessage;
@@ -566,10 +558,6 @@ public class TowerDefenseGame : MonoBehaviour
 
         _placementVisualController?.Dispose();
         _placementVisualController = null;
-        _tutorialTowerAvailability.Clear();
-        _hasTutorialTowerAvailabilityOverrides = false;
-        _tutorialFailureCommanderLineOverride = string.Empty;
-        _tutorialFailureFollowUpLineOverride = string.Empty;
 
         if (Instance == this)
         {
@@ -650,11 +638,6 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     public bool BeginPlacementDrag(TowerType towerType, Vector2 screenPosition)
     {
-        if (!CanInteractWithTutorialTower(towerType))
-        {
-            return false;
-        }
-
         return _placementInteractionController != null &&
                _placementInteractionController.BeginPlacementDrag(towerType, screenPosition);
     }
@@ -800,11 +783,6 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     public void SelectRelayTower()
     {
-        if (!CanInteractWithTutorialTower(TowerType.Relay))
-        {
-            return;
-        }
-
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectRelayTower();
         RefreshHud();
@@ -815,11 +793,6 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     public void SelectDefenseTower()
     {
-        if (!CanInteractWithTutorialTower(TowerType.SingleTarget))
-        {
-            return;
-        }
-
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectSingleTargetTower();
         RefreshHud();
@@ -827,11 +800,6 @@ public class TowerDefenseGame : MonoBehaviour
 
     public void SelectSlowFieldTower()
     {
-        if (!CanInteractWithTutorialTower(TowerType.SlowField))
-        {
-            return;
-        }
-
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectSlowFieldTower();
         RefreshHud();
@@ -839,11 +807,6 @@ public class TowerDefenseGame : MonoBehaviour
 
     public void SelectBombardTower()
     {
-        if (!CanInteractWithTutorialTower(TowerType.Bombard))
-        {
-            return;
-        }
-
         ClearPlacedStructureSelection();
         _placementInteractionController?.SelectBombardTower();
         RefreshHud();
@@ -864,27 +827,6 @@ public class TowerDefenseGame : MonoBehaviour
     /// 判断当前废料是否足够支付指定塔型的造价。
     /// `None` 永远视为不可购买，这样可以避免“未选中状态”误走通过分支。
     /// </summary>
-    private bool CanInteractWithTutorialTower(TowerType towerType)
-    {
-        if (towerType == TowerType.None)
-        {
-            return true;
-        }
-
-        if (!IsTowerLockedByTutorial(towerType))
-        {
-            return true;
-        }
-
-        SetTutorialStatusMessage(_tutorialLockedTowerStatusMessage);
-        return false;
-    }
-
-    private bool IsTowerLockedByTutorial(TowerType towerType)
-    {
-        return GetTutorialTowerAvailability(towerType) == TowerTutorialAvailability.Locked;
-    }
-
     public bool CanAffordTower(TowerType towerType)
     {
         if (towerType == TowerType.None)
@@ -1179,7 +1121,6 @@ public class TowerDefenseGame : MonoBehaviour
                 ? _powerGridCoordinator.GetHudSnapshot()
                 : new PowerGridHudSnapshot(0, 0, 0, 0, 0, 0, 0, string.Empty),
             canAffordTower: CanAffordTower,
-            tutorialTowerAvailabilityQuery: GetTutorialTowerAvailability,
             refreshStarterZoneMarker: () => _placementSupportCoordinator?.RefreshStarterZoneMarker());
         _hudPresenter.SetTheme(hudTheme.ToRuntimeTheme());
         _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());
@@ -1910,11 +1851,6 @@ public class TowerDefenseGame : MonoBehaviour
     /// </summary>
     public void PrewarmPlacementAreaOverlay(TowerType towerType)
     {
-        if (!CanPreviewTowerCard(towerType))
-        {
-            return;
-        }
-
         _placementSupportCoordinator?.PrewarmPlacementAreaOverlay(towerType);
     }
 
@@ -2067,7 +2003,6 @@ public class TowerDefenseGame : MonoBehaviour
         _placementPreviewRoot = bootstrapResult.PlacementPreviewRoot;
         _battlefieldMapDefinition = battlefieldMapReference != null ? battlefieldMapReference : FindFirstObjectByType<BattlefieldMapDefinition>();
         _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());
-        EnsureVictoryResultPageView();
 
         mainCameraReference = _mainCamera;
         buildZoneReference = _buildZone;
@@ -2092,25 +2027,23 @@ public class TowerDefenseGame : MonoBehaviour
         }
     }
 
-    private void EnsureVictoryResultPageView()
+    private void EnsureVictoryResultPageView(VictoryResultPageView.ResultPageTone tone)
     {
+        // Destroy any existing page view with the wrong prefab origin.
         if (victoryResultPageViewReference != null)
         {
-            return;
+            Destroy(victoryResultPageViewReference.gameObject);
+            victoryResultPageViewReference = null;
         }
 
-        VictoryResultPageView existingView = FindFirstObjectByType<VictoryResultPageView>(FindObjectsInactive.Include);
-        if (existingView != null)
-        {
-            victoryResultPageViewReference = existingView;
-            victoryResultPageViewReference.Hide();
-            return;
-        }
+        string resourcePath = tone == VictoryResultPageView.ResultPageTone.Failure
+            ? FailureResultPagePrefabResourcePath
+            : VictoryResultPagePrefabResourcePath;
 
-        GameObject prefabRoot = Resources.Load<GameObject>(VictoryResultPagePrefabResourcePath);
+        GameObject prefabRoot = Resources.Load<GameObject>(resourcePath);
         if (prefabRoot == null)
         {
-            Debug.LogWarning($"TowerDefenseGame could not load VictoryResultPage prefab from Resources path '{VictoryResultPagePrefabResourcePath}'.", this);
+            Debug.LogWarning($"TowerDefenseGame could not load result page prefab from Resources path '{resourcePath}'.", this);
             return;
         }
 
@@ -2121,9 +2054,6 @@ public class TowerDefenseGame : MonoBehaviour
         VictoryResultPageView instantiatedView = instantiatedRoot.GetComponent<VictoryResultPageView>();
         if (instantiatedView == null)
         {
-            // The runtime page should stay recoverable even if the prefab was authored before the
-            // formal page view script existed. Adding the component here keeps old prefab copies
-            // usable while we continue refining the visual asset.
             instantiatedView = instantiatedRoot.AddComponent<VictoryResultPageView>();
         }
 
@@ -2133,7 +2063,7 @@ public class TowerDefenseGame : MonoBehaviour
 
     private void ShowFormalVictoryPresentation()
     {
-        EnsureVictoryResultPageView();
+        EnsureVictoryResultPageView(VictoryResultPageView.ResultPageTone.Victory);
         if (victoryResultPageViewReference != null)
         {
             victoryResultPageViewReference.BindContinueAction(ContinueAfterVictoryPresentation);
@@ -2148,7 +2078,7 @@ public class TowerDefenseGame : MonoBehaviour
 
     private void ShowFormalGameOverPresentation()
     {
-        EnsureVictoryResultPageView();
+        EnsureVictoryResultPageView(VictoryResultPageView.ResultPageTone.Failure);
         if (victoryResultPageViewReference != null)
         {
             victoryResultPageViewReference.BindContinueAction(RetryAfterFailurePresentation);
@@ -2200,14 +2130,9 @@ public class TowerDefenseGame : MonoBehaviour
         int currentScrap = _sessionState != null ? _sessionState.CurrentScrap : 0;
         int currentWave = _sessionState != null ? _sessionState.CurrentWave : 0;
         int totalWaves = _sessionState != null ? _sessionState.TotalWaves : 0;
-        string commanderLine = !string.IsNullOrWhiteSpace(_tutorialFailureCommanderLineOverride)
-            ? _tutorialFailureCommanderLineOverride
-            : integrityPercent <= 0
-                ? "核心防区已经失守，我们丢掉了整条前线。"
-                : "敌军已经撕开防线，当前部署没能把战区稳住。";
-        string followUpLine = !string.IsNullOrWhiteSpace(_tutorialFailureFollowUpLineOverride)
-            ? _tutorialFailureFollowUpLineOverride
-            : "放弃旧部署思路，立刻重算塔位、供电和火力覆盖，马上回到战区。";
+        string commanderLine = integrityPercent <= 0
+            ? "核心防区已经失守，我们丢掉了整条前线。"
+            : "敌军已经撕开防线，当前部署没能把战区稳住。";
 
         return new VictoryResultPageContent(
             tone: VictoryResultPageView.ResultPageTone.Failure,
@@ -2223,7 +2148,7 @@ public class TowerDefenseGame : MonoBehaviour
             footerHint: "立即重组部署序列",
             commanderName: "指挥官",
             commanderCodename: "前线总控 / C-07",
-            dialogueText: commanderLine + "\n" + followUpLine,
+            dialogueText: commanderLine + "\n放弃旧部署思路，立刻重算塔位、供电和火力覆盖，马上回到战区。",
             continueButtonText: "紧急重部署",
             continueHintText: "点击按钮或任意位置，立即回到当前关卡");
     }
