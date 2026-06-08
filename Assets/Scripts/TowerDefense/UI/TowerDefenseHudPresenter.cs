@@ -156,16 +156,40 @@ public readonly struct TowerDefenseHudState
 
 public readonly struct PlacedStructureHudState
 {
-    public PlacedStructureHudState(bool hasSelection, string title, string details)
+    public PlacedStructureHudState(
+        bool hasSelection,
+        string title,
+        string details,
+        int currentLevel = 1,
+        int maxLevel = 4,
+        bool canUpgrade = false,
+        int upgradeCost = 0,
+        bool hasMechanicalUpgrade = false,
+        string nextMechanicalUpgradeDescription = "",
+        string currentMechanicalUpgradeDescription = "")
     {
         HasSelection = hasSelection;
         Title = title ?? string.Empty;
         Details = details ?? string.Empty;
+        CurrentLevel = currentLevel;
+        MaxLevel = maxLevel;
+        CanUpgrade = canUpgrade;
+        UpgradeCost = upgradeCost;
+        HasMechanicalUpgrade = hasMechanicalUpgrade;
+        NextMechanicalUpgradeDescription = nextMechanicalUpgradeDescription ?? string.Empty;
+        CurrentMechanicalUpgradeDescription = currentMechanicalUpgradeDescription ?? string.Empty;
     }
 
     public bool HasSelection { get; }
     public string Title { get; }
     public string Details { get; }
+    public int CurrentLevel { get; }
+    public int MaxLevel { get; }
+    public bool CanUpgrade { get; }
+    public int UpgradeCost { get; }
+    public bool HasMechanicalUpgrade { get; }
+    public string NextMechanicalUpgradeDescription { get; }
+    public string CurrentMechanicalUpgradeDescription { get; }
 }
 
 /// <summary>
@@ -326,6 +350,7 @@ public sealed class TowerDefenseHudPresenter
     private TMP_Text _bombardTowerButtonText;
     private TMP_Text _clearSelectionButtonText;
     private TMP_Text _demolishSelectedStructureButtonText;
+    private TMP_Text _upgradeSelectedStructureButtonText;
     private TMP_Text _dragPreviewLabel;
 
     private Button _relayTowerButton;
@@ -334,6 +359,9 @@ public sealed class TowerDefenseHudPresenter
     private Button _bombardTowerButton;
     private Button _clearSelectionButton;
     private Button _demolishSelectedStructureButton;
+    private Button _upgradeSelectedStructureButton;
+    private TowerInfoPopup _towerInfoPopup;
+    private bool _infoPopupOnlyMode;
     private GameObject _gameOverPanel;
     private GameObject _dragPreviewPanel;
     private GameObject _topBarRoot;
@@ -491,6 +519,31 @@ public sealed class TowerDefenseHudPresenter
             _demolishSelectedStructureButtonText = _demolishSelectedStructureButton.GetComponentInChildren<TMP_Text>(true);
         }
 
+        if (_upgradeSelectedStructureButton == null)
+        {
+            _upgradeSelectedStructureButton = FindButtonByName("UpgradeSelectedStructureButton");
+        }
+
+        if (_upgradeSelectedStructureButton == null)
+        {
+            _upgradeSelectedStructureButton = CreateRuntimeUpgradeButton();
+        }
+
+        if (_upgradeSelectedStructureButtonText == null && _upgradeSelectedStructureButton != null)
+        {
+            _upgradeSelectedStructureButtonText = _upgradeSelectedStructureButton.GetComponentInChildren<TMP_Text>(true);
+        }
+
+        if (_towerInfoPopup == null)
+        {
+            _towerInfoPopup = Object.FindFirstObjectByType<TowerInfoPopup>(FindObjectsInactive.Include);
+        }
+
+        if (_towerInfoPopup == null)
+        {
+            _towerInfoPopup = CreateRuntimeTowerInfoPopup();
+        }
+
         EnsureDragPreviewDoesNotBlockRaycasts();
         CacheSceneAuthoredTextTemplates();
         CaptureOptionalHudRoots();
@@ -506,6 +559,7 @@ public sealed class TowerDefenseHudPresenter
         WarnIfMissing(_bombardTowerButton, "BombardTowerButton");
         WarnIfMissing(_clearSelectionButton, "ClearSelectionButton");
         WarnIfMissing(_demolishSelectedStructureButton, "DeleteSelectedStructureButton");
+        WarnIfMissing(_upgradeSelectedStructureButton, "UpgradeSelectedStructureButton");
         WarnIfMissing(_gameOverPanel, "GameOverPanel");
         WarnIfMissing(_gameOverTitle, "GameOverTitle");
         WarnIfMissing(_gameOverHint, "GameOverHint");
@@ -693,12 +747,12 @@ public sealed class TowerDefenseHudPresenter
             _waveText.text = BuildSceneMetricText(_waveTextTemplate, "Wave", waveDisplay);
         }
 
-        if (_selectionText != null)
+        if (_selectionText != null && !_infoPopupOnlyMode)
         {
             _selectionText.text = BuildSelectionBlock(state, towerCatalog);
         }
 
-        if (_structureStatusText != null)
+        if (_structureStatusText != null && !_infoPopupOnlyMode)
         {
             _structureStatusText.text = BuildStructureStatusBlock(state);
         }
@@ -847,6 +901,201 @@ public sealed class TowerDefenseHudPresenter
         }
     }
 
+    public void SetUpgradeSelectedStructureButtonVisible(bool visible)
+    {
+        if (_upgradeSelectedStructureButton != null)
+        {
+            _upgradeSelectedStructureButton.gameObject.SetActive(visible);
+        }
+    }
+
+    public void SetUpgradeSelectedStructureButtonInteractable(bool interactable)
+    {
+        if (_upgradeSelectedStructureButton != null)
+        {
+            _upgradeSelectedStructureButton.interactable = interactable;
+        }
+    }
+
+    public void SetUpgradeSelectedStructureButtonLabel(string label)
+    {
+        if (_upgradeSelectedStructureButtonText != null)
+        {
+            _upgradeSelectedStructureButtonText.text = label ?? string.Empty;
+        }
+    }
+
+    public void BindUpgradeSelectedStructureButton(Action onClick)
+    {
+        if (_upgradeSelectedStructureButton == null)
+        {
+            return;
+        }
+
+        _upgradeSelectedStructureButton.onClick.RemoveAllListeners();
+        if (onClick != null)
+        {
+            _upgradeSelectedStructureButton.onClick.AddListener(() => onClick());
+        }
+    }
+
+    // ────────────────────────────
+    //  Tower Info Popup
+    // ────────────────────────────
+
+    public void ShowPlacedTowerInfoPopup(
+        string title,
+        string stats,
+        string extra,
+        Vector3 worldPosition)
+    {
+        if (_towerInfoPopup == null) return;
+        _towerInfoPopup.ShowAtWorldPosition(worldPosition, title, stats, extra);
+    }
+
+    public void ShowShopCardInfoPopup(
+        string title,
+        string stats,
+        string extra,
+        RectTransform cardRect)
+    {
+        if (_towerInfoPopup == null) return;
+        _towerInfoPopup.ShowAboveRect(cardRect, title, stats, extra);
+    }
+
+    public void HideTowerInfoPopup()
+    {
+        if (_towerInfoPopup == null) return;
+        _towerInfoPopup.Hide();
+    }
+
+    /// <summary>
+    /// Returns the RectTransform of the shop card button for the given tower type,
+    /// so the info popup can be positioned above the card.
+    /// </summary>
+    public RectTransform GetShopCardRect(TowerType towerType)
+    {
+        Button cardButton = null;
+        switch (towerType)
+        {
+            case TowerType.Relay: cardButton = _relayTowerButton; break;
+            case TowerType.SingleTarget: cardButton = _defenseTowerButton; break;
+            case TowerType.SlowField: cardButton = _slowFieldTowerButton; break;
+            case TowerType.Bombard: cardButton = _bombardTowerButton; break;
+        }
+
+        return cardButton != null ? cardButton.GetComponent<RectTransform>() : null;
+    }
+
+    /// <summary>
+    /// Hide the popup and also stop the top-bar text fields from showing selection
+    /// info. The popup is now the only place where detailed tower info lives.
+    /// </summary>
+    public void ApplyInfoPopupOnlyMode()
+    {
+        _infoPopupOnlyMode = true;
+
+        if (_selectionText != null)
+        {
+            _selectionText.text = string.Empty;
+        }
+
+        if (_structureStatusText != null)
+        {
+            _structureStatusText.text = string.Empty;
+        }
+    }
+
+    private TowerInfoPopup CreateRuntimeTowerInfoPopup()
+    {
+        Canvas targetCanvas = ResolveHudCanvas();
+        if (targetCanvas == null) return null;
+
+        GameObject popupObject = new GameObject("TowerInfoPopup");
+        popupObject.transform.SetParent(targetCanvas.transform, false);
+
+        RectTransform rect = popupObject.AddComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0f, 1f);
+        rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.sizeDelta = new Vector2(280f, 160f);
+
+        Image bg = popupObject.AddComponent<Image>();
+        bg.color = new Color(0.08f, 0.09f, 0.13f, 0.94f);
+
+        // Shadow / outline via a second image behind
+        GameObject shadowObject = new GameObject("Shadow");
+        shadowObject.transform.SetParent(popupObject.transform, false);
+        shadowObject.transform.SetAsFirstSibling();
+        RectTransform shadowRect = shadowObject.AddComponent<RectTransform>();
+        shadowRect.anchorMin = Vector2.zero;
+        shadowRect.anchorMax = Vector2.one;
+        shadowRect.offsetMin = new Vector2(-3f, -3f);
+        shadowRect.offsetMax = new Vector2(3f, 3f);
+        Image shadowBg = shadowObject.AddComponent<Image>();
+        shadowBg.color = new Color(0f, 0f, 0f, 0.6f);
+        shadowBg.raycastTarget = false;
+
+        // Title
+        GameObject titleObj = CreatePopupTextObject("Title", popupObject.transform, 22f, FontStyles.Bold);
+        RectTransform titleRect = titleObj.GetComponent<RectTransform>();
+        titleRect.anchorMin = new Vector2(0f, 1f);
+        titleRect.anchorMax = new Vector2(1f, 1f);
+        titleRect.pivot = new Vector2(0f, 1f);
+        titleRect.anchoredPosition = new Vector2(14f, -12f);
+        titleRect.sizeDelta = new Vector2(-28f, 32f);
+        TMP_Text titleText = titleObj.GetComponent<TMP_Text>();
+
+        // Stats
+        GameObject statsObj = CreatePopupTextObject("Stats", popupObject.transform, 18f, FontStyles.Normal);
+        RectTransform statsRect = statsObj.GetComponent<RectTransform>();
+        statsRect.anchorMin = new Vector2(0f, 1f);
+        statsRect.anchorMax = new Vector2(1f, 1f);
+        statsRect.pivot = new Vector2(0f, 1f);
+        statsRect.anchoredPosition = new Vector2(14f, -48f);
+        statsRect.sizeDelta = new Vector2(-28f, 70f);
+        TMP_Text statsText = statsObj.GetComponent<TMP_Text>();
+        statsText.color = new Color(0.82f, 0.87f, 0.92f, 1f);
+
+        // Extra
+        GameObject extraObj = CreatePopupTextObject("Extra", popupObject.transform, 15f, FontStyles.Normal);
+        RectTransform extraRect = extraObj.GetComponent<RectTransform>();
+        extraRect.anchorMin = new Vector2(0f, 1f);
+        extraRect.anchorMax = new Vector2(1f, 1f);
+        extraRect.pivot = new Vector2(0f, 1f);
+        extraRect.anchoredPosition = new Vector2(14f, -128f);
+        extraRect.sizeDelta = new Vector2(-28f, 28f);
+        TMP_Text extraText = extraObj.GetComponent<TMP_Text>();
+        extraText.color = new Color(0.58f, 0.78f, 0.96f, 1f);
+
+        // Wire up the TowerInfoPopup component
+        TowerInfoPopup popup = popupObject.AddComponent<TowerInfoPopup>();
+        // Use reflection or a setup method to assign the serialized fields
+        // Since we're creating at runtime and the fields are private, we use a runtime init path
+        popup.ConstructRuntime(
+            panelBackground: bg,
+            titleText: titleText,
+            statsText: statsText,
+            extraText: extraText);
+
+        popupObject.SetActive(false);
+        return popup;
+    }
+
+    private static GameObject CreatePopupTextObject(string name, Transform parent, float fontSize, FontStyles fontStyle)
+    {
+        GameObject obj = new GameObject(name);
+        obj.transform.SetParent(parent, false);
+        obj.AddComponent<RectTransform>();
+        TMP_Text text = obj.AddComponent<TextMeshProUGUI>();
+        text.fontSize = fontSize;
+        text.fontStyle = fontStyle;
+        text.color = new Color(1f, 0.98f, 0.94f, 1f);
+        text.raycastTarget = false;
+        text.alignment = TextAlignmentOptions.TopLeft;
+        return obj;
+    }
+
     /// <summary>
     /// 在真正跨场景过渡前，把塔防 HUD 与结果面板统一隐藏。
     ///
@@ -867,7 +1116,9 @@ public sealed class TowerDefenseHudPresenter
         SetActiveIfPresent(_bombardTowerButton, false);
         SetActiveIfPresent(_clearSelectionButton, false);
         SetActiveIfPresent(_demolishSelectedStructureButton, false);
+        SetActiveIfPresent(_upgradeSelectedStructureButton, false);
         SetActiveIfPresent(_dragPreviewPanel, false);
+        HideTowerInfoPopup();
         SetActiveIfPresent(_gameOverPanel, false);
     }
 
@@ -963,6 +1214,57 @@ public sealed class TowerDefenseHudPresenter
         label.fontSize = 26f;
         label.alignment = TextAlignmentOptions.Center;
         label.color = new Color(1f, 0.96f, 0.96f, 1f);
+        label.raycastTarget = false;
+
+        buttonObject.SetActive(false);
+        return button;
+    }
+
+    private Button CreateRuntimeUpgradeButton()
+    {
+        Canvas targetCanvas = ResolveHudCanvas();
+        if (targetCanvas == null)
+        {
+            return null;
+        }
+
+        GameObject buttonObject = new GameObject("UpgradeSelectedStructureButton");
+        buttonObject.transform.SetParent(targetCanvas.transform, false);
+
+        RectTransform rectTransform = buttonObject.AddComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(1f, 1f);
+        rectTransform.anchorMax = new Vector2(1f, 1f);
+        rectTransform.pivot = new Vector2(1f, 1f);
+        rectTransform.anchoredPosition = new Vector2(-24f, -78f);
+        rectTransform.sizeDelta = new Vector2(172f, 46f);
+
+        Image background = buttonObject.AddComponent<Image>();
+        background.color = new Color(0.18f, 0.54f, 0.86f, 0.96f);
+        background.raycastTarget = true;
+
+        Button button = buttonObject.AddComponent<Button>();
+        ColorBlock colors = button.colors;
+        colors.normalColor = background.color;
+        colors.highlightedColor = new Color(0.24f, 0.64f, 0.96f, 1f);
+        colors.pressedColor = new Color(0.14f, 0.42f, 0.72f, 1f);
+        colors.selectedColor = colors.highlightedColor;
+        colors.disabledColor = new Color(0.18f, 0.22f, 0.32f, 0.5f);
+        button.colors = colors;
+        button.transition = Selectable.Transition.ColorTint;
+
+        GameObject labelObject = new GameObject("Label");
+        labelObject.transform.SetParent(buttonObject.transform, false);
+        RectTransform labelRect = labelObject.AddComponent<RectTransform>();
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+
+        TMP_Text label = labelObject.AddComponent<TextMeshProUGUI>();
+        label.text = "Upgrade";
+        label.fontSize = 24f;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = new Color(1f, 0.98f, 0.96f, 1f);
         label.raycastTarget = false;
 
         buttonObject.SetActive(false);

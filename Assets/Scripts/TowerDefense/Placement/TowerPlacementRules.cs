@@ -171,7 +171,11 @@ public sealed class TowerPlacementRules
             return false;
         }
 
-        if (OverlapsExistingStructureGrid(footprintCells, shouldIgnoreTransform, out invalidReason))
+        // Use the candidate's full no-build cells (footprint + expansion square) for
+        // the overlap check so the dragged square visual matches the actual validation.
+        BoundsInt candidateNoBuildCells = _placementGrid.GetNoBuildCells(
+            worldPosition, towerType, ResolveNoBuildSquareSize(towerType));
+        if (OverlapsExistingStructureGrid(candidateNoBuildCells, shouldIgnoreTransform, out invalidReason))
         {
             return false;
         }

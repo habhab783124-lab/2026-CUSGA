@@ -1139,6 +1139,8 @@ public class TowerDefenseGame : MonoBehaviour
             refreshStarterZoneMarker: () => _placementSupportCoordinator?.RefreshStarterZoneMarker());
         _hudPresenter.SetTheme(hudTheme.ToRuntimeTheme());
         _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());
+        _hudPresenter.BindUpgradeSelectedStructureButton(() => TryUpgradeSelectedStructure());
+        _hudPresenter.ApplyInfoPopupOnlyMode();
         _presentationCoordinator.BindPresentation(_hudPresenter, _towerCatalog);
         _sceneBootstrapper = new TowerDefenseSceneBootstrapper();
         InitializeAudioCoordinator();
@@ -1167,7 +1169,8 @@ public class TowerDefenseGame : MonoBehaviour
             starterZoneMarkerSortingOrder,
             GetPrototype,
             GetTowerDisplayName,
-            GetPlacementRadius);
+            GetPlacementRadius,
+            GetExpansionSquareSize);
 
         _placementVisualController.BindPlacementPreviewRoot(_placementPreviewRoot);
         _placementInteractionController?.BindPresentation(_placementVisualController, _hudPresenter, _towerCatalog);
@@ -1251,7 +1254,255 @@ public class TowerDefenseGame : MonoBehaviour
     {
         RefreshSelectedStructureRangeVisualization();
         _hudPresenter?.SetDemolishSelectedStructureButtonVisible(HasSelectedPlacedStructure());
+        RefreshUpgradeButton();
+        RefreshTowerInfoPopup();
         _presentationCoordinator?.RefreshHud();
+    }
+
+    private void RefreshTowerInfoPopup()
+    {
+        if (_hudPresenter == null) return;
+
+        // Placed tower selected → show at tower's world position
+        if (_selectedDefenseTower != null)
+        {
+            BuildDefenseTowerInfoContent(_selectedDefenseTower,
+                out string title, out string stats, out string extra);
+            _hudPresenter.ShowPlacedTowerInfoPopup(
+                title, stats, extra, _selectedDefenseTower.transform.position);
+            return;
+        }
+
+        if (_selectedRelayTower != null)
+        {
+            BuildRelayTowerInfoContent(_selectedRelayTower,
+                out string title, out string stats, out string extra);
+            _hudPresenter.ShowPlacedTowerInfoPopup(
+                title, stats, extra, _selectedRelayTower.transform.position);
+            return;
+        }
+
+        // Shop card selected → show above the card
+        TowerType selectedType = _placementInteractionController != null
+            ? _placementInteractionController.SelectedTowerType
+            : TowerType.None;
+
+        if (selectedType != TowerType.None && selectedType != TowerType.Relay)
+        {
+            BuildShopCardInfoContent(selectedType,
+                out string title, out string stats, out string extra);
+            RectTransform cardRect = _hudPresenter.GetShopCardRect(selectedType);
+            _hudPresenter.ShowShopCardInfoPopup(title, stats, extra, cardRect);
+            return;
+        }
+
+        // Relay selected via card
+        if (selectedType == TowerType.Relay)
+        {
+            BuildRelayShopCardInfoContent(
+                out string title, out string stats, out string extra);
+            RectTransform cardRect = _hudPresenter.GetShopCardRect(TowerType.Relay);
+            _hudPresenter.ShowShopCardInfoPopup(title, stats, extra, cardRect);
+            return;
+        }
+
+        _hudPresenter.HideTowerInfoPopup();
+    }
+
+    private void BuildDefenseTowerInfoContent(
+        DefenseTower tower,
+        out string title,
+        out string stats,
+        out string extra)
+    {
+        string displayName = GetTowerDisplayName(tower.BuildType);
+        title = $"{displayName} #{tower.TowerNumber}  LV {tower.CurrentLevel}/{tower.MaxLevel}";
+
+        string powerState = tower.IsPowered ? "ONLINE" : "OFFLINE";
+        string powerLine = $"Power: {tower.PowerRequired} req  |  {powerState}";
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.AppendLine(powerLine);
+
+        switch (tower.BuildType)
+        {
+            case TowerType.SlowField:
+                sb.AppendLine($"Damage: {tower.DamagePerShot}");
+                sb.AppendLine($"Slow: {DefenseTower.GetSlowPercent(tower.SlowMultiplier):0}%");
+                sb.AppendLine($"Slow Duration: {tower.SlowDuration:0.00}s");
+                sb.AppendLine($"Attack Interval: {tower.AttackInterval:0.00}s");
+                sb.AppendLine($"Range: {tower.AttackRange:0.0}");
+                break;
+
+            case TowerType.Bombard:
+                sb.AppendLine($"Damage: {tower.DamagePerShot}");
+                sb.AppendLine($"Blast Radius: {tower.BombRadius:0.0}");
+                sb.AppendLine($"Flight Time: {tower.BombFlightTime:0.00}s");
+                sb.AppendLine($"Attack Interval: {tower.AttackInterval:0.00}s");
+                sb.AppendLine($"Range: {tower.AttackRange:0.0}");
+                break;
+
+            default: // SingleTarget
+                sb.AppendLine($"Damage: {tower.DamagePerShot}");
+                sb.AppendLine($"Attack Interval: {tower.AttackInterval:0.00}s");
+                sb.AppendLine($"Range: {tower.AttackRange:0.0}");
+                break;
+        }
+
+        sb.Length -= System.Environment.NewLine.Length; // trim trailing newline
+        stats = sb.ToString();
+
+        extra = tower.HasMechanicalUpgrade && !string.IsNullOrWhiteSpace(tower.MechanicalUpgradeDescription)
+            ? $"[M] {tower.MechanicalUpgradeDescription}"
+            : (!string.IsNullOrWhiteSpace(tower.PreviewMechanicalUpgradeDescription)
+                ? $"Next LV unlocks: {tower.PreviewMechanicalUpgradeDescription}"
+                : null);
+    }
+
+    private void BuildRelayTowerInfoContent(
+        RelayTower relay,
+        out string title,
+        out string stats,
+        out string extra)
+    {
+        title = $"Relay #{relay.RelayNumber}  LV {relay.CurrentLevel}/{relay.MaxLevel}";
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Supply: {relay.RemainingCapacity} / {relay.SupplyCapacity}");
+        sb.AppendLine($"Coverage: {relay.SupplyRange:0.0} range");
+        sb.Length -= System.Environment.NewLine.Length;
+        stats = sb.ToString();
+
+        extra = relay.HasMechanicalUpgrade && !string.IsNullOrWhiteSpace(relay.MechanicalUpgradeDescription)
+            ? $"[M] {relay.MechanicalUpgradeDescription}"
+            : (!string.IsNullOrWhiteSpace(relay.PreviewMechanicalUpgradeDescription)
+                ? $"Next LV unlocks: {relay.PreviewMechanicalUpgradeDescription}"
+                : null);
+    }
+
+    private void BuildShopCardInfoContent(
+        TowerType towerType,
+        out string title,
+        out string stats,
+        out string extra)
+    {
+        _towerCatalog.TryGetDefinition(towerType, out TowerDefinition def);
+        GameObject prototype = GetPrototype(towerType);
+        DefenseTower protoTower = prototype != null ? prototype.GetComponent<DefenseTower>() : null;
+
+        title = def != null ? def.DisplayName : towerType.ToString();
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Cost: {GetTowerCost(towerType)} SCRAP");
+
+        if (protoTower != null)
+        {
+            sb.AppendLine($"Power Required: {protoTower.PowerRequired}");
+
+            switch (towerType)
+            {
+                case TowerType.SlowField:
+                    sb.AppendLine($"Damage: {protoTower.DamagePerShot}");
+                    sb.AppendLine($"Slow: {DefenseTower.GetSlowPercent(protoTower.SlowMultiplier):0}%");
+                    sb.AppendLine($"Slow Duration: {protoTower.SlowDuration:0.00}s");
+                    sb.AppendLine($"Interval: {protoTower.AttackInterval:0.00}s");
+                    sb.AppendLine($"Range: {protoTower.AttackRange:0.0}");
+                    break;
+
+                case TowerType.Bombard:
+                    sb.AppendLine($"Damage: {protoTower.DamagePerShot}");
+                    sb.AppendLine($"Blast Radius: {protoTower.BombRadius:0.0}");
+                    sb.AppendLine($"Flight Time: {protoTower.BombFlightTime:0.00}s");
+                    sb.AppendLine($"Interval: {protoTower.AttackInterval:0.00}s");
+                    sb.AppendLine($"Range: {protoTower.AttackRange:0.0}");
+                    break;
+
+                default: // SingleTarget
+                    sb.AppendLine($"Damage: {protoTower.DamagePerShot}");
+                    sb.AppendLine($"Interval: {protoTower.AttackInterval:0.00}s");
+                    sb.AppendLine($"Range: {protoTower.AttackRange:0.0}");
+                    break;
+            }
+        }
+
+        sb.Length -= System.Environment.NewLine.Length;
+        stats = sb.ToString();
+
+        extra = def != null ? def.CardRoleSummary : null;
+    }
+
+    private void BuildRelayShopCardInfoContent(
+        out string title,
+        out string stats,
+        out string extra)
+    {
+        _towerCatalog.TryGetDefinition(TowerType.Relay, out TowerDefinition def);
+        GameObject prototype = GetPrototype(TowerType.Relay);
+        RelayTower protoRelay = prototype != null ? prototype.GetComponent<RelayTower>() : null;
+
+        title = def != null ? def.DisplayName : "Relay";
+
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Cost: {GetTowerCost(TowerType.Relay)} SCRAP");
+
+        if (protoRelay != null)
+        {
+            sb.AppendLine($"Supply Capacity: {protoRelay.SupplyCapacity}");
+            sb.AppendLine($"Coverage: {protoRelay.SupplyRange:0.0} range");
+        }
+
+        sb.Length -= System.Environment.NewLine.Length;
+        stats = sb.ToString();
+
+        extra = def != null ? def.CardRoleSummary : null;
+    }
+
+    private void RefreshUpgradeButton()
+    {
+        if (_hudPresenter == null) return;
+
+        bool hasSelectedPlaced = HasSelectedPlacedStructure();
+        if (!hasSelectedPlaced)
+        {
+            _hudPresenter.SetUpgradeSelectedStructureButtonVisible(false);
+            return;
+        }
+
+        bool canUpgrade = false;
+        int upgradeCost = 0;
+        int currentLevel = 1;
+        int maxLevel = 4;
+
+        if (_selectedRelayTower != null)
+        {
+            canUpgrade = _selectedRelayTower.CanUpgrade;
+            upgradeCost = _selectedRelayTower.GetUpgradeCost();
+            currentLevel = _selectedRelayTower.CurrentLevel;
+            maxLevel = _selectedRelayTower.MaxLevel;
+        }
+        else if (_selectedDefenseTower != null)
+        {
+            canUpgrade = _selectedDefenseTower.CanUpgrade;
+            upgradeCost = _selectedDefenseTower.GetUpgradeCost();
+            currentLevel = _selectedDefenseTower.CurrentLevel;
+            maxLevel = _selectedDefenseTower.MaxLevel;
+        }
+
+        if (!canUpgrade)
+        {
+            _hudPresenter.SetUpgradeSelectedStructureButtonVisible(false);
+            return;
+        }
+
+        bool canAfford = _sessionState != null && _sessionState.CurrentScrap >= upgradeCost;
+        bool isFinalUpgrade = currentLevel + 1 >= maxLevel;
+        string label = isFinalUpgrade
+            ? $"Upgrade LV{currentLevel + 1} [{upgradeCost}] M"
+            : $"Upgrade LV{currentLevel + 1} [{upgradeCost}]";
+
+        _hudPresenter.SetUpgradeSelectedStructureButtonLabel(label);
+        _hudPresenter.SetUpgradeSelectedStructureButtonInteractable(canAfford);
+        _hudPresenter.SetUpgradeSelectedStructureButtonVisible(true);
     }
 
     public void NotifyStructureTopologyChanged()
@@ -1429,17 +1680,55 @@ public class TowerDefenseGame : MonoBehaviour
     {
         if (_selectedRelayTower != null)
         {
+            RelayTower relay = _selectedRelayTower;
             string detail =
-                $"POWER {_selectedRelayTower.RemainingCapacity} / {_selectedRelayTower.SupplyCapacity}";
-            return new PlacedStructureHudState(true, "Relay Node", detail);
+                $"LV {relay.CurrentLevel}/{relay.MaxLevel}  |  POWER {relay.RemainingCapacity} / {relay.SupplyCapacity}";
+            if (relay.HasMechanicalUpgrade && !string.IsNullOrWhiteSpace(relay.MechanicalUpgradeDescription))
+            {
+                detail += $"\n[M] {relay.MechanicalUpgradeDescription}";
+            }
+            else if (!string.IsNullOrWhiteSpace(relay.PreviewMechanicalUpgradeDescription))
+            {
+                detail += $"\nNext LV: {relay.PreviewMechanicalUpgradeDescription}";
+            }
+            return new PlacedStructureHudState(
+                hasSelection: true,
+                title: "Relay Node",
+                details: detail,
+                currentLevel: relay.CurrentLevel,
+                maxLevel: relay.MaxLevel,
+                canUpgrade: relay.CanUpgrade && _sessionState != null && _sessionState.CurrentScrap >= relay.GetUpgradeCost(),
+                upgradeCost: relay.GetUpgradeCost(),
+                hasMechanicalUpgrade: relay.HasMechanicalUpgrade,
+                nextMechanicalUpgradeDescription: relay.PreviewMechanicalUpgradeDescription,
+                currentMechanicalUpgradeDescription: relay.MechanicalUpgradeDescription);
         }
 
         if (_selectedDefenseTower != null)
         {
-            string powerState = _selectedDefenseTower.IsPowered ? "powered" : "unpowered";
+            DefenseTower tower = _selectedDefenseTower;
+            string powerState = tower.IsPowered ? "powered" : "unpowered";
             string detail =
-                $"POWER {_selectedDefenseTower.PowerRequired}  |  STATE {powerState}";
-            return new PlacedStructureHudState(true, GetTowerDisplayName(_selectedDefenseTower.BuildType), detail);
+                $"LV {tower.CurrentLevel}/{tower.MaxLevel}  |  POWER {tower.PowerRequired}  |  STATE {powerState}";
+            if (tower.HasMechanicalUpgrade && !string.IsNullOrWhiteSpace(tower.MechanicalUpgradeDescription))
+            {
+                detail += $"\n[M] {tower.MechanicalUpgradeDescription}";
+            }
+            else if (!string.IsNullOrWhiteSpace(tower.PreviewMechanicalUpgradeDescription))
+            {
+                detail += $"\nNext LV: {tower.PreviewMechanicalUpgradeDescription}";
+            }
+            return new PlacedStructureHudState(
+                hasSelection: true,
+                title: GetTowerDisplayName(tower.BuildType),
+                details: detail,
+                currentLevel: tower.CurrentLevel,
+                maxLevel: tower.MaxLevel,
+                canUpgrade: tower.CanUpgrade && _sessionState != null && _sessionState.CurrentScrap >= tower.GetUpgradeCost(),
+                upgradeCost: tower.GetUpgradeCost(),
+                hasMechanicalUpgrade: tower.HasMechanicalUpgrade,
+                nextMechanicalUpgradeDescription: tower.PreviewMechanicalUpgradeDescription,
+                currentMechanicalUpgradeDescription: tower.MechanicalUpgradeDescription);
         }
 
         TowerType selectedTowerType = _placementInteractionController != null
@@ -1472,7 +1761,10 @@ public class TowerDefenseGame : MonoBehaviour
         _selectedRelayTower = relayTower;
         _selectedDefenseTower = null;
         int refundAmount = CalculateRelayDemolishRefund(relayTower);
-        SetStatusMessage($"Selected relay #{relayTower.RelayNumber}. Press U to upgrade or click Delete to dismantle for {refundAmount} SCRAP.");
+        string upgradeHint = relayTower.CanUpgrade
+            ? $" | Click Upgrade for LV {relayTower.CurrentLevel + 1} ({relayTower.GetUpgradeCost()} SCRAP)"
+            : " | MAX LEVEL";
+        SetStatusMessage($"Relay #{relayTower.RelayNumber} LV {relayTower.CurrentLevel}/{relayTower.MaxLevel}.{upgradeHint} | Delete to refund {refundAmount} SCRAP.");
         RefreshHud();
     }
 
@@ -1488,7 +1780,10 @@ public class TowerDefenseGame : MonoBehaviour
         _selectedDefenseTower = defenseTower;
         _selectedRelayTower = null;
         int refundAmount = CalculateDefenseTowerDemolishRefund(defenseTower);
-        SetStatusMessage($"Selected {GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber}. Press U to upgrade or click Delete to dismantle for {refundAmount} SCRAP.");
+        string upgradeHint = defenseTower.CanUpgrade
+            ? $" | Click Upgrade for LV {defenseTower.CurrentLevel + 1} ({defenseTower.GetUpgradeCost()} SCRAP)"
+            : " | MAX LEVEL";
+        SetStatusMessage($"{GetTowerDisplayName(defenseTower.BuildType)} #{defenseTower.TowerNumber} LV {defenseTower.CurrentLevel}/{defenseTower.MaxLevel}.{upgradeHint} | Delete to refund {refundAmount} SCRAP.");
         RefreshHud();
     }
 
@@ -2018,6 +2313,8 @@ public class TowerDefenseGame : MonoBehaviour
         _placementPreviewRoot = bootstrapResult.PlacementPreviewRoot;
         _battlefieldMapDefinition = battlefieldMapReference != null ? battlefieldMapReference : FindFirstObjectByType<BattlefieldMapDefinition>();
         _hudPresenter.BindDemolishSelectedStructureButton(() => TryDemolishSelectedStructure());
+        _hudPresenter.BindUpgradeSelectedStructureButton(() => TryUpgradeSelectedStructure());
+        _hudPresenter.ApplyInfoPopupOnlyMode();
 
         mainCameraReference = _mainCamera;
         buildZoneReference = _buildZone;

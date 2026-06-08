@@ -128,11 +128,16 @@ public sealed class TowerPlacementBuildExecutor
             return false;
         }
 
+        // Apply visual bottom offset so the placed tower sits at the same position as the
+        // drag preview. Both preview and final placement use the same reference frame.
+        float visualOffsetY = TowerPlacementVisualController.ComputeVisualBottomOffset(prototype);
+        Vector3 placementPosition = new Vector3(worldPosition.x, worldPosition.y + visualOffsetY, worldPosition.z);
+
         if (_validatePlacementPosition != null &&
-            !_validatePlacementPosition(worldPosition, towerType, out string invalidReason))
+            !_validatePlacementPosition(placementPosition, towerType, out string invalidReason))
         {
             _setStatusMessage?.Invoke(invalidReason);
-            _logPlacementDiagnostic?.Invoke($"TryPlace rejected by validation: tower={towerType} world={worldPosition} reason={invalidReason}");
+            _logPlacementDiagnostic?.Invoke($"TryPlace rejected by validation: tower={towerType} world={placementPosition} reason={invalidReason}");
             return false;
         }
 
@@ -140,11 +145,11 @@ public sealed class TowerPlacementBuildExecutor
         if (placedTowerRoot == null)
         {
             _setStatusMessage?.Invoke("Placed tower root is missing. Check the runtime scene wiring.");
-            _logPlacementDiagnostic?.Invoke($"TryPlace rejected: missing placed tower root. tower={towerType} world={worldPosition}");
+            _logPlacementDiagnostic?.Invoke($"TryPlace rejected: missing placed tower root. tower={towerType} world={placementPosition}");
             return false;
         }
 
-        GameObject tower = UnityEngine.Object.Instantiate(prototype, worldPosition, Quaternion.identity, placedTowerRoot);
+        GameObject tower = UnityEngine.Object.Instantiate(prototype, placementPosition, Quaternion.identity, placedTowerRoot);
         string towerDisplayName = _getTowerDisplayName != null ? _getTowerDisplayName(towerType) : towerType.ToString();
         tower.name = ownerPad != null
             ? $"{towerDisplayName}_{ownerPad.name}"
@@ -178,7 +183,7 @@ public sealed class TowerPlacementBuildExecutor
         _setStatusMessage?.Invoke($"Deployed {towerDisplayName} for {cost} SCRAP.");
         TowerDefenseGame.Instance?.PlayPlaceStructureSound();
         TowerDefenseGame.Instance?.ShowTransientHudNotice($"-{cost} SCRAP spent.", 2.2f);
-        _logPlacementDiagnostic?.Invoke($"TryPlace succeeded: tower={towerType} world={worldPosition} cost={cost} remainingScrap={currentScrap - cost}");
+        _logPlacementDiagnostic?.Invoke($"TryPlace succeeded: tower={towerType} world={placementPosition} cost={cost} remainingScrap={currentScrap - cost}");
         _refreshHud?.Invoke();
         return true;
     }

@@ -2,9 +2,9 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// `TowerPlacementVisualController` 负责“自由放置”这一整条链路里的**纯视觉反馈**。
+/// `TowerPlacementVisualController` 负责"自由放置"这一整条链路里的**纯视觉反馈**。
 ///
-/// 这里专门强调“纯视觉”，是为了给后续维护者一个很清晰的边界：
+/// 这里专门强调"纯视觉"，是为了给后续维护者一个很清晰的边界：
 /// 1. 它可以决定预览塔长什么样、放在哪里、什么时候显示或隐藏。
 /// 2. 它可以决定精确合法区覆盖层和首塔起手区标记什么时候刷新。
 /// 3. 它**不能**改变放置规则本身，也不直接做 BuildZone / Blocker / 塔间距判定。
@@ -14,7 +14,7 @@ using UnityEngine;
 /// - 当前坐标是否合法
 /// - 什么时候真正落塔
 ///
-/// 而所有“给玩家看见的反馈”都集中在这里，职责边界会更清楚。
+/// 而所有"给玩家看见的反馈"都集中在这里，职责边界会更清楚。
 /// </summary>
 public sealed class TowerPlacementVisualController : IDisposable
 {
@@ -25,6 +25,7 @@ public sealed class TowerPlacementVisualController : IDisposable
     private readonly Func<TowerType, GameObject> _getPrototype;
     private readonly Func<TowerType, string> _getTowerDisplayName;
     private readonly Func<TowerType, float> _getPlacementRadius;
+    private readonly Func<TowerType, float> _getNoBuildSquareSize;
     private readonly PlacementAreaOverlayRenderer _placementAreaOverlayRenderer;
     private readonly StarterZoneMarkerRenderer _starterZoneMarkerRenderer;
 
@@ -34,13 +35,17 @@ public sealed class TowerPlacementVisualController : IDisposable
     private TowerType _placementPreviewTowerType = TowerType.None;
     private SpriteRenderer _placementPreviewSpriteRenderer;
     private SpriteRenderer _placementPreviewRingRenderer;
+    private float _placementPreviewHalfHeight;
+
+    private GameObject _noBuildZoneSquareObject;
+    private SpriteRenderer _noBuildZoneSquareRenderer;
 
     private int _placementAreaOverlayRevision;
     private int _placementAreaOverlayPreparedRevision = -1;
     private TowerType _placementAreaOverlayPreparedTowerType = TowerType.None;
 
     /// <summary>
-    /// 构造时只注入“长期稳定的配置”和“总控提供的查询入口”。
+    /// 构造时只注入"长期稳定的配置"和"总控提供的查询入口"。
     ///
     /// 这样有两个好处：
     /// 1. 可视化控制器不需要偷偷回头去查场景对象。
@@ -60,7 +65,8 @@ public sealed class TowerPlacementVisualController : IDisposable
         int starterZoneMarkerSortingOrder,
         Func<TowerType, GameObject> getPrototype,
         Func<TowerType, string> getTowerDisplayName,
-        Func<TowerType, float> getPlacementRadius)
+        Func<TowerType, float> getPlacementRadius,
+        Func<TowerType, float> getNoBuildSquareSize)
     {
         _placementRingSprite = placementRingSprite;
         _placementRingResourcePath = placementRingResourcePath;
@@ -69,6 +75,7 @@ public sealed class TowerPlacementVisualController : IDisposable
         _getPrototype = getPrototype;
         _getTowerDisplayName = getTowerDisplayName;
         _getPlacementRadius = getPlacementRadius;
+        _getNoBuildSquareSize = getNoBuildSquareSize;
 
         _placementAreaOverlayRenderer = new PlacementAreaOverlayRenderer(
             placementAreaOverlayPixelsPerUnit,
@@ -95,7 +102,7 @@ public sealed class TowerPlacementVisualController : IDisposable
     }
 
     /// <summary>
-    /// 外部只要知道“规则变了”，就调用这个方法失效缓存即可。
+    /// 外部只要知道"规则变了"，就调用这个方法失效缓存即可。
     ///
     /// 当前最典型的触发点就是：
     /// - 放下一座新塔
@@ -110,9 +117,9 @@ public sealed class TowerPlacementVisualController : IDisposable
     }
 
     /// <summary>
-    /// 在玩家真正拖拽之前，提前把“精确合法区覆盖层”热好。
+    /// 在玩家真正拖拽之前，提前把"精确合法区覆盖层"热好。
     ///
-    /// 这样常见路径“鼠标先悬停卡片，再按下开始拖”时，
+    /// 这样常见路径"鼠标先悬停卡片，再按下开始拖"时，
     /// 起手帧就不会为了整张覆盖层临时重算而卡一下。
     /// </summary>
     public void PrewarmPlacementAreaOverlay(TowerType towerType, bool isGameOver, Bounds overlayBounds, Func<Vector3, bool> validator)
@@ -190,7 +197,7 @@ public sealed class TowerPlacementVisualController : IDisposable
     /// 这是拖拽过程中的主刷新入口。
     ///
     /// 注意这里依然只接收外部提供的 `validator`，不直接知道游戏规则细节。
-    /// 这样即便以后放置规则继续演化，这个类也仍然只是“把给定规则画出来”。
+    /// 这样即便以后放置规则继续演化，这个类也仍然只是"把给定规则画出来"。
     /// </summary>
     public void RefreshPlacementAreaOverlay(TowerType towerType, bool isPlacementDragActive, Bounds overlayBounds, Func<Vector3, bool> validator)
     {
@@ -210,7 +217,7 @@ public sealed class TowerPlacementVisualController : IDisposable
     }
 
     /// <summary>
-    /// 起手区标记只服务于“首塔还没放下”阶段。
+    /// 起手区标记只服务于"首塔还没放下"阶段。
     ///
     /// 一旦规则层告诉我们已经不该显示了，就立即收掉。
     /// </summary>
@@ -240,11 +247,16 @@ public sealed class TowerPlacementVisualController : IDisposable
             // 同塔型复用时，也先把位置对到这次拖拽真正的起始鼠标世界坐标，
             // 再重新激活对象。
             //
-            // 这样可以避免“上一次停在 A 点的隐藏预览塔，
-            // 这一次先在旧位置或世界原点闪一帧，再跳到鼠标下面”的视觉抖动。
-            _placementPreviewInstance.transform.position = initialWorldPosition;
+            // 这样可以避免"上一次停在 A 点的隐藏预览塔，
+            // 这一次先在旧位置或世界原点闪一帧，再跳到鼠标下面"的视觉抖动。
+            _placementPreviewInstance.transform.position = new Vector3(
+                initialWorldPosition.x,
+                initialWorldPosition.y + _placementPreviewHalfHeight,
+                initialWorldPosition.z);
             RefreshPlacementPreviewSorting();
             _placementPreviewInstance.SetActive(true);
+            UpdateNoBuildZoneSquarePosition(initialWorldPosition);
+            SetNoBuildZoneSquareActive(true);
             return;
         }
 
@@ -268,7 +280,7 @@ public sealed class TowerPlacementVisualController : IDisposable
         // 2. 紧接着下一次 `UpdatePlacementDrag()` 才把它搬到鼠标位置
         // 于是玩家第一次拖卡时，会看到地图中央短暂闪过一次预览塔
         //
-        // 现在直接用拖拽起始点作为实例化位置，让它“第一次出现就出现在正确位置”。
+        // 现在直接用拖拽起始点作为实例化位置，让它"第一次出现就出现在正确位置"。
         _placementPreviewInstance = UnityEngine.Object.Instantiate(prototype, initialWorldPosition, Quaternion.identity, _placementPreviewRoot);
         _placementPreviewTowerType = towerType;
         _placementPreviewInstance.name = $"{_getTowerDisplayName(towerType)}_Preview";
@@ -276,7 +288,16 @@ public sealed class TowerPlacementVisualController : IDisposable
 
         DisablePreviewRuntimeBehaviour();
         CachePreviewRenderers();
+        CapturePreviewHalfHeight();
+
+        // Offset the preview upward so the mouse cursor sits at the bottom center
+        // of the tower visual, not at the transform pivot.
+        _placementPreviewInstance.transform.position = new Vector3(
+            initialWorldPosition.x,
+            initialWorldPosition.y + _placementPreviewHalfHeight,
+            initialWorldPosition.z);
         CreatePlacementRing(towerType);
+        CreateNoBuildZoneSquare(towerType, initialWorldPosition);
         RefreshPlacementPreviewSorting();
     }
 
@@ -291,6 +312,8 @@ public sealed class TowerPlacementVisualController : IDisposable
         {
             _placementPreviewInstance.SetActive(false);
         }
+
+        SetNoBuildZoneSquareActive(false);
     }
 
     /// <summary>
@@ -300,12 +323,17 @@ public sealed class TowerPlacementVisualController : IDisposable
     {
         if (_placementPreviewInstance != null)
         {
-            _placementPreviewInstance.transform.position = previewWorldPosition;
+            _placementPreviewInstance.transform.position = new Vector3(
+                previewWorldPosition.x,
+                previewWorldPosition.y + _placementPreviewHalfHeight,
+                previewWorldPosition.z);
         }
+
+        UpdateNoBuildZoneSquarePosition(previewWorldPosition);
     }
 
     /// <summary>
-    /// 放置规则层偶尔需要跳过“预览塔自己”的碰撞。
+    /// 放置规则层偶尔需要跳过"预览塔自己"的碰撞。
     ///
     /// 这个查询入口专门暴露给总控做校验过滤，避免它再次直接持有预览对象引用。
     /// </summary>
@@ -337,6 +365,13 @@ public sealed class TowerPlacementVisualController : IDisposable
             ringColor.a = isValid ? 0.9f : 0.82f;
             _placementPreviewRingRenderer.color = ringColor;
         }
+
+        if (_noBuildZoneSquareRenderer != null)
+        {
+            Color squareColor = isValid ? _validPreviewColor : _invalidPreviewColor;
+            squareColor.a = isValid ? 0.30f : 0.42f;
+            _noBuildZoneSquareRenderer.color = squareColor;
+        }
     }
 
     /// <summary>
@@ -355,6 +390,7 @@ public sealed class TowerPlacementVisualController : IDisposable
         ReleasePlacementPreviewInstance();
         _placementAreaOverlayRenderer.Dispose();
         _starterZoneMarkerRenderer.Dispose();
+        ReleaseNoBuildZoneSquare();
     }
 
     private bool IsPlacementAreaOverlayPreparedFor(TowerType towerType)
@@ -364,12 +400,12 @@ public sealed class TowerPlacementVisualController : IDisposable
     }
 
     /// <summary>
-    /// 预览对象必须彻底失去“真正参与玩法”的能力。
+    /// 预览对象必须彻底失去"真正参与玩法"的能力。
     ///
     /// 如果这里忘记关掉某个脚本或碰撞体，就会出现：
     /// - 预览塔误伤敌人
     /// - 预览塔挡住正式落塔
-    /// - 首塔阶段被预览对象自己误判成“离别的结构太近”
+    /// - 首塔阶段被预览对象自己误判成"离别的结构太近"
     /// 这类非常隐蔽的回归。
     /// </summary>
     private void DisablePreviewRuntimeBehaviour()
@@ -400,9 +436,64 @@ public sealed class TowerPlacementVisualController : IDisposable
     }
 
     /// <summary>
+    /// Computes the world-space Y offset needed so the tower's visual bottom sits at
+    /// the transform pivot (and thus at the grid-snapped placement position).
+    ///
+    /// Resolution order:
+    /// 1. TowerPlacementAnchor on root — author drags a child Transform into the field.
+    /// 2. Tight-mesh sprite.bounds — Unity trims transparent pixels for Tight meshes.
+    /// 3. CircleCollider2D offset — rough proxy for the tower's base.
+    /// </summary>
+    public static float ComputeVisualBottomOffset(GameObject prototype)
+    {
+        if (prototype == null)
+        {
+            return 0f;
+        }
+
+        // 1. Author-defined anchor — the Transform field on the root component.
+        TowerPlacementAnchor anchor = prototype.GetComponent<TowerPlacementAnchor>();
+        if (anchor != null && anchor.AnchorPoint != null)
+        {
+            Vector3 localPos = anchor.AnchorPoint.localPosition;
+            Vector3 scale = prototype.transform.lossyScale;
+            return -localPos.y * scale.y;
+        }
+
+        // 2. Tight-mesh sprite bounds (handles transparent padding correctly).
+        SpriteRenderer sr = prototype.GetComponent<SpriteRenderer>();
+        if (sr != null && sr.sprite != null)
+        {
+            float localBottom = sr.sprite.bounds.min.y;
+            Vector3 scale = prototype.transform.lossyScale;
+            return -localBottom * scale.y;
+        }
+
+        // 3. Collider offset as a rough fallback.
+        CircleCollider2D collider = prototype.GetComponent<CircleCollider2D>();
+        if (collider != null)
+        {
+            return -collider.offset.y * prototype.transform.lossyScale.y;
+        }
+
+        return 0f;
+    }
+
+    private void CapturePreviewHalfHeight()
+    {
+        _placementPreviewHalfHeight = 0f;
+
+        if (_placementPreviewTowerType != TowerType.None && _getPrototype != null)
+        {
+            _placementPreviewHalfHeight = ComputeVisualBottomOffset(
+                _getPrototype(_placementPreviewTowerType));
+        }
+    }
+
+    /// <summary>
     /// 地面圆环是纯教学性视觉反馈。
     ///
-    /// 玩家看到它之后，能更直觉地理解“这座塔落地时大概会占多大范围”。
+    /// 玩家看到它之后，能更直觉地理解"这座塔落地时大概会占多大范围"。
     /// </summary>
     private void CreatePlacementRing(TowerType towerType)
     {
@@ -419,7 +510,10 @@ public sealed class TowerPlacementVisualController : IDisposable
 
         GameObject placementRing = new GameObject("PlacementRing");
         placementRing.transform.SetParent(_placementPreviewInstance.transform, false);
-        placementRing.transform.localPosition = ResolvePlacementRingLocalOffset(towerType);
+
+        Vector3 ringLocalOffset = ResolvePlacementRingLocalOffset(towerType);
+        ringLocalOffset.y -= _placementPreviewHalfHeight;
+        placementRing.transform.localPosition = ringLocalOffset;
         placementRing.transform.localScale = Vector3.one * (_getPlacementRadius(towerType) * 2f);
 
         _placementPreviewRingRenderer = placementRing.AddComponent<SpriteRenderer>();
@@ -444,6 +538,14 @@ public sealed class TowerPlacementVisualController : IDisposable
             _placementPreviewRingRenderer,
             _placementPreviewSpriteRenderer,
             TowerRenderSorting.PlacementPreviewRingRelativeSortingOffset);
+
+        if (_noBuildZoneSquareRenderer != null)
+        {
+            TowerRenderSorting.ApplyPlacementPreviewAdornmentSorting(
+                _noBuildZoneSquareRenderer,
+                _placementPreviewSpriteRenderer,
+                -2);
+        }
     }
 
     private Vector3 ResolvePlacementRingLocalOffset(TowerType towerType)
@@ -472,6 +574,90 @@ public sealed class TowerPlacementVisualController : IDisposable
             0f);
     }
 
+    private static Sprite _cachedWhiteSquareSprite;
+
+    private static Sprite GetWhiteSquareSprite()
+    {
+        if (_cachedWhiteSquareSprite == null)
+        {
+            Texture2D tex = new Texture2D(1, 1);
+            tex.SetPixel(0, 0, Color.white);
+            tex.Apply();
+            _cachedWhiteSquareSprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f), 1f);
+            _cachedWhiteSquareSprite.hideFlags = HideFlags.HideAndDontSave;
+        }
+
+        return _cachedWhiteSquareSprite;
+    }
+
+    /// <summary>
+    /// Creates a square visual at the placement position to show the no-build zone
+    /// (expansion square) around where the tower would land.
+    ///
+    /// This is parented to _placementPreviewRoot (scale 1,1,1) so the square's
+    /// localScale directly controls its world-space size.
+    /// </summary>
+    private void CreateNoBuildZoneSquare(TowerType towerType, Vector3 worldPosition)
+    {
+        if (_placementPreviewRoot == null || _getNoBuildSquareSize == null)
+        {
+            return;
+        }
+
+        float squareSize = _getNoBuildSquareSize(towerType);
+        if (squareSize <= 0f)
+        {
+            return;
+        }
+
+        ReleaseNoBuildZoneSquare();
+
+        _noBuildZoneSquareObject = new GameObject("NoBuildZoneSquare");
+        _noBuildZoneSquareObject.transform.SetParent(_placementPreviewRoot, false);
+
+        _noBuildZoneSquareRenderer = _noBuildZoneSquareObject.AddComponent<SpriteRenderer>();
+        _noBuildZoneSquareRenderer.sprite = GetWhiteSquareSprite();
+        _noBuildZoneSquareObject.transform.localScale = new Vector3(squareSize, squareSize, 1f);
+
+        UpdateNoBuildZoneSquarePosition(worldPosition);
+        SetNoBuildZoneSquareActive(true);
+    }
+
+    private void UpdateNoBuildZoneSquarePosition(Vector3 worldPosition)
+    {
+        if (_noBuildZoneSquareObject == null)
+        {
+            return;
+        }
+
+        // The tower (both preview and final placement) sits at worldPosition.y +
+        // _placementPreviewHalfHeight. The no-build zone must be centered at the
+        // same position so it matches the actual grid cells the tower will occupy.
+        _noBuildZoneSquareObject.transform.position = new Vector3(
+            worldPosition.x,
+            worldPosition.y + _placementPreviewHalfHeight,
+            worldPosition.z);
+    }
+
+    private void SetNoBuildZoneSquareActive(bool active)
+    {
+        if (_noBuildZoneSquareObject != null)
+        {
+            _noBuildZoneSquareObject.SetActive(active);
+        }
+    }
+
+    private void ReleaseNoBuildZoneSquare()
+    {
+        if (_noBuildZoneSquareObject != null)
+        {
+            UnityEngine.Object.Destroy(_noBuildZoneSquareObject);
+        }
+
+        _noBuildZoneSquareObject = null;
+        _noBuildZoneSquareRenderer = null;
+    }
+
     /// <summary>
     /// 只有切换塔型或整体销毁时，才真的释放预览对象。
     /// </summary>
@@ -486,5 +672,7 @@ public sealed class TowerPlacementVisualController : IDisposable
         _placementPreviewTowerType = TowerType.None;
         _placementPreviewSpriteRenderer = null;
         _placementPreviewRingRenderer = null;
+
+        ReleaseNoBuildZoneSquare();
     }
 }

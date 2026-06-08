@@ -23,9 +23,12 @@ public partial class RelayTower
 
     [Header("Progression")]
     [SerializeField] private int currentLevel = 1;
-    [SerializeField] private int maxLevel = 3;
+    [SerializeField] private int maxLevel = 4;
     [SerializeField] private int upgradeCostBase = 16;
     [SerializeField] private int upgradeCostPerLevel = 12;
+
+    [Header("Mechanical Upgrade (LV 4)")]
+    [TextArea(2, 4)] [SerializeField] private string mechanicalUpgradeDescription = string.Empty;
 
     [Header("Visual References")]
     [SerializeField] private SpriteRenderer bodyRendererReference;
@@ -80,6 +83,16 @@ public partial class RelayTower
     }
 
     public bool CanUpgrade => CurrentLevel < MaxLevel;
+
+    public bool HasMechanicalUpgrade => CurrentLevel >= MaxLevel;
+
+    public string MechanicalUpgradeDescription =>
+        HasMechanicalUpgrade ? mechanicalUpgradeDescription : string.Empty;
+
+    public string PreviewMechanicalUpgradeDescription =>
+        CanUpgrade && CurrentLevel + 1 >= MaxLevel
+            ? mechanicalUpgradeDescription
+            : string.Empty;
 
     public int GetUpgradeCost()
     {

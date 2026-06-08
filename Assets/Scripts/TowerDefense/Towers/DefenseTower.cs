@@ -54,6 +54,9 @@ public class DefenseTower : MonoBehaviour
         [Min(0)] public int upgradeCostBase = 30;
         [Min(0)] public int upgradeCostPerLevel = 15;
 
+        [Header("Mechanical Upgrade (LV 4)")]
+        [TextArea(2, 4)] public string mechanicalUpgradeDescription = string.Empty;
+
         [Header("Slow Field")]
         [Range(0.15f, 1f)] public float slowMultiplier = 0.65f;
         public float slowMultiplierPerUpgradeDelta = -0.05f;
@@ -198,7 +201,7 @@ public class DefenseTower : MonoBehaviour
 
     [Header("Progression")]
     [SerializeField] private int currentLevel = 1;
-    [SerializeField] private int maxLevel = 3;
+    [SerializeField] private int maxLevel = 4;
 
     [Header("Visual References")]
 
@@ -419,6 +422,16 @@ public class DefenseTower : MonoBehaviour
     }
 
     public bool CanUpgrade => CurrentLevel < MaxLevel;
+
+    public bool HasMechanicalUpgrade => CurrentLevel >= MaxLevel;
+
+    public string MechanicalUpgradeDescription =>
+        HasMechanicalUpgrade ? ActiveTuning.mechanicalUpgradeDescription : string.Empty;
+
+    public string PreviewMechanicalUpgradeDescription =>
+        CanUpgrade && CurrentLevel + 1 >= MaxLevel
+            ? ActiveTuning.mechanicalUpgradeDescription
+            : string.Empty;
 
     public int GetUpgradeCost()
     {
@@ -1293,7 +1306,7 @@ public class DefenseTower : MonoBehaviour
         return Mathf.Max(0.1f, ActiveTuning.bombRadius + (level - 1) * ActiveTuning.bombRadiusPerUpgrade);
     }
 
-    private static float GetSlowPercent(float slowMultiplier)
+    public static float GetSlowPercent(float slowMultiplier)
     {
         return (1f - Mathf.Clamp01(slowMultiplier)) * 100f;
     }

@@ -281,7 +281,10 @@ public sealed class TowerPlacementInteractionController
 
         if (_validatePlacementPosition != null)
         {
-            _previewPositionIsValid = _validatePlacementPosition(_previewWorldPosition, _dragTowerType, out _previewInvalidReason);
+            GameObject prototype = _getPrototype?.Invoke(_dragTowerType);
+            float visualOffsetY = TowerPlacementVisualController.ComputeVisualBottomOffset(prototype);
+            Vector3 validatePosition = new Vector3(_previewWorldPosition.x, _previewWorldPosition.y + visualOffsetY, _previewWorldPosition.z);
+            _previewPositionIsValid = _validatePlacementPosition(validatePosition, _dragTowerType, out _previewInvalidReason);
         }
         else
         {
