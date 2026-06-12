@@ -41,23 +41,6 @@ public sealed class TowerInfoPopup : MonoBehaviour
     }
 
     /// <summary>
-    /// Called by the presenter when creating the popup at runtime instead of
-    /// placing it in the scene ahead of time.
-    /// </summary>
-    public void ConstructRuntime(Image panelBackground, TMP_Text titleText, TMP_Text statsText, TMP_Text extraText)
-    {
-        this.panelBackground = panelBackground;
-        this.titleText = titleText;
-        this.statsText = statsText;
-        this.extraText = extraText;
-        panelRect = GetComponent<RectTransform>();
-        _canvas = GetComponentInParent<Canvas>();
-        if (_canvas != null) _canvasRect = _canvas.GetComponent<RectTransform>();
-        _worldCamera = Camera.main;
-        gameObject.SetActive(false);
-    }
-
-    /// <summary>
     /// Position the popup at a world position (for placed towers), offset to the upper-right.
     /// </summary>
     public void ShowAtWorldPosition(

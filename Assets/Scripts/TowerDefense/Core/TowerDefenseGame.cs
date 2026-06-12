@@ -308,6 +308,8 @@ public class TowerDefenseGame : MonoBehaviour
     [SerializeField] private TMP_Text gameOverHintReference;
     [SerializeField] private GameObject dragPreviewPanelReference;
     [SerializeField] private TMP_Text dragPreviewLabelReference;
+    [SerializeField] private Button upgradeSelectedStructureButtonReference;
+    [SerializeField] private TowerInfoPopup towerInfoPopupReference;
     [SerializeField] private VictoryResultPageView victoryResultPageViewReference;
 
     /// <summary>
@@ -2295,11 +2297,13 @@ public class TowerDefenseGame : MonoBehaviour
                 bombardTowerButtonReference,
                 clearSelectionButtonReference,
                 demolishSelectedStructureButtonReference,
+                upgradeSelectedStructureButtonReference,
                 gameOverPanelReference,
                 gameOverTitleReference,
                 gameOverHintReference,
                 dragPreviewPanelReference,
-                dragPreviewLabelReference),
+                dragPreviewLabelReference,
+                towerInfoPopupReference),
             _hudPresenter);
 
         _mainCamera = bootstrapResult.MainCamera;

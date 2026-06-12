@@ -23,11 +23,13 @@ public readonly struct TowerDefenseHudSceneReferences
         Button bombardTowerButton,
         Button clearSelectionButton,
         Button demolishSelectedStructureButton,
+        Button upgradeSelectedStructureButton,
         GameObject gameOverPanel,
         TMP_Text gameOverTitle,
         TMP_Text gameOverHint,
         GameObject dragPreviewPanel,
-        TMP_Text dragPreviewLabel)
+        TMP_Text dragPreviewLabel,
+        TowerInfoPopup towerInfoPopup)
     {
         ScrapText = scrapText;
         BaseHealthText = baseHealthText;
@@ -40,11 +42,13 @@ public readonly struct TowerDefenseHudSceneReferences
         BombardTowerButton = bombardTowerButton;
         ClearSelectionButton = clearSelectionButton;
         DemolishSelectedStructureButton = demolishSelectedStructureButton;
+        UpgradeSelectedStructureButton = upgradeSelectedStructureButton;
         GameOverPanel = gameOverPanel;
         GameOverTitle = gameOverTitle;
         GameOverHint = gameOverHint;
         DragPreviewPanel = dragPreviewPanel;
         DragPreviewLabel = dragPreviewLabel;
+        TowerInfoPopup = towerInfoPopup;
     }
 
     public TMP_Text ScrapText { get; }
@@ -58,11 +62,13 @@ public readonly struct TowerDefenseHudSceneReferences
     public Button BombardTowerButton { get; }
     public Button ClearSelectionButton { get; }
     public Button DemolishSelectedStructureButton { get; }
+    public Button UpgradeSelectedStructureButton { get; }
     public GameObject GameOverPanel { get; }
     public TMP_Text GameOverTitle { get; }
     public TMP_Text GameOverHint { get; }
     public GameObject DragPreviewPanel { get; }
     public TMP_Text DragPreviewLabel { get; }
+    public TowerInfoPopup TowerInfoPopup { get; }
 }
 
 /// <summary>
@@ -156,11 +162,13 @@ public sealed class TowerDefenseSceneBootstrapper
             bombardTowerButton: hudSceneReferences.BombardTowerButton,
             clearSelectionButton: hudSceneReferences.ClearSelectionButton,
             demolishSelectedStructureButton: hudSceneReferences.DemolishSelectedStructureButton,
+            upgradeSelectedStructureButton: hudSceneReferences.UpgradeSelectedStructureButton,
             gameOverPanel: hudSceneReferences.GameOverPanel,
             gameOverTitle: hudSceneReferences.GameOverTitle,
             gameOverHint: hudSceneReferences.GameOverHint,
             dragPreviewPanel: hudSceneReferences.DragPreviewPanel,
-            dragPreviewLabel: hudSceneReferences.DragPreviewLabel);
+            dragPreviewLabel: hudSceneReferences.DragPreviewLabel,
+            towerInfoPopup: hudSceneReferences.TowerInfoPopup);
         hudPresenter?.FindSceneReferences();
 
         Camera resolvedMainCamera = mainCameraReference != null ? mainCameraReference : Camera.main;

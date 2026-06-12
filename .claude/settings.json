@@ -1,0 +1,44 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit -m ' *)",
+      "Bash(git fetch *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(git branch *)",
+      "Bash(gh pr *)",
+      "Bash(git merge *)",
+      "Bash(git show *)",
+      "Bash(cd \"d:\\\\unity\\\\做游戏\\\\塔防开发\" && wc -c \"Assets/Scenes/Tutorial Level.unity\" && wc -c /tmp/tutorial_level_backup.unity)",
+      "Read(//tmp/**)",
+      "Bash(cd \"d:\\\\unity\\\\做游戏\\\\塔防开发\" && cp /tmp/tutorial_level_backup.unity \"Assets/Scenes/Tutorial Level.unity\")",
+      "Bash(git reset *)",
+      "Bash(python3 -c ' *)",
+      "Bash(python -c ' *)",
+      "Bash(grep -n 'string interpolation\\\\|$\\\\\"' Assets/Scripts/TowerDefense/Placement/TowerPlacementVisualController.cs)",
+      "Bash(git -C \"d:\\\\unity\\\\做游戏\\\\塔防开发\" status)",
+      "Bash(git -C \"d:\\\\unity\\\\做游戏\\\\塔防开发\" diff --stat)",
+      "Bash(git -C \"d:\\\\unity\\\\做游戏\\\\塔防开发\" log --oneline -5)",
+      "Bash(ls -la \"d:\\\\unity\\\\做游戏\\\\塔防开发\\\\\")",
+      "Read(//d/unity/做游戏/**)",
+      "Bash(git -C \"d:\\\\unity\\\\做游戏\\\\塔防开发\\\\\" log --oneline -30)",
+      "Bash(git -C \"d:\\\\unity\\\\做游戏\\\\塔防开发\\\\\" log --oneline --all --graph -50)",
+      "Bash(git -C \"d:/unity/做游戏/塔防开发/\" log --oneline -30)",
+      "Bash(git -C \"d:/unity/做游戏/塔防开发/\" log --oneline --all --graph -50)",
+      "Bash(git -C \"d:/unity/做游戏/塔防开发/\" branch -a)",
+      "Bash(git -C \"d:/unity/做游戏/塔防开发/\" log --oneline --since=\"2026-05-01\" --until=\"2026-06-08\" --format=\"%h %aI %s\")",
+      "Bash(git -C \"d:/unity/做游戏/塔防开发/\" log --oneline -20 --format=\"%h %aI %s\")",
+      "Bash(git -C \"d:/unity/做游戏/塔防开发/\" diff --stat HEAD~5..HEAD)",
+      "WebSearch",
+      "WebFetch(domain:www.nowcoder.com)",
+      "WebFetch(domain:api-cdn.nowcoder.com)",
+      "WebFetch(domain:juejin.cn)",
+      "Bash(ls -la \"C:/Users/。。。/.claude/projects/d--unity---------/1cc569ef-a185-46ab-84f7-c175d2d87bc.jsonl\" 2>/dev/null || echo \"not found\")",
+      "Read(//c/Users/。。。/.claude/projects/d--unity---------/**)",
+      "Read(//c/Users/**)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}

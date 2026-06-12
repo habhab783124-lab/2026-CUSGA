@@ -411,7 +411,9 @@ public sealed class TowerDefenseHudPresenter
         TMP_Text gameOverTitle,
         TMP_Text gameOverHint,
         GameObject dragPreviewPanel,
-        TMP_Text dragPreviewLabel)
+        TMP_Text dragPreviewLabel,
+        Button upgradeSelectedStructureButton,
+        TowerInfoPopup towerInfoPopup)
     {
         _scrapText = scrapText;
         _baseHealthText = baseHealthText;
@@ -424,6 +426,8 @@ public sealed class TowerDefenseHudPresenter
         _bombardTowerButton = bombardTowerButton;
         _clearSelectionButton = clearSelectionButton;
         _demolishSelectedStructureButton = demolishSelectedStructureButton;
+        _upgradeSelectedStructureButton = upgradeSelectedStructureButton;
+        _towerInfoPopup = towerInfoPopup;
         _gameOverPanel = gameOverPanel;
         _gameOverTitle = gameOverTitle;
         _gameOverHint = gameOverHint;
@@ -440,6 +444,7 @@ public sealed class TowerDefenseHudPresenter
         _bombardTowerButtonText = _bombardTowerButton != null ? _bombardTowerButton.GetComponentInChildren<TMP_Text>(true) : null;
         _clearSelectionButtonText = _clearSelectionButton != null ? _clearSelectionButton.GetComponentInChildren<TMP_Text>(true) : null;
         _demolishSelectedStructureButtonText = _demolishSelectedStructureButton != null ? _demolishSelectedStructureButton.GetComponentInChildren<TMP_Text>(true) : null;
+        _upgradeSelectedStructureButtonText = _upgradeSelectedStructureButton != null ? _upgradeSelectedStructureButton.GetComponentInChildren<TMP_Text>(true) : null;
     }
 
     /// <summary>
@@ -509,11 +514,6 @@ public sealed class TowerDefenseHudPresenter
             _demolishSelectedStructureButton = FindButtonByName("DeleteSelectedStructureButton");
         }
 
-        if (_demolishSelectedStructureButton == null)
-        {
-            _demolishSelectedStructureButton = CreateRuntimeDemolishButton();
-        }
-
         if (_demolishSelectedStructureButtonText == null && _demolishSelectedStructureButton != null)
         {
             _demolishSelectedStructureButtonText = _demolishSelectedStructureButton.GetComponentInChildren<TMP_Text>(true);
@@ -524,11 +524,6 @@ public sealed class TowerDefenseHudPresenter
             _upgradeSelectedStructureButton = FindButtonByName("UpgradeSelectedStructureButton");
         }
 
-        if (_upgradeSelectedStructureButton == null)
-        {
-            _upgradeSelectedStructureButton = CreateRuntimeUpgradeButton();
-        }
-
         if (_upgradeSelectedStructureButtonText == null && _upgradeSelectedStructureButton != null)
         {
             _upgradeSelectedStructureButtonText = _upgradeSelectedStructureButton.GetComponentInChildren<TMP_Text>(true);
@@ -537,11 +532,6 @@ public sealed class TowerDefenseHudPresenter
         if (_towerInfoPopup == null)
         {
             _towerInfoPopup = Object.FindFirstObjectByType<TowerInfoPopup>(FindObjectsInactive.Include);
-        }
-
-        if (_towerInfoPopup == null)
-        {
-            _towerInfoPopup = CreateRuntimeTowerInfoPopup();
         }
 
         EnsureDragPreviewDoesNotBlockRaycasts();
@@ -828,11 +818,11 @@ public sealed class TowerDefenseHudPresenter
             : $"<color=#{invalidHex}>{previewState.InvalidReason}</color>";
 
         _dragPreviewLabel.text =
-            $"<size=20><color=#{infoHex}>DEPLOY TRACE</color></size>\n" +
-            $"<size=34>{definition.DisplayName.ToUpperInvariant()}</size>\n" +
-            $"<size=20><color=#{accentHex}>{definition.BuildCostLabel}</color>  <color=#{infoHex}>GRID {definition.ExpansionSquareSize:0.0}</color></size>\n" +
-            $"<size=18><color=#{infoHex}>Cyan sectors show exact legal drop zones</color></size>\n" +
-            $"<size=18>{stateLine}</size>";
+            $"<color=#{infoHex}>DEPLOY TRACE</color>\n" +
+            $"{definition.DisplayName.ToUpperInvariant()}\n" +
+            $"<color=#{accentHex}>{definition.BuildCostLabel}</color>  <color=#{infoHex}>GRID {definition.ExpansionSquareSize:0.0}</color>\n" +
+            "Cyan sectors show exact legal drop zones\n" +
+            stateLine;
     }
 
     /// <summary>
@@ -1006,96 +996,6 @@ public sealed class TowerDefenseHudPresenter
         }
     }
 
-    private TowerInfoPopup CreateRuntimeTowerInfoPopup()
-    {
-        Canvas targetCanvas = ResolveHudCanvas();
-        if (targetCanvas == null) return null;
-
-        GameObject popupObject = new GameObject("TowerInfoPopup");
-        popupObject.transform.SetParent(targetCanvas.transform, false);
-
-        RectTransform rect = popupObject.AddComponent<RectTransform>();
-        rect.anchorMin = new Vector2(0f, 1f);
-        rect.anchorMax = new Vector2(0f, 1f);
-        rect.pivot = new Vector2(0f, 1f);
-        rect.sizeDelta = new Vector2(280f, 160f);
-
-        Image bg = popupObject.AddComponent<Image>();
-        bg.color = new Color(0.08f, 0.09f, 0.13f, 0.94f);
-
-        // Shadow / outline via a second image behind
-        GameObject shadowObject = new GameObject("Shadow");
-        shadowObject.transform.SetParent(popupObject.transform, false);
-        shadowObject.transform.SetAsFirstSibling();
-        RectTransform shadowRect = shadowObject.AddComponent<RectTransform>();
-        shadowRect.anchorMin = Vector2.zero;
-        shadowRect.anchorMax = Vector2.one;
-        shadowRect.offsetMin = new Vector2(-3f, -3f);
-        shadowRect.offsetMax = new Vector2(3f, 3f);
-        Image shadowBg = shadowObject.AddComponent<Image>();
-        shadowBg.color = new Color(0f, 0f, 0f, 0.6f);
-        shadowBg.raycastTarget = false;
-
-        // Title
-        GameObject titleObj = CreatePopupTextObject("Title", popupObject.transform, 22f, FontStyles.Bold);
-        RectTransform titleRect = titleObj.GetComponent<RectTransform>();
-        titleRect.anchorMin = new Vector2(0f, 1f);
-        titleRect.anchorMax = new Vector2(1f, 1f);
-        titleRect.pivot = new Vector2(0f, 1f);
-        titleRect.anchoredPosition = new Vector2(14f, -12f);
-        titleRect.sizeDelta = new Vector2(-28f, 32f);
-        TMP_Text titleText = titleObj.GetComponent<TMP_Text>();
-
-        // Stats
-        GameObject statsObj = CreatePopupTextObject("Stats", popupObject.transform, 18f, FontStyles.Normal);
-        RectTransform statsRect = statsObj.GetComponent<RectTransform>();
-        statsRect.anchorMin = new Vector2(0f, 1f);
-        statsRect.anchorMax = new Vector2(1f, 1f);
-        statsRect.pivot = new Vector2(0f, 1f);
-        statsRect.anchoredPosition = new Vector2(14f, -48f);
-        statsRect.sizeDelta = new Vector2(-28f, 70f);
-        TMP_Text statsText = statsObj.GetComponent<TMP_Text>();
-        statsText.color = new Color(0.82f, 0.87f, 0.92f, 1f);
-
-        // Extra
-        GameObject extraObj = CreatePopupTextObject("Extra", popupObject.transform, 15f, FontStyles.Normal);
-        RectTransform extraRect = extraObj.GetComponent<RectTransform>();
-        extraRect.anchorMin = new Vector2(0f, 1f);
-        extraRect.anchorMax = new Vector2(1f, 1f);
-        extraRect.pivot = new Vector2(0f, 1f);
-        extraRect.anchoredPosition = new Vector2(14f, -128f);
-        extraRect.sizeDelta = new Vector2(-28f, 28f);
-        TMP_Text extraText = extraObj.GetComponent<TMP_Text>();
-        extraText.color = new Color(0.58f, 0.78f, 0.96f, 1f);
-
-        // Wire up the TowerInfoPopup component
-        TowerInfoPopup popup = popupObject.AddComponent<TowerInfoPopup>();
-        // Use reflection or a setup method to assign the serialized fields
-        // Since we're creating at runtime and the fields are private, we use a runtime init path
-        popup.ConstructRuntime(
-            panelBackground: bg,
-            titleText: titleText,
-            statsText: statsText,
-            extraText: extraText);
-
-        popupObject.SetActive(false);
-        return popup;
-    }
-
-    private static GameObject CreatePopupTextObject(string name, Transform parent, float fontSize, FontStyles fontStyle)
-    {
-        GameObject obj = new GameObject(name);
-        obj.transform.SetParent(parent, false);
-        obj.AddComponent<RectTransform>();
-        TMP_Text text = obj.AddComponent<TextMeshProUGUI>();
-        text.fontSize = fontSize;
-        text.fontStyle = fontStyle;
-        text.color = new Color(1f, 0.98f, 0.94f, 1f);
-        text.raycastTarget = false;
-        text.alignment = TextAlignmentOptions.TopLeft;
-        return obj;
-    }
-
     /// <summary>
     /// 在真正跨场景过渡前，把塔防 HUD 与结果面板统一隐藏。
     ///
@@ -1169,108 +1069,6 @@ public sealed class TowerDefenseHudPresenter
         }
     }
 
-    private Button CreateRuntimeDemolishButton()
-    {
-        Canvas targetCanvas = ResolveHudCanvas();
-        if (targetCanvas == null)
-        {
-            return null;
-        }
-
-        GameObject buttonObject = new GameObject("DeleteSelectedStructureButton");
-        buttonObject.transform.SetParent(targetCanvas.transform, false);
-
-        RectTransform rectTransform = buttonObject.AddComponent<RectTransform>();
-        rectTransform.anchorMin = new Vector2(1f, 1f);
-        rectTransform.anchorMax = new Vector2(1f, 1f);
-        rectTransform.pivot = new Vector2(1f, 1f);
-        rectTransform.anchoredPosition = new Vector2(-24f, -24f);
-        rectTransform.sizeDelta = new Vector2(172f, 46f);
-
-        Image background = buttonObject.AddComponent<Image>();
-        background.color = new Color(0.78f, 0.16f, 0.16f, 0.96f);
-        background.raycastTarget = true;
-
-        Button button = buttonObject.AddComponent<Button>();
-        ColorBlock colors = button.colors;
-        colors.normalColor = background.color;
-        colors.highlightedColor = new Color(0.88f, 0.24f, 0.24f, 1f);
-        colors.pressedColor = new Color(0.62f, 0.12f, 0.12f, 1f);
-        colors.selectedColor = colors.highlightedColor;
-        colors.disabledColor = new Color(0.42f, 0.14f, 0.14f, 0.5f);
-        button.colors = colors;
-        button.transition = Selectable.Transition.ColorTint;
-
-        GameObject labelObject = new GameObject("Label");
-        labelObject.transform.SetParent(buttonObject.transform, false);
-        RectTransform labelRect = labelObject.AddComponent<RectTransform>();
-        labelRect.anchorMin = Vector2.zero;
-        labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = Vector2.zero;
-        labelRect.offsetMax = Vector2.zero;
-
-        TMP_Text label = labelObject.AddComponent<TextMeshProUGUI>();
-        label.text = "Delete";
-        label.fontSize = 26f;
-        label.alignment = TextAlignmentOptions.Center;
-        label.color = new Color(1f, 0.96f, 0.96f, 1f);
-        label.raycastTarget = false;
-
-        buttonObject.SetActive(false);
-        return button;
-    }
-
-    private Button CreateRuntimeUpgradeButton()
-    {
-        Canvas targetCanvas = ResolveHudCanvas();
-        if (targetCanvas == null)
-        {
-            return null;
-        }
-
-        GameObject buttonObject = new GameObject("UpgradeSelectedStructureButton");
-        buttonObject.transform.SetParent(targetCanvas.transform, false);
-
-        RectTransform rectTransform = buttonObject.AddComponent<RectTransform>();
-        rectTransform.anchorMin = new Vector2(1f, 1f);
-        rectTransform.anchorMax = new Vector2(1f, 1f);
-        rectTransform.pivot = new Vector2(1f, 1f);
-        rectTransform.anchoredPosition = new Vector2(-24f, -78f);
-        rectTransform.sizeDelta = new Vector2(172f, 46f);
-
-        Image background = buttonObject.AddComponent<Image>();
-        background.color = new Color(0.18f, 0.54f, 0.86f, 0.96f);
-        background.raycastTarget = true;
-
-        Button button = buttonObject.AddComponent<Button>();
-        ColorBlock colors = button.colors;
-        colors.normalColor = background.color;
-        colors.highlightedColor = new Color(0.24f, 0.64f, 0.96f, 1f);
-        colors.pressedColor = new Color(0.14f, 0.42f, 0.72f, 1f);
-        colors.selectedColor = colors.highlightedColor;
-        colors.disabledColor = new Color(0.18f, 0.22f, 0.32f, 0.5f);
-        button.colors = colors;
-        button.transition = Selectable.Transition.ColorTint;
-
-        GameObject labelObject = new GameObject("Label");
-        labelObject.transform.SetParent(buttonObject.transform, false);
-        RectTransform labelRect = labelObject.AddComponent<RectTransform>();
-        labelRect.anchorMin = Vector2.zero;
-        labelRect.anchorMax = Vector2.one;
-        labelRect.offsetMin = Vector2.zero;
-        labelRect.offsetMax = Vector2.zero;
-
-        TMP_Text label = labelObject.AddComponent<TextMeshProUGUI>();
-        label.text = "Upgrade";
-        label.fontSize = 24f;
-        label.alignment = TextAlignmentOptions.Center;
-        label.color = new Color(1f, 0.98f, 0.96f, 1f);
-        label.raycastTarget = false;
-
-        buttonObject.SetActive(false);
-        return button;
-    }
-
     private static Canvas ResolveHudCanvas()
     {
         Canvas[] canvases = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -1322,245 +1120,6 @@ public sealed class TowerDefenseHudPresenter
     /// 这部分仍然由脚本生成，
     /// 因为它本质上就是当前状态的动态摘要，而不是固定装饰性文本。
     /// </summary>
-
-    /// <summary>
-    /// 组装操作区的主说明块。
-    ///
-    /// 这里继续只表达“玩家眼前主要在做什么”：
-    /// - 正在拖拽哪种建筑
-    /// - 当前选中了哪张卡
-    /// - 当前选中了哪座已放下的结构
-    /// - 或者当前处于默认待命态
-    ///
-    /// 后面新增的供电摘要、实时状态和事件流，会作为独立区块拼接在后面，
-    /// 让信息层级比之前更清楚。
-    /// </summary>
-    private string BuildPrimaryOperationBlock(TowerDefenseHudState state, TowerCatalog towerCatalog)
-    {
-        if (state.IsPlacementDragActive)
-        {
-            TowerDefinition draggingDefinition = towerCatalog.GetDefinition(state.DragTowerType);
-            if (draggingDefinition != null)
-            {
-                string accentHex = ColorUtility.ToHtmlStringRGB(draggingDefinition.AccentColor);
-                string secondaryHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
-                return
-                    "DEPLOY TRACE\n" +
-                    $"<size=30>{draggingDefinition.DisplayName}</size>\n" +
-                    $"<size=20><color=#{accentHex}>{draggingDefinition.BuildCostLabel}</color>  <color=#{secondaryHex}>Cyan sectors = exact legal zone</color></size>";
-            }
-        }
-
-        if (state.SelectedTowerType != TowerType.None)
-        {
-            TowerDefinition selectedDefinition = towerCatalog.GetDefinition(state.SelectedTowerType);
-            if (selectedDefinition != null)
-            {
-                string accentHex = ColorUtility.ToHtmlStringRGB(selectedDefinition.AccentColor);
-                string secondaryHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
-                string economyLine = BuildSelectionEconomyLine(state.CurrentScrap, selectedDefinition);
-                return
-                    "TACTICAL READY\n" +
-                    $"<size=30>{selectedDefinition.DisplayName}</size>\n" +
-                    $"<size=20><color=#{accentHex}>{selectedDefinition.SelectionHint}</color></size>\n" +
-                    $"<size=18><color=#{secondaryHex}>{selectedDefinition.UpgradeFocusSummary}</color></size>\n" +
-                    $"<size=18>{economyLine}</size>";
-            }
-        }
-
-        if (state.PlacedStructureState.HasSelection)
-        {
-            string secondaryHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
-            return
-                "STRUCTURE LINK\n" +
-                $"<size=30>{state.PlacedStructureState.Title}</size>\n" +
-                $"<size=18><color=#{secondaryHex}>{state.PlacedStructureState.Details}</color></size>";
-        }
-
-        string operationHintHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
-        return
-            "OPERATION LINK\n" +
-            "<size=28>Click or drag a tower card to project legal sectors</size>\n" +
-            $"<size=20><color=#{operationHintHex}>1 Relay / 2 Single / 3 Slow / 4 Bomb / Esc Cancel</color></size>";
-    }
-
-    /// <summary>
-    /// 当前状态行负责承接原来已经存在的 `SetStatusMessage()` 调用链。
-    ///
-    /// 这样一来：
-    /// - 旧代码不需要为了“没有 StatusStrip 了”而改得支离破碎
-    /// - 这些状态消息也不再丢失，而是正式落进操作区里
-    /// </summary>
-    private string BuildStatusBlock(string statusMessage)
-    {
-        if (string.IsNullOrWhiteSpace(statusMessage))
-        {
-            return string.Empty;
-        }
-
-        string statusHex = ColorUtility.ToHtmlStringRGB(_theme.StatusTextColor);
-        return
-            "LIVE STATUS\n" +
-            $"<size=18><color=#{statusHex}>{EscapeRichText(statusMessage)}</color></size>";
-    }
-
-    /// <summary>
-    /// 把供电系统当前已经生效的结果翻译成一段可读摘要。
-    ///
-    /// 这样玩家在准备放塔、升级或排查断电时，
-    /// 不需要先点中特定继电器，也能先看到整局供电态势。
-    /// </summary>
-    private string BuildPowerGridBlock(PowerGridHudSnapshot snapshot)
-    {
-        string relayLimitText = snapshot.RelayLimit == int.MaxValue
-            ? "∞"
-            : snapshot.RelayLimit.ToString();
-
-        Color statusColor = snapshot.OfflineTowerCount > 0
-            ? _theme.DangerNoticeColor
-            : snapshot.RelayCount == 0
-                ? _theme.WarningNoticeColor
-                : _theme.PositiveNoticeColor;
-        string statusHex = ColorUtility.ToHtmlStringRGB(statusColor);
-        string infoHex = ColorUtility.ToHtmlStringRGB(_theme.SecondaryInfoColor);
-
-        return
-            "POWER GRID\n" +
-            $"<size=18><color=#{infoHex}>Relays {snapshot.RelayCount}/{relayLimitText}  Towers {snapshot.PoweredTowerCount}/{snapshot.TotalTowerCount} online</color></size>\n" +
-            $"<size=18><color=#{infoHex}>Load {snapshot.AssignedLoad}/{snapshot.TotalCapacity}</color></size>\n" +
-            $"<size=18><color=#{statusHex}>{EscapeRichText(snapshot.StatusMessage)}</color></size>";
-    }
-
-    /// <summary>
-    /// 最新一条瞬时提示会以更醒目的方式单独展示。
-    ///
-    /// 这样资源增减、关键警告或波次提示不会淹没在长说明文本里，
-    /// 玩家扫一眼就能知道刚刚发生了什么。
-    /// </summary>
-    private string BuildTransientNoticeBlock(HudNoticeEntry transientNotice)
-    {
-        if (!transientNotice.HasMessage)
-        {
-            return string.Empty;
-        }
-
-        return
-            "LATEST EVENT\n" +
-            $"<size=18><color={GetNoticeColor(transientNotice.Tone)}>{EscapeRichText(transientNotice.Message)}</color></size>";
-    }
-
-    /// <summary>
-    /// 最近事件流会保留最近几条重要反馈，
-    /// 解决“瞬时提示一闪而过，玩家没看清就丢失”的问题。
-    /// </summary>
-    private string BuildRecentNoticeBlock(HudNoticeEntry[] notices, HudNoticeEntry transientNotice)
-    {
-        if (notices == null || notices.Length == 0)
-        {
-            return string.Empty;
-        }
-
-        string lines = string.Empty;
-        int visibleCount = 0;
-
-        for (int i = 0; i < notices.Length; i++)
-        {
-            HudNoticeEntry notice = notices[i];
-            if (!notice.HasMessage)
-            {
-                continue;
-            }
-
-            if (transientNotice.HasMessage &&
-                notice.Message == transientNotice.Message &&
-                notice.Tone == transientNotice.Tone)
-            {
-                continue;
-            }
-
-            if (visibleCount > 0)
-            {
-                lines += "\n";
-            }
-
-            lines += $"<color={GetNoticeColor(notice.Tone)}>• {EscapeRichText(notice.Message)}</color>";
-            visibleCount++;
-        }
-
-        if (visibleCount == 0)
-        {
-            return string.Empty;
-        }
-
-        return
-            "RECENT LOG\n" +
-            $"<size=16>{lines}</size>";
-    }
-
-    private static void AppendSection(ref string composedText, string section)
-    {
-        if (string.IsNullOrWhiteSpace(section))
-        {
-            return;
-        }
-
-        if (!string.IsNullOrWhiteSpace(composedText))
-        {
-            composedText += "\n\n";
-        }
-
-        composedText += section;
-    }
-
-    private static string EscapeRichText(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-        {
-            return string.Empty;
-        }
-
-        return value.Replace("<", "&lt;").Replace(">", "&gt;");
-    }
-
-    private string GetNoticeColor(HudNoticeTone tone)
-    {
-        switch (tone)
-        {
-            case HudNoticeTone.Positive:
-                return $"#{ColorUtility.ToHtmlStringRGB(_theme.PositiveNoticeColor)}";
-            case HudNoticeTone.Spending:
-                return $"#{ColorUtility.ToHtmlStringRGB(_theme.SpendingNoticeColor)}";
-            case HudNoticeTone.Warning:
-                return $"#{ColorUtility.ToHtmlStringRGB(_theme.WarningNoticeColor)}";
-            case HudNoticeTone.Danger:
-                return $"#{ColorUtility.ToHtmlStringRGB(_theme.DangerNoticeColor)}";
-            default:
-                return $"#{ColorUtility.ToHtmlStringRGB(_theme.NeutralNoticeColor)}";
-        }
-    }
-
-    private string BuildSelectionEconomyLine(int currentScrap, TowerDefinition definition)
-    {
-        if (definition == null)
-        {
-            return string.Empty;
-        }
-
-        string positiveHex = $"#{ColorUtility.ToHtmlStringRGB(_theme.PositiveNoticeColor)}";
-        string dangerHex = $"#{ColorUtility.ToHtmlStringRGB(_theme.DangerNoticeColor)}";
-        if (definition.BuildCost <= 0)
-        {
-            return $"<color={positiveHex}>FREE deploy. Scrap remains unchanged.</color>";
-        }
-
-        int remainingAfterBuild = currentScrap - definition.BuildCost;
-        if (remainingAfterBuild >= 0)
-        {
-            return $"<color={positiveHex}>{remainingAfterBuild} SCRAP left after deploy.</color>";
-        }
-
-        return $"<color={dangerHex}>Need {-remainingAfterBuild} more SCRAP to deploy.</color>";
-    }
 
     /// <summary>
     /// 在“场景主导 HUD”的模式下，只维护按钮的可交互状态。
@@ -1647,19 +1206,4 @@ public sealed class TowerDefenseHudPresenter
             : string.Empty;
     }
 
-    /// <summary>
-    /// 组装顶部资源卡的富文本。
-    ///
-    /// 这里返回的是”内容格式”，不是布局格式。
-    /// 卡片放哪、字号多大、外边距多少，应该主要由场景控制；
-    /// 但每张卡内部标签和数值的层级关系，仍然适合由代码统一生成。
-    /// </summary>
-    private string BuildMetricText(string label, string value, Color accentColor)
-    {
-        string labelHex = ColorUtility.ToHtmlStringRGB(_theme.MetricLabelColor);
-        string accentHex = ColorUtility.ToHtmlStringRGB(accentColor);
-        return
-            $"<size=18><color=#{labelHex}>{label}</color></size>\n" +
-            $"<size=56><color=#{accentHex}>{value}</color></size>";
-    }
 }

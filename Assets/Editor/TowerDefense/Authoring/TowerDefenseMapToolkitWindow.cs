@@ -938,6 +938,8 @@ namespace TowerDefense.Editor
                 AssignObjectReferenceByName(serializedGame, "gameOverHintReference", FindTextByName(targetScene, "GameOverHint"));
                 AssignObjectReferenceByName(serializedGame, "dragPreviewPanelReference", FindObjectByName(targetScene, "DragPreviewPanel"));
                 AssignObjectReferenceByName(serializedGame, "dragPreviewLabelReference", FindTextByName(targetScene, "DragPreviewLabel"));
+                AssignObjectReferenceByName(serializedGame, "upgradeSelectedStructureButtonReference", FindComponentByName<Button>(targetScene, "UpgradeSelectedStructureButton"));
+                AssignObjectReferenceByName(serializedGame, "towerInfoPopupReference", FindFirstComponentInScene<TowerInfoPopup>(targetScene));
                 serializedGame.ApplyModifiedPropertiesWithoutUndo();
                 EditorUtility.SetDirty(targetGame);
             }
@@ -1052,6 +1054,221 @@ namespace TowerDefense.Editor
 
             EditorSceneManager.MarkSceneDirty(scene);
             return selectionText;
+        }
+
+        /// <summary>
+        /// Ensures that the template scene's HUDCanvas carries the three scene-authored UI
+        /// objects that were previously created at runtime by TowerDefenseHudPresenter:
+        /// TowerInfoPopup, DeleteSelectedStructureButton, UpgradeSelectedStructureButton.
+        ///
+        /// After this method runs (once), the template scene owns these objects and the
+        /// author can adjust every visual property directly in the scene. The next sync
+        /// will propagate them to all level scenes, and the runtime presenter will find
+        /// them by name instead of creating them from hardcoded C# values.
+        /// </summary>
+        internal static void EnsurePopupAndActionButtonsExist(Scene scene)
+        {
+            GameObject hudCanvas = FindRootObjectByName(scene, "HUDCanvas");
+            if (hudCanvas == null)
+            {
+                Debug.LogWarning("[EnsurePopupAndActionButtons] HUDCanvas not found in scene.");
+                return;
+            }
+
+            Transform hudTransform = hudCanvas.transform;
+
+            EnsureDeleteSelectedStructureButton(hudTransform);
+            EnsureUpgradeSelectedStructureButton(hudTransform);
+            EnsureTowerInfoPopup(hudTransform);
+
+            EditorSceneManager.MarkSceneDirty(scene);
+        }
+
+        private static void EnsureDeleteSelectedStructureButton(Transform hudTransform)
+        {
+            Transform existing = hudTransform.Find("DeleteSelectedStructureButton");
+            if (existing != null) return;
+
+            GameObject buttonObject = new GameObject("DeleteSelectedStructureButton");
+            buttonObject.transform.SetParent(hudTransform, false);
+
+            RectTransform rect = buttonObject.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(1f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-24f, -24f);
+            rect.sizeDelta = new Vector2(172f, 46f);
+
+            Image background = buttonObject.AddComponent<Image>();
+            background.color = new Color(0.78f, 0.16f, 0.16f, 0.96f);
+            background.raycastTarget = true;
+
+            Button button = buttonObject.AddComponent<Button>();
+            ColorBlock colors = button.colors;
+            colors.normalColor = background.color;
+            colors.highlightedColor = new Color(0.88f, 0.24f, 0.24f, 1f);
+            colors.pressedColor = new Color(0.62f, 0.12f, 0.12f, 1f);
+            colors.selectedColor = colors.highlightedColor;
+            colors.disabledColor = new Color(0.42f, 0.14f, 0.14f, 0.5f);
+            button.colors = colors;
+            button.transition = Selectable.Transition.ColorTint;
+
+            GameObject labelObject = new GameObject("Label");
+            labelObject.transform.SetParent(buttonObject.transform, false);
+            RectTransform labelRect = labelObject.AddComponent<RectTransform>();
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
+
+            TextMeshProUGUI label = labelObject.AddComponent<TextMeshProUGUI>();
+            label.text = "Delete";
+            label.fontSize = 26f;
+            label.alignment = TextAlignmentOptions.Center;
+            label.color = new Color(1f, 0.96f, 0.96f, 1f);
+            label.raycastTarget = false;
+
+            buttonObject.SetActive(false);
+            Undo.RegisterCreatedObjectUndo(buttonObject, "Create DeleteSelectedStructureButton");
+        }
+
+        private static void EnsureUpgradeSelectedStructureButton(Transform hudTransform)
+        {
+            Transform existing = hudTransform.Find("UpgradeSelectedStructureButton");
+            if (existing != null) return;
+
+            GameObject buttonObject = new GameObject("UpgradeSelectedStructureButton");
+            buttonObject.transform.SetParent(hudTransform, false);
+
+            RectTransform rect = buttonObject.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(1f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-24f, -78f);
+            rect.sizeDelta = new Vector2(172f, 46f);
+
+            Image background = buttonObject.AddComponent<Image>();
+            background.color = new Color(0.18f, 0.54f, 0.86f, 0.96f);
+            background.raycastTarget = true;
+
+            Button button = buttonObject.AddComponent<Button>();
+            ColorBlock colors = button.colors;
+            colors.normalColor = background.color;
+            colors.highlightedColor = new Color(0.24f, 0.64f, 0.96f, 1f);
+            colors.pressedColor = new Color(0.14f, 0.42f, 0.72f, 1f);
+            colors.selectedColor = colors.highlightedColor;
+            colors.disabledColor = new Color(0.18f, 0.22f, 0.32f, 0.5f);
+            button.colors = colors;
+            button.transition = Selectable.Transition.ColorTint;
+
+            GameObject labelObject = new GameObject("Label");
+            labelObject.transform.SetParent(buttonObject.transform, false);
+            RectTransform labelRect = labelObject.AddComponent<RectTransform>();
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
+
+            TextMeshProUGUI label = labelObject.AddComponent<TextMeshProUGUI>();
+            label.text = "Upgrade";
+            label.fontSize = 24f;
+            label.alignment = TextAlignmentOptions.Center;
+            label.color = new Color(1f, 0.98f, 0.96f, 1f);
+            label.raycastTarget = false;
+
+            buttonObject.SetActive(false);
+            Undo.RegisterCreatedObjectUndo(buttonObject, "Create UpgradeSelectedStructureButton");
+        }
+
+        private static void EnsureTowerInfoPopup(Transform hudTransform)
+        {
+            Transform existing = hudTransform.Find("TowerInfoPopup");
+            if (existing != null) return;
+
+            GameObject popupObject = new GameObject("TowerInfoPopup");
+            popupObject.transform.SetParent(hudTransform, false);
+
+            RectTransform rect = popupObject.AddComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.sizeDelta = new Vector2(280f, 160f);
+
+            Image bg = popupObject.AddComponent<Image>();
+            bg.color = new Color(0.08f, 0.09f, 0.13f, 0.94f);
+
+            // Shadow
+            GameObject shadowObject = new GameObject("Shadow");
+            shadowObject.transform.SetParent(popupObject.transform, false);
+            shadowObject.transform.SetAsFirstSibling();
+            RectTransform shadowRect = shadowObject.AddComponent<RectTransform>();
+            shadowRect.anchorMin = Vector2.zero;
+            shadowRect.anchorMax = Vector2.one;
+            shadowRect.offsetMin = new Vector2(-3f, -3f);
+            shadowRect.offsetMax = new Vector2(3f, 3f);
+            Image shadowBg = shadowObject.AddComponent<Image>();
+            shadowBg.color = new Color(0f, 0f, 0f, 0.6f);
+            shadowBg.raycastTarget = false;
+
+            // Title
+            GameObject titleObj = CreatePopupChildText("Title", popupObject.transform, 22f, FontStyles.Bold);
+            RectTransform titleRect = titleObj.GetComponent<RectTransform>();
+            titleRect.anchorMin = new Vector2(0f, 1f);
+            titleRect.anchorMax = new Vector2(1f, 1f);
+            titleRect.pivot = new Vector2(0f, 1f);
+            titleRect.anchoredPosition = new Vector2(14f, -12f);
+            titleRect.sizeDelta = new Vector2(-28f, 32f);
+            TMP_Text titleText = titleObj.GetComponent<TMP_Text>();
+
+            // Stats
+            GameObject statsObj = CreatePopupChildText("Stats", popupObject.transform, 18f, FontStyles.Normal);
+            RectTransform statsRect = statsObj.GetComponent<RectTransform>();
+            statsRect.anchorMin = new Vector2(0f, 1f);
+            statsRect.anchorMax = new Vector2(1f, 1f);
+            statsRect.pivot = new Vector2(0f, 1f);
+            statsRect.anchoredPosition = new Vector2(14f, -48f);
+            statsRect.sizeDelta = new Vector2(-28f, 70f);
+            TMP_Text statsText = statsObj.GetComponent<TMP_Text>();
+            statsText.color = new Color(0.82f, 0.87f, 0.92f, 1f);
+
+            // Extra
+            GameObject extraObj = CreatePopupChildText("Extra", popupObject.transform, 15f, FontStyles.Normal);
+            RectTransform extraRect = extraObj.GetComponent<RectTransform>();
+            extraRect.anchorMin = new Vector2(0f, 1f);
+            extraRect.anchorMax = new Vector2(1f, 1f);
+            extraRect.pivot = new Vector2(0f, 1f);
+            extraRect.anchoredPosition = new Vector2(14f, -128f);
+            extraRect.sizeDelta = new Vector2(-28f, 28f);
+            TMP_Text extraText = extraObj.GetComponent<TMP_Text>();
+            extraText.color = new Color(0.58f, 0.78f, 0.96f, 1f);
+
+            TowerInfoPopup popup = popupObject.AddComponent<TowerInfoPopup>();
+
+            // Wire serialized fields via SerializedObject
+            SerializedObject serializedPopup = new SerializedObject(popup);
+            serializedPopup.FindProperty("panelRect").objectReferenceValue = rect;
+            serializedPopup.FindProperty("panelBackground").objectReferenceValue = bg;
+            serializedPopup.FindProperty("titleText").objectReferenceValue = titleText;
+            serializedPopup.FindProperty("statsText").objectReferenceValue = statsText;
+            serializedPopup.FindProperty("extraText").objectReferenceValue = extraText;
+            serializedPopup.ApplyModifiedPropertiesWithoutUndo();
+
+            popupObject.SetActive(false);
+            Undo.RegisterCreatedObjectUndo(popupObject, "Create TowerInfoPopup");
+        }
+
+        private static GameObject CreatePopupChildText(string name, Transform parent, float fontSize, FontStyles fontStyle)
+        {
+            GameObject obj = new GameObject(name);
+            obj.transform.SetParent(parent, false);
+            obj.AddComponent<RectTransform>();
+            TextMeshProUGUI text = obj.AddComponent<TextMeshProUGUI>();
+            text.fontSize = fontSize;
+            text.fontStyle = fontStyle;
+            text.color = new Color(1f, 0.98f, 0.94f, 1f);
+            text.raycastTarget = false;
+            text.alignment = TextAlignmentOptions.TopLeft;
+            return obj;
         }
 
         /// <summary>
@@ -1674,6 +1891,7 @@ namespace TowerDefense.Editor
             try
             {
                 TowerDefenseMapToolkitUtility.EnsureSelectionHudCompatibility(templateScene);
+                TowerDefenseMapToolkitUtility.EnsurePopupAndActionButtonsExist(templateScene);
                 EditorSceneManager.SaveScene(templateScene);
 
                 foreach (string targetScenePath in TowerDefenseMapToolkitUtility.GetFinalTowerDefenseScenePaths())

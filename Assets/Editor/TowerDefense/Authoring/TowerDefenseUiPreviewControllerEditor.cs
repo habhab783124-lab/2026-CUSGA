@@ -81,7 +81,7 @@ namespace TowerDefense.Editor
                 return;
             }
 
-            TowerDefenseMapToolkitUtility.SyncFinalTowerDefenseLevelsFromUiTemplate();
+            TowerDefenseMapToolkitWindow.SyncFinalTowerDefenseLevelsFromUiTemplate();
         }
 
         [MenuItem(SyncMenuPath)]
@@ -123,6 +123,9 @@ namespace TowerDefense.Editor
 
             // Open the template, copy everything, add the preview controller, save as preview
             Scene templateScene = EditorSceneManager.OpenScene(TemplateScenePath, OpenSceneMode.Single);
+
+            // Ensure scene-authored HUD objects exist in the template before creating the preview
+            TowerDefenseMapToolkitUtility.EnsurePopupAndActionButtonsExist(templateScene);
 
             // Ensure TowerDefenseUiPreviewController exists in the scene
             TowerDefenseUiPreviewController existingController =

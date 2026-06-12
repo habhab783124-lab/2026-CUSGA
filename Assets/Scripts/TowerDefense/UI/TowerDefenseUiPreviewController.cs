@@ -67,6 +67,8 @@ public sealed class TowerDefenseUiPreviewController : MonoBehaviour
     [SerializeField] private TowerType mockSelectedCardType = TowerType.SingleTarget;
 
     [Header("Preview Behavior")]
+    [SerializeField] private Color cardHighlightColor = new Color(1f, 0.92f, 0.55f, 1f);
+    [SerializeField] private string metricFormat = "{label}: {value}";
     [SerializeField] private bool refreshOnValidate = true;
 
     // ────────────────────────────
@@ -248,7 +250,7 @@ public sealed class TowerDefenseUiPreviewController : MonoBehaviour
     private void ApplyShopCardSelected()
     {
         Button cardButton = GetCardButton(mockSelectedCardType);
-        SetCardHighlight(cardButton, true, new Color(1f, 0.92f, 0.55f, 1f));
+        SetCardHighlight(cardButton, true, cardHighlightColor);
 
         ShowShopCardPopup(mockSelectedCardType, cardButton);
     }
@@ -309,7 +311,7 @@ public sealed class TowerDefenseUiPreviewController : MonoBehaviour
     {
         // Show a selected card highlight
         Button cardButton = GetCardButton(mockSelectedCardType);
-        SetCardHighlight(cardButton, true, new Color(1f, 0.92f, 0.55f, 1f));
+        SetCardHighlight(cardButton, true, cardHighlightColor);
 
         ShowShopCardPopup(mockSelectedCardType, cardButton);
     }
@@ -363,9 +365,11 @@ public sealed class TowerDefenseUiPreviewController : MonoBehaviour
         if (button != null) button.gameObject.SetActive(visible);
     }
 
-    private static string FormatMetric(string label, string value)
+    private string FormatMetric(string label, string value)
     {
-        return $"{label}: {value}";
+        return metricFormat
+            .Replace("{label}", label)
+            .Replace("{value}", value);
     }
 
 }
