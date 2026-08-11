@@ -1,0 +1,265 @@
+﻿【Unity 2D 项目 · PlayerController 使用指导（当前版本）】
+
+文件位置
+- 角色控制脚本：Assets/PlayerController.cs
+- 兼容脚本：Assets/PlayerMovement.cs
+- NPC 交互脚本：Assets/NPCInteractable.cs
+- 交互接口：Assets/IInteractable.cs
+- 本指导文件：操作指导/PlayerControllerUsageGuide.txt
+
+当前定位（先看这段）
+- `PlayerController` 在当前项目里只负责：
+  1) 左右移动
+  2) 角色朝向翻转
+  3) 动画参数更新
+  4) 对话期间冻结移动
+- 当前版本的 `PlayerController` 不负责：
+  - 射线交互检测
+  - `E` 键寻找 NPC
+  - 调用 `IInteractable.Interact(...)`
+- 当前 NPC 交互主流程在 `NPCInteractable`：
+  - 玩家进入 NPC 的 Trigger 区域
+  - NPC 显示提示
+  - 玩家按 `E` 开始对话
+  - 对话时 `NPCInteractable` 调用 `PlayerController.SetFrozen(true)` 锁定玩家
+
+也就是说：
+- `PlayerController` = 纯移动 + 动画 + 冻结
+- `NPCInteractable` = 交互 + 对话
+
+------------------------------------------------------------
+一、脚本关系怎么理解
+------------------------------------------------------------
+
+1. `PlayerController`
+- 当前主控制脚本
+- 推荐直接挂在玩家对象上使用
+
+2. `PlayerMovement`
+- 兼容层脚本
+- 继承自 `PlayerController`
+- 如果老场景仍挂着 `PlayerMovement`，也能继续工作
+- 新内容建议直接使用 `PlayerController`
+
+3. `NPCInteractable`
+- 当前示例 NPC 交互组件
+- 它并不依赖 `PlayerController` 去扫描 NPC，而是依赖 Trigger 进入范围后自己处理输入
+
+------------------------------------------------------------
+二、最小配置（当前版本）
+------------------------------------------------------------
+
+给玩家对象准备以下组件：
+
+必需：
+- `SpriteRenderer`
+- `Rigidbody2D`
+- `Collider2D`
+- `PlayerController`
+
+推荐：
+- `Animator`
+
+说明：
+- `PlayerController` 上有 `RequireComponent(typeof(Rigidbody2D), typeof(Collider2D))`。
+- 也就是说，玩家对象必须有 `Rigidbody2D` 和某种 `Collider2D`。
+
+------------------------------------------------------------
+三、Inspector 字段说明
+------------------------------------------------------------
+
+A）Movement
+
+- `moveSpeed`
+  - 左右移动速度，默认 `5`
+
+- `useBoundary`
+  - 是否限制 X 轴活动范围
+
+- `minX / maxX`
+  - X 轴边界数值
+
+B）Movement Input
+
+- `horizontalAxis`
+  - 输入轴名称，默认 `Horizontal`
+  - 对应 A/D 或左右方向键
+
+- `inputDeadZone`
+  - 输入死区，过滤细小抖动
+
+- `moveSmoothing`
+  - 平滑移动系数，值越大越快接近目标速度
+
+C）Animator
+
+- `animator`
+  - 可选
+  - 若为空，会自动尝试读取同物体上的 `Animator`
+
+- `walkingBoolParameter`
+  - 行走状态参数名
+  - 默认 `isWalking`
+
+- `moveXFloatParameter`
+  - 可选的 Float 参数名
+  - 若你使用 BlendTree，可在这里填入，例如 `moveX`
+
+D）Runtime State
+
+- `isFrozen`
+  - 运行时冻结状态
+  - 对话或演出时可设为 `true`
+
+------------------------------------------------------------
+四、运行时逻辑（当前实现）
+------------------------------------------------------------
+
+1. Update 阶段
+- 读取 `Horizontal` 输入
+- 判断当前是否正在移动
+- 根据移动方向自动翻转朝向
+- 更新 Animator 参数
+
+2. FixedUpdate 阶段
+- 根据输入计算水平速度
+- 使用 `Mathf.Lerp` 进行平滑速度过渡
+- 如果启用了边界，则对 X 坐标做 `Clamp`
+
+3. 冻结逻辑
+- 当 `isFrozen = true` 时：
+  - 停止水平输入
+  - 清除水平速度
+  - 保持动画为非移动状态
+- 当前项目中，通常由 `NPCInteractable` 在对话开始时调用 `SetFrozen(true)`，在对话结束时调用 `SetFrozen(false)`
+
+------------------------------------------------------------
+五、推荐的一套可运行参数
+------------------------------------------------------------
+
+玩家对象（示例）：
+
+组件：
+- `SpriteRenderer`
+- `Rigidbody2D`
+- `BoxCollider2D`
+- `Animator`
+- `PlayerController`
+
+推荐参数：
+- `moveSpeed = 5`
+- `useBoundary = true`
+- `minX = -8`
+- `maxX = 8`
+- `horizontalAxis = Horizontal`
+- `inputDeadZone = 0.01`
+- `moveSmoothing = 20`
+- `walkingBoolParameter = isWalking`
+- `moveXFloatParameter =` 留空（初版可不填）
+
+Rigidbody2D 推荐：
+- `Body Type = Dynamic`
+- `Gravity Scale = 0`
+- `Collision Detection = Continuous`
+- `Freeze Rotation Z = true`
+
+Collider2D 推荐：
+- 使用 `BoxCollider2D`
+- `Is Trigger = false`
+- 尺寸与偏移按角色外形调整
+
+------------------------------------------------------------
+六、如何与 NPCInteractable 配合
+------------------------------------------------------------
+
+当前项目中，玩家和 NPC 的配合方式如下：
+
+1. 玩家对象身上挂 `PlayerController`
+2. 玩家对象有 `Rigidbody2D + Collider2D`
+3. NPC 对象身上挂 `NPCInteractable`
+4. NPC 对象的 `BoxCollider2D` 勾选 `Is Trigger`
+5. 玩家进入 NPC 的触发区后：
+   - `NPCInteractable` 会记录当前玩家
+   - 显示提示 UI
+6. 玩家按 `E` 后：
+   - `NPCInteractable` 开始对话
+   - 调用 `currentPlayer.SetFrozen(true)`
+7. 对话结束后：
+   - `NPCInteractable` 调用 `SetFrozen(false)`
+   - 玩家恢复移动
+
+结论：
+- 玩家是否能与 NPC 正常交互，关键不在 `PlayerController` 有没有“交互扫描”功能。
+- 关键在于：
+  - 玩家有没有进入 NPC 的 Trigger
+  - NPC 的 `playerLayer` 是否能识别玩家
+
+------------------------------------------------------------
+七、动画配置建议
+------------------------------------------------------------
+
+如果你要做最常见的待机/行走切换：
+
+1. 给玩家对象添加 `Animator`
+2. 创建一个 `Bool` 参数：`isWalking`
+3. 建立两个状态：
+   - `Idle`
+   - `Walk`
+4. 切换条件：
+   - `Idle -> Walk`：`isWalking = true`
+   - `Walk -> Idle`：`isWalking = false`
+
+如果你要做 BlendTree：
+
+1. 在 Animator 中增加一个 Float 参数，例如 `moveX`
+2. 在 `PlayerController.moveXFloatParameter` 中填写同名参数
+3. 脚本会把当前水平输入写入 Animator
+
+------------------------------------------------------------
+八、常见问题排查
+------------------------------------------------------------
+
+Q1：角色不能移动
+- 检查是否挂了 `PlayerController`
+- 检查 `Horizontal` 输入轴是否可用
+- 检查 `isFrozen` 是否被保持为 `true`
+- 检查是否被边界锁住（`minX/maxX` 太小）
+
+Q2：角色能移动但不播放动画
+- 检查是否挂了 `Animator`
+- 检查 `walkingBoolParameter` 是否与 Animator 中的参数名一致
+- 检查参数类型是否为 `Bool`
+
+Q3：角色移动方向和朝向翻转相反
+- 检查角色原始 Sprite 是否默认朝右
+- 若原图默认朝左，翻转逻辑看起来会反过来
+
+Q4：靠近 NPC 没有提示
+- 这通常不是 `PlayerController` 的问题
+- 请检查：
+  - NPC 是否挂了 `NPCInteractable`
+  - NPC 的碰撞体是否勾选 `Is Trigger`
+  - 玩家是否有 `Rigidbody2D`
+  - NPC 的 `playerLayer` 是否包含玩家所在 Layer
+
+Q5：对话期间玩家还能动
+- 检查 `NPCInteractable` 是否正确拿到了 `PlayerController`
+- 检查 `SetFrozen(true)` 是否被执行
+- 检查是否有其他脚本同时在控制玩家位移
+
+------------------------------------------------------------
+九、版本结论
+------------------------------------------------------------
+
+请以当前代码为准：
+
+- `PlayerController`：玩家移动、翻转、动画、冻结
+- `PlayerMovement`：兼容层
+- `NPCInteractable`：当前 NPC 交互和对话主逻辑
+
+如果旧文档或旧理解里还提到：
+- 射线检测
+- 范围交互扫描
+- PlayerController 直接按 `E` 调用 NPC 接口
+
+请视为旧版本描述，不适用于当前项目实现。
